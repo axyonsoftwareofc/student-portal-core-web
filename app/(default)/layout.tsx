@@ -1,3 +1,5 @@
+// app/(default)/layout.tsx
+
 "use client";
 
 import { useEffect } from "react";
@@ -8,8 +10,8 @@ import "aos/dist/aos.css";
 import Footer from "@/components/ui/footer";
 
 export default function DefaultLayout({
-  children,
-}: {
+                                        children,
+                                      }: {
   children: React.ReactNode;
 }) {
   useEffect(() => {
@@ -22,10 +24,10 @@ export default function DefaultLayout({
   });
 
   return (
-    <>
-      <main className="relative flex grow flex-col">{children}</main>
+      <>
+        <main className="relative flex grow flex-col">{children}</main>
 
-      <Footer />
-    </>
+        <Footer />
+      </>
   );
 }

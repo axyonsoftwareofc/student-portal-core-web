@@ -1,16 +1,23 @@
 // app/(dashboard)/admin/layout.tsx
 'use client';
 
-import dynamic from 'next/dynamic';
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import AdminSidebar from "@/components/dashboard/AdminSidebar";
+import MobileMenu from "@/components/dashboard/MobileMenu";
 import DashboardFooter from "@/components/dashboard/DashboardFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-// Força renderização dinâmica
-export const runtime = 'edge';
+const adminMenuItems = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
+    { href: "/admin/alunos", label: "Alunos", icon: "👥" },
+    { href: "/admin/modulos", label: "Módulos", icon: "📚" },
+    { href: "/admin/conteudos", label: "Conteúdos", icon: "📝" },
+    { href: "/admin/pagamentos", label: "Pagamentos", icon: "💰" },
+    { href: "/admin/relatorios", label: "Relatórios", icon: "📈" },
+    { href: "/admin/configuracoes", label: "Configurações", icon: "⚙️" },
+];
 
 export default function AdminLayout({
                                         children,
@@ -49,9 +56,14 @@ export default function AdminLayout({
         <div className="flex h-screen flex-col bg-gray-950">
             <DashboardHeader />
             <div className="flex flex-1 overflow-hidden">
+                {/* Sidebar - só aparece em telas grandes */}
                 <AdminSidebar />
+
+                {/* Menu Mobile */}
+                <MobileMenu items={adminMenuItems} title="Painel Admin" />
+
                 <main className="flex-1 overflow-y-auto">
-                    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
                         {children}
                     </div>
                     <DashboardFooter />

@@ -10,27 +10,25 @@ export default function DashboardHeader() {
     const { user, logout } = useAuth();
 
     const handleLogout = async () => {
-        console.log('Botão logout clicado');
-        setMenuOpen(false); // Fecha o menu
+        setMenuOpen(false);
         await logout();
     };
 
     if (!user) return null;
 
-    // Determinar o link do dashboard baseado no role
     const dashboardLink = user.role === 'admin' ? '/admin/dashboard' : '/aluno/dashboard';
     const profileLink = user.role === 'admin' ? '/admin/configuracoes' : '/aluno/perfil';
 
     return (
-        <header className="sticky top-0 z-50 border-b border-gray-700/50 bg-gray-950/95 backdrop-blur-xl">
+        <header className="sticky top-0 z-40 border-b border-gray-700/50 bg-gray-950/95 backdrop-blur-xl">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="flex h-16 items-center justify-between">
-                    {/* Logo e marca */}
+                <div className="flex h-14 sm:h-16 items-center justify-between">
+                    {/* Logo */}
                     <Link href={dashboardLink} className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-purple-600">
                             <span className="text-sm font-bold text-white">📚</span>
                         </div>
-                        <span className="hidden font-nacelle text-lg font-semibold text-white sm:inline">
+                        <span className="hidden sm:inline font-nacelle text-lg font-semibold text-white">
                             {user.role === 'admin' ? 'Painel Admin' : 'Portal do Aluno'}
                         </span>
                     </Link>
@@ -39,7 +37,7 @@ export default function DashboardHeader() {
                     <div className="relative">
                         <button
                             onClick={() => setMenuOpen(!menuOpen)}
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-gray-900/50"
+                            className="flex items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 transition-colors hover:bg-gray-900/50"
                         >
                             {/* Avatar */}
                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
@@ -49,9 +47,9 @@ export default function DashboardHeader() {
                                 </span>
                             </div>
 
-                            {/* Name */}
-                            <div className="hidden text-left sm:block">
-                                <p className="text-sm font-medium text-white">
+                            {/* Name - esconde no mobile pequeno */}
+                            <div className="hidden sm:block text-left">
+                                <p className="text-sm font-medium text-white truncate max-w-[120px] md:max-w-none">
                                     {user.name}
                                 </p>
                                 <p className="text-xs text-gray-400">
@@ -80,36 +78,37 @@ export default function DashboardHeader() {
                         {/* Dropdown menu */}
                         {menuOpen && (
                             <>
-                                {/* Overlay para fechar o menu ao clicar fora */}
                                 <div
                                     className="fixed inset-0 z-10"
                                     onClick={() => setMenuOpen(false)}
                                 />
 
-                                <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-700 bg-gray-900 shadow-xl z-20">
+                                <div className="absolute right-0 mt-2 w-56 sm:w-48 rounded-lg border border-gray-700 bg-gray-900 shadow-xl z-20">
                                     <div className="border-b border-gray-700 p-4">
-                                        <p className="text-sm font-medium text-white">
+                                        <p className="text-sm font-medium text-white truncate">
                                             {user.name}
                                         </p>
-                                        <p className="text-xs text-gray-400">{user.email}</p>
+                                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
                                     </div>
 
                                     <div className="p-2">
                                         <Link
                                             href={profileLink}
                                             onClick={() => setMenuOpen(false)}
-                                            className="block rounded px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-800"
+                                            className="flex items-center gap-2 rounded px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-gray-800"
                                         >
-                                            {user.role === 'admin' ? '⚙️ Configurações' : '👤 Meu Perfil'}
+                                            <span>👤</span>
+                                            {user.role === 'admin' ? 'Configurações' : 'Meu Perfil'}
                                         </Link>
 
                                         {user.role === 'admin' && (
                                             <Link
                                                 href="/admin/dashboard"
                                                 onClick={() => setMenuOpen(false)}
-                                                className="block rounded px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-800"
+                                                className="flex items-center gap-2 rounded px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-gray-800"
                                             >
-                                                📊 Dashboard
+                                                <span>📊</span>
+                                                Dashboard
                                             </Link>
                                         )}
                                     </div>
@@ -117,9 +116,10 @@ export default function DashboardHeader() {
                                     <div className="border-t border-gray-700 p-2">
                                         <button
                                             onClick={handleLogout}
-                                            className="w-full rounded px-4 py-2 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-950/30"
+                                            className="flex w-full items-center gap-2 rounded px-4 py-2.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-950/30"
                                         >
-                                            🚪 Sair
+                                            <span>🚪</span>
+                                            Sair
                                         </button>
                                     </div>
                                 </div>

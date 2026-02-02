@@ -7,19 +7,19 @@ import Link from "next/link";
 
 export default function AdminDashboardPage() {
     return (
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
             {/* Header */}
             <div className="space-y-2">
-                <h1 className="font-nacelle text-4xl font-bold text-white">
+                <h1 className="font-nacelle text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
                     Dashboard Administrativo 👑
                 </h1>
-                <p className="text-gray-400">
+                <p className="text-sm sm:text-base text-gray-400">
                     Visão geral do sistema e métricas importantes
                 </p>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Stats Grid - responsivo */}
+            <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
                 {adminStats.map((stat) => (
                     <AdminStatCard
                         key={stat.id}
@@ -34,16 +34,16 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid gap-8 lg:grid-cols-3">
+            <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
                 {/* Recent Activities */}
                 <div className="lg:col-span-2 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-white">
+                        <h2 className="text-lg sm:text-xl font-bold text-white">
                             Atividades Recentes
                         </h2>
                         <Link
                             href="/admin/relatorios"
-                            className="text-sm text-violet-400 hover:text-violet-300 transition-colors"
+                            className="text-xs sm:text-sm text-violet-400 hover:text-violet-300 transition-colors"
                         >
                             Ver tudo →
                         </Link>
@@ -53,17 +53,17 @@ export default function AdminDashboardPage() {
                         {recentActivities.map((activity) => (
                             <div
                                 key={activity.id}
-                                className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
+                                className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
                             >
-                                <div className="flex items-start gap-4">
+                                <div className="flex items-start gap-3 sm:gap-4">
                                     <div className="flex-shrink-0">
-                                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                        <div className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full ${
                                             activity.type === 'student' ? 'bg-blue-500/20' :
                                                 activity.type === 'content' ? 'bg-green-500/20' :
                                                     activity.type === 'system' ? 'bg-orange-500/20' :
                                                         'bg-purple-500/20'
                                         }`}>
-                                            <span className="text-lg">{activity.icon}</span>
+                                            <span className="text-base sm:text-lg">{activity.icon}</span>
                                         </div>
                                     </div>
 
@@ -71,7 +71,7 @@ export default function AdminDashboardPage() {
                                         <p className="text-sm font-medium text-white">
                                             {activity.title}
                                         </p>
-                                        <p className="mt-1 text-sm text-gray-400">
+                                        <p className="mt-1 text-xs sm:text-sm text-gray-400 line-clamp-2">
                                             {activity.description}
                                         </p>
                                         <p className="mt-2 text-xs text-gray-500">
@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
 
                 {/* System Alerts */}
                 <div className="space-y-4">
-                    <h2 className="text-xl font-bold text-white">
+                    <h2 className="text-lg sm:text-xl font-bold text-white">
                         Alertas do Sistema
                     </h2>
 
@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
                         {systemAlerts.map((alert) => (
                             <div
                                 key={alert.id}
-                                className={`rounded-lg border p-4 backdrop-blur transition-all hover:scale-105 cursor-pointer ${
+                                className={`rounded-lg border p-3 sm:p-4 backdrop-blur transition-all hover:scale-[1.02] cursor-pointer ${
                                     alert.severity === 'high'
                                         ? 'border-red-500/30 bg-red-950/20'
                                         : alert.severity === 'medium'
@@ -103,12 +103,12 @@ export default function AdminDashboardPage() {
                                 }`}
                             >
                                 <div className="flex items-start gap-3">
-                                    <span className="text-xl">{alert.icon}</span>
-                                    <div className="flex-1">
+                                    <span className="text-lg sm:text-xl">{alert.icon}</span>
+                                    <div className="flex-1 min-w-0">
                                         <h3 className="font-semibold text-white text-sm">
                                             {alert.title}
                                         </h3>
-                                        <p className="mt-1 text-xs text-gray-400">
+                                        <p className="mt-1 text-xs text-gray-400 line-clamp-2">
                                             {alert.message}
                                         </p>
                                         <p className="mt-2 text-xs text-gray-500">
@@ -128,21 +128,21 @@ export default function AdminDashboardPage() {
 
             {/* Quick Actions */}
             <div className="space-y-4">
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-lg sm:text-xl font-bold text-white">
                     Ações Rápidas
                 </h2>
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
                     <Link
                         href="/admin/alunos"
-                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
+                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 sm:p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/20">
-                                <span className="text-2xl">👥</span>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
+                            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-blue-500/20">
+                                <span className="text-xl sm:text-2xl">👥</span>
                             </div>
                             <div>
-                                <p className="font-semibold text-white">Novo Aluno</p>
+                                <p className="font-semibold text-white text-sm sm:text-base">Novo Aluno</p>
                                 <p className="text-xs text-gray-400">Cadastrar</p>
                             </div>
                         </div>
@@ -150,14 +150,14 @@ export default function AdminDashboardPage() {
 
                     <Link
                         href="/admin/modulos"
-                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
+                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 sm:p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
-                                <span className="text-2xl">📚</span>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
+                            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-green-500/20">
+                                <span className="text-xl sm:text-2xl">📚</span>
                             </div>
                             <div>
-                                <p className="font-semibold text-white">Novo Módulo</p>
+                                <p className="font-semibold text-white text-sm sm:text-base">Novo Módulo</p>
                                 <p className="text-xs text-gray-400">Criar</p>
                             </div>
                         </div>
@@ -165,14 +165,14 @@ export default function AdminDashboardPage() {
 
                     <Link
                         href="/admin/conteudos"
-                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
+                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 sm:p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/20">
-                                <span className="text-2xl">📝</span>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
+                            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-purple-500/20">
+                                <span className="text-xl sm:text-2xl">📝</span>
                             </div>
                             <div>
-                                <p className="font-semibold text-white">Novo Conteúdo</p>
+                                <p className="font-semibold text-white text-sm sm:text-base">Novo Conteúdo</p>
                                 <p className="text-xs text-gray-400">Adicionar</p>
                             </div>
                         </div>
@@ -180,14 +180,14 @@ export default function AdminDashboardPage() {
 
                     <Link
                         href="/admin/relatorios"
-                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
+                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 sm:p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/20">
-                                <span className="text-2xl">📊</span>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
+                            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-orange-500/20">
+                                <span className="text-xl sm:text-2xl">📊</span>
                             </div>
                             <div>
-                                <p className="font-semibold text-white">Relatório</p>
+                                <p className="font-semibold text-white text-sm sm:text-base">Relatório</p>
                                 <p className="text-xs text-gray-400">Gerar</p>
                             </div>
                         </div>

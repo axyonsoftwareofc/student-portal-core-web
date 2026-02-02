@@ -1,14 +1,14 @@
-// app/(dashboard)/admin/layout.tsx
+// app/(dashboard)/aluno/layout.tsx
 'use client';
 
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import AdminSidebar from "@/components/dashboard/AdminSidebar";
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardFooter from "@/components/dashboard/DashboardFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function AdminLayout({
+export default function AlunoLayout({
                                         children,
                                     }: {
     children: React.ReactNode;
@@ -17,12 +17,8 @@ export default function AdminLayout({
     const router = useRouter();
 
     useEffect(() => {
-        if (!isLoading) {
-            if (!user) {
-                router.push('/signin');
-            } else if (user.role !== 'admin') {
-                router.push('/aluno/dashboard');
-            }
+        if (!isLoading && !user) {
+            router.push('/signin');
         }
     }, [user, isLoading, router]);
 
@@ -37,7 +33,7 @@ export default function AdminLayout({
         );
     }
 
-    if (!user || user.role !== 'admin') {
+    if (!user) {
         return null;
     }
 
@@ -45,7 +41,7 @@ export default function AdminLayout({
         <div className="flex h-screen flex-col bg-gray-950">
             <DashboardHeader />
             <div className="flex flex-1 overflow-hidden">
-                <AdminSidebar />
+                <DashboardSidebar />
                 <main className="flex-1 overflow-y-auto">
                     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                         {children}

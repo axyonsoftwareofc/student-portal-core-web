@@ -21,14 +21,14 @@ const menuItems = [
         href: "/admin/modulos",
     },
     {
-        icon: "👨‍🏫",
-        label: "Professores",
-        href: "/admin/professores",
-    },
-    {
         icon: "📝",
         label: "Conteúdos",
         href: "/admin/conteudos",
+    },
+    {
+        icon: "💰",
+        label: "Pagamentos",
+        href: "/admin/pagamentos",
     },
     {
         icon: "📈",

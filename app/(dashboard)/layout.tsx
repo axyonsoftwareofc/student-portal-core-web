@@ -1,9 +1,9 @@
+// app/(dashboard)/layout.tsx
+// Este arquivo NÃO deve ter header, pois os layouts filhos (admin/aluno) já têm
+
 'use client';
 
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
-import DashboardFooter from "@/components/dashboard/DashboardFooter";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export default function DashboardLayout({
                                             children,
@@ -11,27 +11,8 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <ProtectedRoute>
-            <div className="flex h-screen flex-col">
-                {/* Header */}
-                <DashboardHeader />
-
-                {/* Main content */}
-                <div className="flex flex-1 overflow-hidden">
-                    {/* Sidebar */}
-                    <DashboardSidebar />
-
-                    {/* Content area */}
-                    <main className="flex-1 overflow-y-auto bg-gray-950">
-                        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                            {children}
-                        </div>
-
-                        {/* Footer */}
-                        <DashboardFooter />
-                    </main>
-                </div>
-            </div>
-        </ProtectedRoute>
+        <AuthProvider>
+            {children}
+        </AuthProvider>
     );
 }

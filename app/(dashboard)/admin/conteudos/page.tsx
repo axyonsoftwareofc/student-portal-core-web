@@ -115,28 +115,28 @@ export default function ConteudosPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="font-nacelle text-3xl font-bold text-white">
+                    <h1 className="font-nacelle text-2xl sm:text-3xl font-bold text-white">
                         Gestão de Conteúdos
                     </h1>
-                    <p className="mt-1 text-gray-400">
+                    <p className="mt-1 text-sm text-gray-400">
                         {contents.length} conteúdos cadastrados
                     </p>
                 </div>
-                <button className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-colors">
+                <button className="w-full sm:w-auto rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-500 transition-colors">
                     + Novo Conteúdo
                 </button>
             </div>
 
             {/* Filters */}
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <select
                     value={filterType}
-                    onChange={(e) => setFilterType(e.target.value as any)}
-                    className="rounded-lg border border-gray-700 bg-gray-900 px-4 py-2 text-white focus:border-violet-500 focus:outline-none"
+                    onChange={(e) => setFilterType(e.target.value as typeof filterType)}
+                    className="w-full sm:w-auto rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-sm text-white focus:border-violet-500 focus:outline-none"
                 >
                     <option value="all">Todos os tipos</option>
                     <option value="video">Vídeos</option>
@@ -146,8 +146,8 @@ export default function ConteudosPage() {
                 </select>
                 <select
                     value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value as any)}
-                    className="rounded-lg border border-gray-700 bg-gray-900 px-4 py-2 text-white focus:border-violet-500 focus:outline-none"
+                    onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+                    className="w-full sm:w-auto rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-sm text-white focus:border-violet-500 focus:outline-none"
                 >
                     <option value="all">Todos os status</option>
                     <option value="published">Publicados</option>
@@ -157,72 +157,72 @@ export default function ConteudosPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid gap-4 sm:grid-cols-4">
-                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-4">
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-400">Vídeos</p>
-                            <p className="text-2xl font-bold text-white">
+                            <p className="text-xs sm:text-sm text-gray-400">Vídeos</p>
+                            <p className="text-xl sm:text-2xl font-bold text-white">
                                 {contents.filter(c => c.type === 'video').length}
                             </p>
                         </div>
-                        <span className="text-3xl">🎥</span>
+                        <span className="text-2xl sm:text-3xl">🎥</span>
                     </div>
                 </div>
-                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-4">
+                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-400">Artigos</p>
-                            <p className="text-2xl font-bold text-white">
+                            <p className="text-xs sm:text-sm text-gray-400">Artigos</p>
+                            <p className="text-xl sm:text-2xl font-bold text-white">
                                 {contents.filter(c => c.type === 'article').length}
                             </p>
                         </div>
-                        <span className="text-3xl">📄</span>
+                        <span className="text-2xl sm:text-3xl">📄</span>
                     </div>
                 </div>
-                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-4">
+                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-400">Exercícios</p>
-                            <p className="text-2xl font-bold text-white">
+                            <p className="text-xs sm:text-sm text-gray-400">Exercícios</p>
+                            <p className="text-xl sm:text-2xl font-bold text-white">
                                 {contents.filter(c => c.type === 'exercise').length}
                             </p>
                         </div>
-                        <span className="text-3xl">✍️</span>
+                        <span className="text-2xl sm:text-3xl">✍️</span>
                     </div>
                 </div>
-                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-4">
+                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-400">Quizzes</p>
-                            <p className="text-2xl font-bold text-white">
+                            <p className="text-xs sm:text-sm text-gray-400">Quizzes</p>
+                            <p className="text-xl sm:text-2xl font-bold text-white">
                                 {contents.filter(c => c.type === 'quiz').length}
                             </p>
                         </div>
-                        <span className="text-3xl">❓</span>
+                        <span className="text-2xl sm:text-3xl">❓</span>
                     </div>
                 </div>
             </div>
 
             {/* Contents List */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
                 {filteredContents.map((content) => (
                     <div
                         key={content.id}
-                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
+                        className="group rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 sm:p-6 backdrop-blur transition-all hover:border-violet-500/50 hover:bg-gray-900/60"
                     >
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-4 flex-1">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-violet-500/20">
-                                    <span className="text-2xl">{getTypeIcon(content.type)}</span>
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 sm:gap-4 flex-1">
+                                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-violet-500/20 flex-shrink-0">
+                                    <span className="text-xl sm:text-2xl">{getTypeIcon(content.type)}</span>
                                 </div>
 
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-lg font-semibold text-white">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <h3 className="text-base sm:text-lg font-semibold text-white">
                                             {content.title}
                                         </h3>
-                                        <span className="text-sm text-gray-500">
+                                        <span className="text-xs sm:text-sm text-gray-500">
                                             {getTypeLabel(content.type)}
                                         </span>
                                     </div>
@@ -230,14 +230,14 @@ export default function ConteudosPage() {
                                         Módulo: {content.module}
                                     </p>
 
-                                    <div className="mt-3 flex items-center gap-4 text-sm">
+                                    <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
                                         {content.duration && (
                                             <span className="text-gray-400">
                                                 ⏱️ {content.duration}
                                             </span>
                                         )}
                                         <span className="text-gray-400">
-                                            👁️ {content.views} visualizações
+                                            👁️ {content.views}
                                         </span>
                                         {content.rating > 0 && (
                                             <span className="text-gray-400">
@@ -248,23 +248,21 @@ export default function ConteudosPage() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(content.status)}`}>
-                                    {getStatusLabel(content.status)}
-                                </span>
-                            </div>
+                            <span className={`inline-flex self-start rounded-full px-2 sm:px-3 py-1 text-xs font-medium ${getStatusColor(content.status)}`}>
+                                {getStatusLabel(content.status)}
+                            </span>
                         </div>
 
-                        <div className="mt-4 flex items-center justify-between border-t border-gray-700/50 pt-4">
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-700/50 pt-4">
                             <span className="text-xs text-gray-500">
                                 Criado em {new Date(content.createdAt).toLocaleDateString('pt-BR')}
                             </span>
-                            <div className="flex gap-2">
+                            <div className="flex gap-3 sm:gap-4">
                                 <button className="text-sm text-violet-400 hover:text-violet-300">
                                     Editar
                                 </button>
                                 <button className="text-sm text-blue-400 hover:text-blue-300">
-                                    Visualizar
+                                    Ver
                                 </button>
                                 <button className="text-sm text-red-400 hover:text-red-300">
                                     Excluir

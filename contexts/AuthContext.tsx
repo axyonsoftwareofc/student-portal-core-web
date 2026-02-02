@@ -3,8 +3,8 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { User as SupabaseUser, SupabaseClient } from '@supabase/supabase-js';
 
 interface AppUser {
   id: string;
@@ -29,6 +29,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Criar cliente Supabase sem tipagem genérica
+function getSupabaseClient(): SupabaseClient {
+  return createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
@@ -36,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
 
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
 
   const fetchUserData = useCallback(async (userId: string): Promise<AppUser | null> => {
     try {
@@ -147,16 +155,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      // Verificar se email já existe
       const { data: existingUser } = await supabase
           .from('users')
-          .select('id, email')
+          .select('id')
           .eq('email', email)
-          .single();
+          .maybeSingle();
 
       if (existingUser) {
         return { success: false, error: 'Este e-mail já está cadastrado. Tente fazer login.' };
       }
 
+      // Criar usuário no Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -170,6 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.user) {
+        // Verificar se perfil já existe
         const existingProfile = await fetchUserData(data.user.id);
 
         if (existingProfile) {
@@ -179,31 +190,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { success: true };
         }
 
-        const { error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: data.user.id,
-              email: email,
-              name: name,
-              role: 'student',
-              created_at: new Date().toISOString(),
-            } as Record<string, unknown>);
+        // Criar perfil usando RPC ou insert direto
+        const { error: insertError } = await supabase.rpc('create_user_profile', {
+          user_id: data.user.id,
+          user_email: email,
+          user_name: name,
+          user_role: 'student'
+        });
 
+        // Se RPC falhar, tenta insert direto
         if (insertError) {
-          if (insertError.message.includes('duplicate')) {
-            const userData = await fetchUserData(data.user.id);
-            if (userData) {
-              setUser(userData);
-              setSupabaseUser(data.user);
-              router.push('/aluno/dashboard');
-              return { success: true };
-            }
-          }
+          console.log('RPC falhou, tentando insert direto:', insertError.message);
 
-          console.error('Erro ao criar perfil do usuário:', insertError.message);
-          return { success: false, error: 'Erro ao criar perfil. Tente fazer login.' };
+          const { error: directInsertError } = await supabase
+              .from('users')
+              .insert([
+                {
+                  id: data.user.id,
+                  email: email,
+                  name: name,
+                  role: 'student',
+                  created_at: new Date().toISOString()
+                }
+              ]);
+
+          if (directInsertError && !directInsertError.message.includes('duplicate')) {
+            console.error('Erro ao criar perfil:', directInsertError.message);
+            return { success: false, error: 'Erro ao criar perfil. Tente fazer login.' };
+          }
         }
 
+        // Buscar usuário criado
         const userData = await fetchUserData(data.user.id);
 
         if (userData) {
@@ -222,26 +239,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Função de logout CORRIGIDA
   const logout = async () => {
-    if (isLoggingOut) return; // Evita múltiplas chamadas
+    if (isLoggingOut) return;
 
     setIsLoggingOut(true);
 
     try {
-      // Limpa o estado primeiro para UI responder rápido
       setUser(null);
       setSupabaseUser(null);
 
-      // Faz o signOut no Supabase
       await supabase.auth.signOut({ scope: 'local' });
 
-      // Redireciona
       router.push('/signin');
       router.refresh();
     } catch (error) {
       console.error('Erro no logout:', error);
-      // Fallback
       window.location.href = '/signin';
     } finally {
       setIsLoggingOut(false);

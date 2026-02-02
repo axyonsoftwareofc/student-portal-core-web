@@ -1,12 +1,16 @@
 // app/(dashboard)/admin/layout.tsx
 'use client';
 
+import dynamic from 'next/dynamic';
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import AdminSidebar from "@/components/dashboard/AdminSidebar";
 import DashboardFooter from "@/components/dashboard/DashboardFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+
+// Força renderização dinâmica
+export const runtime = 'edge';
 
 export default function AdminLayout({
                                         children,

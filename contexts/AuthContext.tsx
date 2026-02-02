@@ -29,24 +29,31 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Criar cliente Supabase sem tipagem genérica
-function getSupabaseClient(): SupabaseClient {
-  return createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const router = useRouter();
 
-  const supabase = getSupabaseClient();
+  // Inicializar Supabase apenas no cliente
+  useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (supabaseUrl && supabaseKey) {
+      const client = createBrowserClient(supabaseUrl, supabaseKey);
+      setSupabase(client);
+    } else {
+      console.error('Supabase credentials not found');
+      setIsLoading(false);
+    }
+  }, []);
 
   const fetchUserData = useCallback(async (userId: string): Promise<AppUser | null> => {
+    if (!supabase) return null;
+
     try {
       const { data, error } = await supabase
           .from('users')
@@ -68,7 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase]);
 
+  // Carregar usuário quando Supabase estiver pronto
   useEffect(() => {
+    if (!supabase) return;
+
     const getUser = async () => {
       try {
         const { data: { user: authUser }, error } = await supabase.auth.getUser();
@@ -117,6 +127,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, fetchUserData]);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    if (!supabase) {
+      return { success: false, error: 'Sistema não inicializado' };
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -154,6 +168,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
+    if (!supabase) {
+      return { success: false, error: 'Sistema não inicializado' };
+    }
+
     try {
       // Verificar se email já existe
       const { data: existingUser } = await supabase
@@ -190,34 +208,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { success: true };
         }
 
-        // Criar perfil usando RPC ou insert direto
-        const { error: insertError } = await supabase.rpc('create_user_profile', {
-          user_id: data.user.id,
-          user_email: email,
-          user_name: name,
-          user_role: 'student'
-        });
+        // Criar perfil
+        const { error: insertError } = await supabase
+            .from('users')
+            .insert([
+              {
+                id: data.user.id,
+                email: email,
+                name: name,
+                role: 'student',
+                created_at: new Date().toISOString()
+              }
+            ]);
 
-        // Se RPC falhar, tenta insert direto
-        if (insertError) {
-          console.log('RPC falhou, tentando insert direto:', insertError.message);
-
-          const { error: directInsertError } = await supabase
-              .from('users')
-              .insert([
-                {
-                  id: data.user.id,
-                  email: email,
-                  name: name,
-                  role: 'student',
-                  created_at: new Date().toISOString()
-                }
-              ]);
-
-          if (directInsertError && !directInsertError.message.includes('duplicate')) {
-            console.error('Erro ao criar perfil:', directInsertError.message);
-            return { success: false, error: 'Erro ao criar perfil. Tente fazer login.' };
-          }
+        if (insertError && !insertError.message.includes('duplicate')) {
+          console.error('Erro ao criar perfil:', insertError.message);
+          return { success: false, error: 'Erro ao criar perfil. Tente fazer login.' };
         }
 
         // Buscar usuário criado
@@ -240,7 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    if (isLoggingOut) return;
+    if (isLoggingOut || !supabase) return;
 
     setIsLoggingOut(true);
 

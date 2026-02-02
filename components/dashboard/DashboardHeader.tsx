@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { studentData } from "@/utils/mock/studentMock";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function DashboardHeader() {
     const [menuOpen, setMenuOpen] = useState(false);
+    const { user, logout } = useAuth();
 
     const handleLogout = () => {
-        // Por enquanto, apenas redireciona para signin
-        // Depois integra com autenticação real
-        window.location.href = "/signin";
+        logout();
     };
+
+    if (!user) return null;
 
     return (
         <header className="sticky top-0 z-50 border-b border-gray-700/50 bg-gray-950/95 backdrop-blur-xl">
@@ -36,17 +37,17 @@ export default function DashboardHeader() {
                             {/* Avatar */}
                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
                 <span className="text-xs font-bold text-white">
-                  {studentData.name.split(" ")[0][0]}
-                    {studentData.name.split(" ")[1][0]}
+                  {user.name.split(" ")[0][0]}
+                    {user.name.split(" ")[1]?.[0] || ''}
                 </span>
                             </div>
 
                             {/* Name */}
                             <div className="hidden text-left sm:block">
                                 <p className="text-sm font-medium text-white">
-                                    {studentData.name}
+                                    {user.name}
                                 </p>
-                                <p className="text-xs text-gray-400">{studentData.course}</p>
+                                <p className="text-xs text-gray-400">{user.email}</p>
                             </div>
 
                             {/* Dropdown icon */}
@@ -72,9 +73,9 @@ export default function DashboardHeader() {
                             <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
                                 <div className="border-b border-gray-700 p-4">
                                     <p className="text-sm font-medium text-white">
-                                        {studentData.name}
+                                        {user.name}
                                     </p>
-                                    <p className="text-xs text-gray-400">{studentData.email}</p>
+                                    <p className="text-xs text-gray-400">{user.email}</p>
                                 </div>
 
                                 <div className="space-y-2 p-2">

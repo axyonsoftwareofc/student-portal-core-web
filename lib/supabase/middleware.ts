@@ -3,9 +3,9 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({
-        request,
-    })
+    const pathname = request.nextUrl.pathname;
+
+    let response = NextResponse.next({ request });
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,77 +17,78 @@ export async function updateSession(request: NextRequest) {
                 },
                 setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    })
+                    response = NextResponse.next({ request })
                     cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
+                        response.cookies.set(name, value, options)
                     )
                 },
             },
         }
     )
 
-    // IMPORTANTE: Não colocar lógica entre createServerClient e supabase.auth.getUser()
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    // Rotas públicas - sempre permite
+    const publicPaths = ['/', '/signin', '/signup', '/reset-password'];
+    const isPublicPath = publicPaths.includes(pathname) ||
+        pathname.startsWith('/auth/') ||
+        pathname.startsWith('/api/') ||
+        pathname.startsWith('/_next/');
 
-    // Rotas públicas que não precisam de autenticação
-    const publicRoutes = ['/', '/signin', '/signup', '/reset-password']
-    const isPublicRoute = publicRoutes.some(route =>
-        request.nextUrl.pathname === route ||
-        request.nextUrl.pathname.startsWith('/api/auth') ||
-        request.nextUrl.pathname.startsWith('/auth')
-    )
+    if (isPublicPath) {
+        // Verificar se usuário logado está acessando login/signup
+        if (pathname === '/signin' || pathname === '/signup') {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
 
-    // Se não está logado e tenta acessar rota protegida
-    if (!user && !isPublicRoute) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/signin'
-        return NextResponse.redirect(url)
-    }
+                if (user) {
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('role')
+                        .eq('id', user.id)
+                        .single();
 
-    // Se está logado e tenta acessar página de login/cadastro
-    if (user && (request.nextUrl.pathname === '/signin' || request.nextUrl.pathname === '/signup')) {
-        const url = request.nextUrl.clone()
-
-        // Buscar o role do usuário para redirecionar corretamente
-        const { data: userData, error } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .single()
-
-        if (!error && userData) {
-            const role = (userData as { role: string }).role
-            if (role === 'admin') {
-                url.pathname = '/admin/dashboard'
-            } else {
-                url.pathname = '/aluno/dashboard'
+                    const redirectPath = userData?.role === 'admin' ? '/admin/dashboard' : '/aluno/dashboard';
+                    return NextResponse.redirect(new URL(redirectPath, request.url));
+                }
+            } catch {
+                // Se deu erro, deixa acessar normalmente
             }
-            return NextResponse.redirect(url)
         }
-
-        // Default para aluno se não encontrar
-        url.pathname = '/aluno/dashboard'
-        return NextResponse.redirect(url)
+        return response;
     }
 
-    // Proteção de rotas admin
-    if (user && request.nextUrl.pathname.startsWith('/admin')) {
-        const { data: userData, error } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .single()
+    // Rotas protegidas - verifica autenticação
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser();
 
-        if (error || !userData || (userData as { role: string }).role !== 'admin') {
-            const url = request.nextUrl.clone()
-            url.pathname = '/aluno/dashboard'
-            return NextResponse.redirect(url)
+        // Sem usuário válido - redireciona para login
+        if (error || !user) {
+            // Limpar cookies potencialmente corrompidos
+            const allCookies = request.cookies.getAll();
+            allCookies.forEach(cookie => {
+                if (cookie.name.startsWith('sb-')) {
+                    response.cookies.delete(cookie.name);
+                }
+            });
+
+            return NextResponse.redirect(new URL('/signin', request.url));
         }
-    }
 
-    return supabaseResponse
+        // Verificar acesso admin
+        if (pathname.startsWith('/admin')) {
+            const { data: userData } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (!userData || userData.role !== 'admin') {
+                return NextResponse.redirect(new URL('/aluno/dashboard', request.url));
+            }
+        }
+
+        return response;
+    } catch {
+        // Em caso de erro, redireciona para login
+        return NextResponse.redirect(new URL('/signin', request.url));
+    }
 }

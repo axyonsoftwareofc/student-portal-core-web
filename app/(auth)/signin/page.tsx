@@ -2,11 +2,13 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignIn() {
   const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,12 +22,15 @@ export default function SignIn() {
     try {
       const result = await login(email, password);
 
-      if (!result.success) {
+      if (result.success && result.redirectTo) {
+        // Usa router.push para navegação SPA (sem reload)
+        router.push(result.redirectTo);
+      } else if (!result.success) {
         setError(result.error || 'Erro ao fazer login');
+        setIsLoading(false);
       }
     } catch (err) {
       setError('Erro ao fazer login. Tente novamente.');
-    } finally {
       setIsLoading(false);
     }
   };

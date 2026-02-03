@@ -1,68 +1,57 @@
 // app/(dashboard)/aluno/perfil/page.tsx
+'use client';
 
-import { studentData } from "@/utils/mock/studentMock";
+import { useAuth } from "@/contexts/AuthContext";
 import { badges, profileStats, modules } from "@/utils/mock/modulesMock";
 
-export const metadata = {
-    title: "Meu Perfil - Portal do Aluno",
-    description: "Seus dados, badges e progresso acadêmico",
-};
-
 export default function PerfilPage() {
+    const { user } = useAuth();
+
     const completedModules = modules.filter((m) => m.status === "Concluído");
     const inProgressModules = modules.filter((m) => m.status === "Em Progresso");
 
+    if (!user) return null;
+
     return (
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
             {/* Profile Header Card */}
-            <div className="rounded-xl border border-gray-700/50 bg-gray-900/30 p-8 backdrop-blur">
-                <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            <div className="rounded-xl border border-gray-700/50 bg-gray-900/30 p-4 sm:p-6 lg:p-8 backdrop-blur">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                     {/* Avatar */}
-                    <div className="flex shrink-0 flex-col items-center gap-4 sm:items-start">
+                    <div className="flex flex-col items-center sm:items-start gap-3 sm:gap-4">
                         <div className="relative">
-                            <div className="h-24 w-24 rounded-full bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center text-4xl font-bold text-white">
-                                {studentData.name.split(" ")[0][0]}
-                                {studentData.name.split(" ")[1][0]}
+                            <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center text-2xl sm:text-4xl font-bold text-white">
+                                {user.name.split(" ")[0][0]}
+                                {user.name.split(" ")[1]?.[0] || ''}
                             </div>
-                            <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-900 bg-emerald-600">
-                                <span className="text-sm">✓</span>
+                            <div className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full border-2 border-gray-900 bg-emerald-600">
+                                <span className="text-xs sm:text-sm">✓</span>
                             </div>
                         </div>
-                        <button className="rounded-lg bg-violet-600/20 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-600/30">
+                        <button className="rounded-lg bg-violet-600/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-violet-300 transition-colors hover:bg-violet-600/30">
                             Alterar Avatar
                         </button>
                     </div>
 
                     {/* Info */}
-                    <div className="flex-1">
-                        <h1 className="font-nacelle text-3xl font-bold text-white">{studentData.name}</h1>
-                        <p className="mt-1 text-gray-400">{studentData.email}</p>
+                    <div className="flex-1 text-center sm:text-left">
+                        <h1 className="font-nacelle text-xl sm:text-2xl lg:text-3xl font-bold text-white">
+                            {user.name}
+                        </h1>
+                        <p className="mt-1 text-sm text-gray-400">{user.email}</p>
 
-                        <div className="mt-4 space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-gray-300">
+                        <div className="mt-4 space-y-1.5 sm:space-y-2 text-sm">
+                            <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-300">
                                 <span>📚</span>
-                                <span>
-                  <strong>Curso:</strong> {studentData.course}
-                </span>
+                                <span>Full Stack Developer</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-300">
+                            <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-300">
                                 <span>🎓</span>
-                                <span>
-                  <strong>Matrícula:</strong> {studentData.id}
-                </span>
+                                <span>ID: {user.id.slice(0, 8)}...</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-300">
-                                <span>📅</span>
-                                <span>
-                  <strong>Data de Inscrição:</strong>{" "}
-                                    {new Date(studentData.enrollmentDate).toLocaleDateString("pt-BR")}
-                </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-300">
+                            <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-300">
                                 <span>✨</span>
-                                <span>
-                  <strong>Status:</strong> Ativo
-                </span>
+                                <span className="text-emerald-400">Ativo</span>
                             </div>
                         </div>
                     </div>
@@ -70,62 +59,72 @@ export default function PerfilPage() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 backdrop-blur">
-                    <p className="text-xs uppercase tracking-wider text-gray-400">Tempo Total de Estudo</p>
-                    <p className="mt-2 text-2xl font-bold text-violet-400">{profileStats.totalStudyTime}</p>
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4 backdrop-blur">
+                    <p className="text-xs uppercase tracking-wider text-gray-400">Tempo Total</p>
+                    <p className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold text-violet-400">
+                        {profileStats.totalStudyTime}
+                    </p>
                 </div>
-                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 backdrop-blur">
-                    <p className="text-xs uppercase tracking-wider text-gray-400">Módulos Concluídos</p>
-                    <p className="mt-2 text-2xl font-bold text-emerald-400">
+                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4 backdrop-blur">
+                    <p className="text-xs uppercase tracking-wider text-gray-400">Módulos</p>
+                    <p className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold text-emerald-400">
                         {profileStats.modulesCompleted}/{modules.length}
                     </p>
                 </div>
-                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 backdrop-blur">
-                    <p className="text-xs uppercase tracking-wider text-gray-400">Assuntos Completados</p>
-                    <p className="mt-2 text-2xl font-bold text-blue-400">{profileStats.topicCompleted}</p>
+                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4 backdrop-blur">
+                    <p className="text-xs uppercase tracking-wider text-gray-400">Assuntos</p>
+                    <p className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold text-blue-400">
+                        {profileStats.topicCompleted}
+                    </p>
                 </div>
-                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-4 backdrop-blur">
-                    <p className="text-xs uppercase tracking-wider text-gray-400">Streak Atual</p>
-                    <p className="mt-2 text-2xl font-bold text-orange-400">🔥 {profileStats.streak}</p>
+                <div className="rounded-lg border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4 backdrop-blur">
+                    <p className="text-xs uppercase tracking-wider text-gray-400">Streak</p>
+                    <p className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold text-orange-400">
+                        🔥 {profileStats.streak}
+                    </p>
                 </div>
             </div>
 
             {/* Modules Status */}
             <div className="space-y-4">
-                <h2 className="text-xl font-bold text-white">Status dos Módulos</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-white">Status dos Módulos</h2>
 
-                {/* Completed */}
                 {completedModules.length > 0 && (
                     <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-4 backdrop-blur">
-                        <h3 className="mb-3 font-semibold text-emerald-300">✅ Módulos Concluídos</h3>
+                        <h3 className="mb-3 font-semibold text-emerald-300 text-sm sm:text-base">
+                            ✅ Concluídos
+                        </h3>
                         <div className="space-y-2">
                             {completedModules.map((module) => (
-                                <div key={module.id} className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm text-emerald-200">
-                    {module.icon} {module.name}
-                  </span>
+                                <div key={module.id} className="flex items-center justify-between text-sm">
+                                    <span className="flex items-center gap-2 text-emerald-200">
+                                        {module.icon} {module.name}
+                                    </span>
                                     <span className="text-xs text-emerald-300">
-                    {new Date(module.completedDate!).toLocaleDateString("pt-BR")}
-                  </span>
+                                        {new Date(module.completedDate!).toLocaleDateString("pt-BR")}
+                                    </span>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
 
-                {/* In Progress */}
                 {inProgressModules.length > 0 && (
                     <div className="rounded-lg border border-violet-500/30 bg-violet-950/20 p-4 backdrop-blur">
-                        <h3 className="mb-3 font-semibold text-violet-300">🚀 Em Progresso</h3>
+                        <h3 className="mb-3 font-semibold text-violet-300 text-sm sm:text-base">
+                            🚀 Em Progresso
+                        </h3>
                         <div className="space-y-3">
                             {inProgressModules.map((module) => (
                                 <div key={module.id}>
                                     <div className="mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-violet-200">
-                      {module.icon} {module.name}
-                    </span>
-                                        <span className="text-xs font-semibold text-violet-400">{module.progress}%</span>
+                                        <span className="flex items-center gap-2 text-sm text-violet-200">
+                                            {module.icon} {module.name}
+                                        </span>
+                                        <span className="text-xs font-semibold text-violet-400">
+                                            {module.progress}%
+                                        </span>
                                     </div>
                                     <div className="h-2 overflow-hidden rounded-full bg-gray-700/50">
                                         <div
@@ -142,8 +141,8 @@ export default function PerfilPage() {
 
             {/* Badges Section */}
             <div className="space-y-4">
-                <h2 className="text-xl font-bold text-white">Seus Badges 🏅</h2>
-                <div className="grid gap-4 sm:grid-cols-3">
+                <h2 className="text-lg sm:text-xl font-bold text-white">Seus Badges 🏅</h2>
+                <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
                     {badges.map((badge) => (
                         <div
                             key={badge.id}
@@ -153,15 +152,16 @@ export default function PerfilPage() {
                                     : "border-gray-700/50 bg-gray-900/30 opacity-50"
                             }`}
                         >
-                            <div className="text-3xl">{badge.icon}</div>
-                            <h3 className="mt-2 font-semibold text-white">{badge.name}</h3>
+                            <div className="text-2xl sm:text-3xl">{badge.icon}</div>
+                            <h3 className="mt-2 font-semibold text-white text-sm sm:text-base">
+                                {badge.name}
+                            </h3>
                             <p className="mt-1 text-xs text-gray-400">{badge.description}</p>
-                            {badge.unlockedDate && (
+                            {badge.unlockedDate ? (
                                 <p className="mt-2 text-xs text-yellow-400">
-                                    🔓 Desbloqueado em {new Date(badge.unlockedDate).toLocaleDateString("pt-BR")}
+                                    🔓 {new Date(badge.unlockedDate).toLocaleDateString("pt-BR")}
                                 </p>
-                            )}
-                            {!badge.unlockedDate && (
+                            ) : (
                                 <p className="mt-2 text-xs text-gray-500">🔒 Bloqueado</p>
                             )}
                         </div>
@@ -170,7 +170,7 @@ export default function PerfilPage() {
             </div>
 
             {/* Settings Button */}
-            <button className="w-full rounded-lg border border-gray-700/50 bg-gray-900/30 px-6 py-3 font-medium text-gray-200 transition-all hover:bg-gray-900/60 hover:border-violet-500/50">
+            <button className="w-full rounded-lg border border-gray-700/50 bg-gray-900/30 px-6 py-3 font-medium text-gray-200 transition-all hover:bg-gray-900/60 hover:border-violet-500/50 text-sm sm:text-base">
                 ⚙️ Configurações da Conta
             </button>
         </div>

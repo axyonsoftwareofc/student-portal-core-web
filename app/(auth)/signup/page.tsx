@@ -2,11 +2,13 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignUp() {
   const { signup } = useAuth();
+  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +19,6 @@ export default function SignUp() {
     e.preventDefault();
     setError('');
 
-    // Validação básica
     if (password.length < 6) {
       setError('A senha deve ter pelo menos 6 caracteres');
       return;
@@ -28,12 +29,15 @@ export default function SignUp() {
     try {
       const result = await signup(email, password, name);
 
-      if (!result.success) {
+      if (result.success && result.redirectTo) {
+        // Usa router.push para navegação SPA (sem reload)
+        router.push(result.redirectTo);
+      } else if (!result.success) {
         setError(result.error || 'Erro ao criar conta');
+        setIsLoading(false);
       }
     } catch (err) {
       setError('Erro ao criar conta. Tente novamente.');
-    } finally {
       setIsLoading(false);
     }
   };

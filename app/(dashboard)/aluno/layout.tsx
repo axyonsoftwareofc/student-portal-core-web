@@ -1,13 +1,12 @@
 // app/(dashboard)/aluno/layout.tsx
 'use client';
 
+import { useEffect, useState } from 'react';
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import MobileMenu from "@/components/dashboard/MobileMenu";
 import DashboardFooter from "@/components/dashboard/DashboardFooter";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 const alunoMenuItems = [
     { href: "/aluno/dashboard", label: "Dashboard", icon: "📊" },
@@ -17,21 +16,21 @@ const alunoMenuItems = [
     { href: "/aluno/perfil", label: "Perfil", icon: "👤" },
 ];
 
-export default function AlunoLayout({
-                                        children,
-                                    }: {
-    children: React.ReactNode;
-}) {
-    const { user, isLoading } = useAuth();
-    const router = useRouter();
+export default function AlunoLayout({ children }: { children: React.ReactNode }) {
+    const { isLoading } = useAuth();
+    const [showContent, setShowContent] = useState(false);
 
     useEffect(() => {
-        if (!isLoading && !user) {
-            router.push('/signin');
+        if (!isLoading) {
+            setShowContent(true);
+        } else {
+            // Timeout de segurança: 1.5s
+            const timer = setTimeout(() => setShowContent(true), 1500);
+            return () => clearTimeout(timer);
         }
-    }, [user, isLoading, router]);
+    }, [isLoading]);
 
-    if (isLoading) {
+    if (!showContent) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-950">
                 <div className="text-center">
@@ -42,20 +41,12 @@ export default function AlunoLayout({
         );
     }
 
-    if (!user) {
-        return null;
-    }
-
     return (
         <div className="flex h-screen flex-col bg-gray-950">
             <DashboardHeader />
             <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar - só aparece em telas grandes */}
                 <DashboardSidebar />
-
-                {/* Menu Mobile */}
                 <MobileMenu items={alunoMenuItems} title="Portal do Aluno" />
-
                 <main className="flex-1 overflow-y-auto">
                     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
                         {children}

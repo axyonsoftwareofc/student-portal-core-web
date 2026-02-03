@@ -2,9 +2,8 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-import type { User as SupabaseUser, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface AppUser {
   id: string;
@@ -21,280 +20,248 @@ interface AuthContextType {
   user: AppUser | null;
   supabaseUser: SupabaseUser | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; redirectTo?: string }>;
+  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string; redirectTo?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Estado global persistente
+let globalUser: AppUser | null = null;
+let globalSupabaseUser: SupabaseUser | null = null;
+let isGlobalLoading = true;
+let hasInitialized = false;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
-  const router = useRouter();
+  const [user, setUser] = useState<AppUser | null>(globalUser);
+  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(globalSupabaseUser);
+  const [isLoading, setIsLoading] = useState(isGlobalLoading);
 
-  // Inicializar Supabase apenas no cliente
-  useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (supabaseUrl && supabaseKey) {
-      const client = createBrowserClient(supabaseUrl, supabaseKey);
-      setSupabase(client);
-    } else {
-      console.error('Supabase credentials not found');
-      setIsLoading(false);
-    }
+  // Atualizar estados globais e locais
+  const updateState = useCallback((newUser: AppUser | null, newSupabaseUser: SupabaseUser | null, loading: boolean) => {
+    globalUser = newUser;
+    globalSupabaseUser = newSupabaseUser;
+    isGlobalLoading = loading;
+    setUser(newUser);
+    setSupabaseUser(newSupabaseUser);
+    setIsLoading(loading);
   }, []);
 
+  // Buscar dados do usuário no banco
   const fetchUserData = useCallback(async (userId: string): Promise<AppUser | null> => {
-    if (!supabase) return null;
-
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
           .from('users')
-          .select('id, email, name, role, avatar_url, phone, created_at, updated_at')
+          .select('*')
           .eq('id', userId)
           .single();
 
       if (error) {
-        if (error.code !== 'PGRST116') {
-          console.error('Erro ao buscar dados do usuário:', error);
-        }
+        console.error('[Auth] Erro buscar usuário:', error.message);
         return null;
       }
-
       return data as AppUser;
-    } catch (error) {
-      console.error('Erro ao buscar dados do usuário:', error);
+    } catch {
       return null;
     }
-  }, [supabase]);
+  }, []);
 
-  // Carregar usuário quando Supabase estiver pronto
+  // Inicialização
   useEffect(() => {
-    if (!supabase) return;
+    // Se já inicializou e tem dados, usa eles
+    if (hasInitialized) {
+      setUser(globalUser);
+      setSupabaseUser(globalSupabaseUser);
+      setIsLoading(false);
+      return;
+    }
 
-    const getUser = async () => {
+    const supabase = createClient();
+    let mounted = true;
+
+    const init = async () => {
       try {
-        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        // Primeiro, tentar pegar sessão existente
+        const { data: { session } } = await supabase.auth.getSession();
 
-        if (error && error.message !== 'Auth session missing!') {
-          console.error('Erro ao obter usuário:', error);
-        }
+        if (!mounted) return;
 
-        if (authUser) {
-          setSupabaseUser(authUser);
-          const userData = await fetchUserData(authUser.id);
-          if (userData) {
-            setUser(userData);
+        if (session?.user) {
+          const userData = await fetchUserData(session.user.id);
+          if (mounted && userData) {
+            hasInitialized = true;
+            updateState(userData, session.user, false);
+            return;
           }
         }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : '';
-        if (!errorMessage.includes('Auth session missing')) {
-          console.error('Erro ao carregar usuário:', error);
-        }
-      } finally {
-        setIsLoading(false);
+
+        // Sem sessão ou sem usuário válido
+        hasInitialized = true;
+        updateState(null, null, false);
+      } catch (err) {
+        console.error('[Auth] Erro init:', err);
+        hasInitialized = true;
+        if (mounted) updateState(null, null, false);
       }
     };
 
-    getUser();
+    init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          if (event === 'SIGNED_IN' && session?.user) {
-            setSupabaseUser(session.user);
-            const userData = await fetchUserData(session.user.id);
-            if (userData) {
-              setUser(userData);
-            }
-          } else if (event === 'SIGNED_OUT') {
-            setUser(null);
-            setSupabaseUser(null);
-          }
+    // Listener para mudanças de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        const userData = await fetchUserData(session.user.id);
+        if (mounted && userData) {
+          updateState(userData, session.user, false);
         }
-    );
+      } else if (event === 'SIGNED_OUT') {
+        hasInitialized = false;
+        updateState(null, null, false);
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        globalSupabaseUser = session.user;
+        setSupabaseUser(session.user);
+      }
+    });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase, fetchUserData]);
+  }, [fetchUserData, updateState]);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    if (!supabase) {
-      return { success: false, error: 'Sistema não inicializado' };
-    }
-
+  // Login
+  const login = useCallback(async (email: string, password: string) => {
     try {
+      setIsLoading(true);
+      const supabase = createClient();
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
 
       if (error) {
-        return { success: false, error: getErrorMessage(error.message) };
+        setIsLoading(false);
+        return { success: false, error: translateError(error.message) };
       }
 
       if (data.user) {
         const userData = await fetchUserData(data.user.id);
-
         if (userData) {
-          setUser(userData);
-          setSupabaseUser(data.user);
-
-          if (userData.role === 'admin') {
-            router.push('/admin/dashboard');
-          } else {
-            router.push('/aluno/dashboard');
-          }
-
-          return { success: true };
-        } else {
-          return { success: false, error: 'Perfil não encontrado. Entre em contato com o administrador.' };
+          hasInitialized = true;
+          updateState(userData, data.user, false);
+          return {
+            success: true,
+            redirectTo: userData.role === 'admin' ? '/admin/dashboard' : '/aluno/dashboard'
+          };
         }
+        setIsLoading(false);
+        return { success: false, error: 'Perfil não encontrado' };
       }
 
+      setIsLoading(false);
+      return { success: false, error: 'Erro desconhecido' };
+    } catch {
+      setIsLoading(false);
       return { success: false, error: 'Erro ao fazer login' };
-    } catch (error) {
-      console.error('Erro no login:', error);
-      return { success: false, error: 'Erro inesperado. Tente novamente.' };
     }
-  };
+  }, [fetchUserData, updateState]);
 
-  const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
-    if (!supabase) {
-      return { success: false, error: 'Sistema não inicializado' };
-    }
-
+  // Signup
+  const signup = useCallback(async (email: string, password: string, name: string) => {
     try {
-      // Verificar se email já existe
-      const { data: existingUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', email)
-          .maybeSingle();
+      setIsLoading(true);
+      const supabase = createClient();
 
-      if (existingUser) {
-        return { success: false, error: 'Este e-mail já está cadastrado. Tente fazer login.' };
-      }
-
-      // Criar usuário no Auth
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
 
       if (error) {
-        if (error.message.includes('already registered')) {
-          return { success: false, error: 'Este e-mail já está cadastrado. Tente fazer login.' };
-        }
-        return { success: false, error: getErrorMessage(error.message) };
+        setIsLoading(false);
+        return { success: false, error: translateError(error.message) };
       }
 
       if (data.user) {
-        // Verificar se perfil já existe
-        const existingProfile = await fetchUserData(data.user.id);
-
-        if (existingProfile) {
-          setUser(existingProfile);
-          setSupabaseUser(data.user);
-          router.push('/aluno/dashboard');
-          return { success: true };
-        }
-
         // Criar perfil
-        const { error: insertError } = await supabase
-            .from('users')
-            .insert([
-              {
-                id: data.user.id,
-                email: email,
-                name: name,
-                role: 'student',
-                created_at: new Date().toISOString()
-              }
-            ]);
+        await supabase.from('users').insert({
+          id: data.user.id,
+          email: email.trim().toLowerCase(),
+          name: name.trim(),
+          role: 'student',
+          created_at: new Date().toISOString(),
+        });
 
-        if (insertError && !insertError.message.includes('duplicate')) {
-          console.error('Erro ao criar perfil:', insertError.message);
-          return { success: false, error: 'Erro ao criar perfil. Tente fazer login.' };
-        }
-
-        // Buscar usuário criado
         const userData = await fetchUserData(data.user.id);
-
         if (userData) {
-          setUser(userData);
-          setSupabaseUser(data.user);
+          hasInitialized = true;
+          updateState(userData, data.user, false);
         }
 
-        router.push('/aluno/dashboard');
-        return { success: true };
+        return { success: true, redirectTo: '/aluno/dashboard' };
       }
 
+      setIsLoading(false);
       return { success: false, error: 'Erro ao criar conta' };
-    } catch (error) {
-      console.error('Erro no cadastro:', error);
-      return { success: false, error: 'Erro inesperado. Tente novamente.' };
+    } catch {
+      setIsLoading(false);
+      return { success: false, error: 'Erro ao criar conta' };
     }
-  };
+  }, [fetchUserData, updateState]);
 
-  const logout = async () => {
-    if (isLoggingOut || !supabase) return;
-
-    setIsLoggingOut(true);
-
+  // Logout
+  const logout = useCallback(async () => {
     try {
-      setUser(null);
-      setSupabaseUser(null);
-
+      const supabase = createClient();
       await supabase.auth.signOut({ scope: 'local' });
-
-      router.push('/signin');
-      router.refresh();
-    } catch (error) {
-      console.error('Erro no logout:', error);
-      window.location.href = '/signin';
-    } finally {
-      setIsLoggingOut(false);
+    } catch {
+      // Ignora erros
     }
-  };
 
-  const value = {
-    user,
-    supabaseUser,
-    isLoading,
-    login,
-    signup,
-    logout,
-    isAuthenticated: !!user,
-  };
+    // Limpa estado
+    hasInitialized = false;
+    globalUser = null;
+    globalSupabaseUser = null;
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    // Força reload limpo
+    window.location.href = '/signin';
+  }, []);
+
+  return (
+      <AuthContext.Provider value={{
+        user,
+        supabaseUser,
+        isLoading,
+        login,
+        signup,
+        logout,
+        isAuthenticated: !!user,
+      }}>
+        {children}
+      </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+  if (!context) {
+    throw new Error('useAuth deve ser usado dentro de AuthProvider');
   }
   return context;
 }
 
-function getErrorMessage(error: string): string {
-  const errorMessages: Record<string, string> = {
+function translateError(error: string): string {
+  const map: Record<string, string> = {
     'Invalid login credentials': 'E-mail ou senha incorretos',
-    'Email not confirmed': 'E-mail não confirmado. Verifique sua caixa de entrada.',
-    'User already registered': 'Este e-mail já está cadastrado',
-    'Password should be at least 6 characters': 'A senha deve ter pelo menos 6 caracteres',
-    'Unable to validate email address: invalid format': 'Formato de e-mail inválido',
+    'User already registered': 'E-mail já cadastrado',
+    'Password should be at least 6 characters': 'Senha deve ter 6+ caracteres',
+    'Email not confirmed': 'Confirme seu e-mail antes de entrar',
   };
-
-  return errorMessages[error] || 'Erro ao processar. Tente novamente.';
+  return map[error] || error;
 }

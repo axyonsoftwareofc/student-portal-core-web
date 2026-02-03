@@ -38,7 +38,7 @@ export const studyModules = [
                     {
                         id: 2,
                         title: "Documentação Oracle",
-                        type: "Link Externo",
+                        type: "Link",
                         url: "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/variables.html",
                     },
                     {
@@ -231,7 +231,7 @@ export const studyModules = [
                     {
                         id: 2,
                         title: "Documentação Oracle",
-                        type: "Link Externo",
+                        type: "Link",
                         url: "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/if.html",
                     },
                 ],
@@ -296,6 +296,20 @@ export const studyModules = [
         ],
     },
 ];
+
+// Helper para ícone de material baseado no tipo
+export function getMaterialIcon(type: string): string {
+    switch (type) {
+        case 'PDF':
+            return 'FileText';
+        case 'Link':
+            return 'ExternalLink';
+        case 'GitHub':
+            return 'Code';
+        default:
+            return 'File';
+    }
+}
 
 // Funções helper para feedback
 export const getQuizFeedback = (score: number, totalQuestions: number) => {

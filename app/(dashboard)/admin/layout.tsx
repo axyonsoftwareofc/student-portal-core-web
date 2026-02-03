@@ -19,21 +19,19 @@ const adminMenuItems = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const { user, isLoading } = useAuth();
+    const { isLoading } = useAuth();
     const [showContent, setShowContent] = useState(false);
 
-    // Aguarda um pouco para o auth carregar, depois mostra conteúdo
     useEffect(() => {
         if (!isLoading) {
             setShowContent(true);
         } else {
-            // Timeout de segurança: após 3s, mostra conteúdo mesmo assim
-            const timer = setTimeout(() => setShowContent(true), 3000);
+            // Timeout de segurança: 1.5s
+            const timer = setTimeout(() => setShowContent(true), 1500);
             return () => clearTimeout(timer);
         }
     }, [isLoading]);
 
-    // Loading state
     if (!showContent) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-950">

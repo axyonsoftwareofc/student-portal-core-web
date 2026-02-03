@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 interface AppUser {
   id: string;
@@ -111,22 +111,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     init();
 
     // Listener para mudanças de auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event: AuthChangeEvent, session: Session | null) => {
+          if (!mounted) return;
 
-      if (event === 'SIGNED_IN' && session?.user) {
-        const userData = await fetchUserData(session.user.id);
-        if (mounted && userData) {
-          updateState(userData, session.user, false);
+          if (event === 'SIGNED_IN' && session?.user) {
+            const userData = await fetchUserData(session.user.id);
+            if (mounted && userData) {
+              updateState(userData, session.user, false);
+            }
+          } else if (event === 'SIGNED_OUT') {
+            hasInitialized = false;
+            updateState(null, null, false);
+          } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+            globalSupabaseUser = session.user;
+            setSupabaseUser(session.user);
+          }
         }
-      } else if (event === 'SIGNED_OUT') {
-        hasInitialized = false;
-        updateState(null, null, false);
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        globalSupabaseUser = session.user;
-        setSupabaseUser(session.user);
-      }
-    });
+    );
 
     return () => {
       mounted = false;

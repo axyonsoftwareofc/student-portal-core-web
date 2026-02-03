@@ -1,35 +1,37 @@
 // utils/mock/adminMock.ts
+import { Users, BookOpen, BarChart3, GraduationCap, User, FileText, Trophy, Settings, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+
 export const adminStats = [
     {
         id: 1,
         label: 'Total de Alunos',
-        value: 245,
-        icon: '👥',
-        color: 'blue' as const,
+        value: 15,
+        icon: Users,
+        color: 'sky' as const,
         trend: {
             value: 12,
             label: 'vs mês anterior',
         },
-        description: '18 novos este mês',
+        description: '2 novos este mês',
     },
     {
         id: 2,
         label: 'Módulos Ativos',
-        value: 12,
-        icon: '📚',
-        color: 'green' as const,
+        value: 3,
+        icon: BookOpen,
+        color: 'emerald' as const,
         trend: {
             value: 8,
             label: 'vs mês anterior',
         },
-        description: '3 em desenvolvimento',
+        description: '1 em desenvolvimento',
     },
     {
         id: 3,
         label: 'Taxa de Conclusão',
         value: '78%',
-        icon: '📊',
-        color: 'purple' as const,
+        icon: BarChart3,
+        color: 'amber' as const,
         trend: {
             value: 5,
             label: 'vs mês anterior',
@@ -38,15 +40,15 @@ export const adminStats = [
     },
     {
         id: 4,
-        label: 'Professores',
-        value: 15,
-        icon: '👨‍🏫',
-        color: 'orange' as const,
+        label: 'Aulas Realizadas',
+        value: 24,
+        icon: GraduationCap,
+        color: 'sky' as const,
         trend: {
-            value: 0,
-            label: 'sem alteração',
+            value: 3,
+            label: 'este mês',
         },
-        description: 'Todos ativos',
+        description: 'Aos sábados',
     },
 ];
 
@@ -54,34 +56,34 @@ export const recentActivities = [
     {
         id: 1,
         type: 'student',
-        icon: '👤',
+        icon: User,
         title: 'Novo aluno cadastrado',
         description: 'Maria Silva se inscreveu no curso de Java Avançado',
-        timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 min atrás
+        timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
     },
     {
         id: 2,
         type: 'content',
-        icon: '📝',
+        icon: FileText,
         title: 'Conteúdo publicado',
-        description: 'Prof. Carlos adicionou videoaula "Spring Boot Security"',
-        timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 min atrás
+        description: 'Nova videoaula "Spring Boot Security" adicionada',
+        timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     },
     {
         id: 3,
         type: 'achievement',
-        icon: '🏆',
+        icon: Trophy,
         title: 'Meta atingida',
-        description: '50 alunos completaram o módulo de POO este mês',
-        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2h atrás
+        description: '10 alunos completaram o módulo de POO este mês',
+        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
     },
     {
         id: 4,
         type: 'system',
-        icon: '⚙️',
+        icon: Settings,
         title: 'Atualização do sistema',
         description: 'Nova versão da plataforma foi implementada',
-        timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(), // 4h atrás
+        timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
     },
 ];
 
@@ -89,25 +91,25 @@ export const systemAlerts = [
     {
         id: 1,
         severity: 'high' as const,
-        icon: '🔴',
-        title: 'Servidor de backup offline',
-        message: 'O servidor de backup não responde desde 10:30',
+        icon: AlertCircle,
+        title: 'Pagamento pendente',
+        message: '3 alunos com mensalidade atrasada',
         timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     },
     {
         id: 2,
         severity: 'medium' as const,
-        icon: '🟡',
-        title: 'Armazenamento 80%',
-        message: 'Espaço em disco atingiu 80% da capacidade',
+        icon: AlertTriangle,
+        title: 'Conteúdo desatualizado',
+        message: 'Módulo de Java Básico precisa de revisão',
         timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
     },
     {
         id: 3,
         severity: 'low' as const,
-        icon: '🔵',
-        title: 'Atualização disponível',
-        message: 'Nova versão do sistema disponível para instalação',
+        icon: Info,
+        title: 'Lembrete',
+        message: 'Próxima aula: Sábado às 09:00',
         timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
     },
 ];

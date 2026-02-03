@@ -1,4 +1,5 @@
 // utils/mock/modulesMock.ts
+import { Circle, Square, Hexagon, Award, Target, Star } from 'lucide-react';
 
 export const modules = [
     {
@@ -7,8 +8,9 @@ export const modules = [
         description: "Aprenda os conceitos básicos de Java e programação orientada a objetos",
         level: "Iniciante",
         progress: 100,
-        status: "Concluído",
-        icon: "🟠",
+        status: "Concluído" as const,
+        icon: Circle,
+        iconColor: "text-amber-500",
         topics: [
             { id: 1, name: "Variáveis e Tipos de Dados", completed: true },
             { id: 2, name: "Operadores", completed: true },
@@ -26,8 +28,9 @@ export const modules = [
         description: "Domine classes, herança, polimorfismo e encapsulamento",
         level: "Intermediário",
         progress: 75,
-        status: "Em Progresso",
-        icon: "🟦",
+        status: "Em Progresso" as const,
+        icon: Square,
+        iconColor: "text-sky-500",
         topics: [
             { id: 1, name: "Classes e Objetos", completed: true },
             { id: 2, name: "Encapsulamento", completed: true },
@@ -44,8 +47,9 @@ export const modules = [
         description: "Crie aplicações enterprise robustas com Spring Boot",
         level: "Avançado",
         progress: 30,
-        status: "Em Progresso",
-        icon: "🟢",
+        status: "Em Progresso" as const,
+        icon: Hexagon,
+        iconColor: "text-emerald-500",
         topics: [
             { id: 1, name: "Introdução ao Spring Framework", completed: true },
             { id: 2, name: "Spring Boot Setup", completed: true },
@@ -62,17 +66,17 @@ export const performanceData = [
     {
         name: "Fundamentos",
         progress: 100,
-        fill: "#7c3aed",
+        fill: "#0ea5e9", // sky-500
     },
     {
         name: "POO",
         progress: 75,
-        fill: "#6366f1",
+        fill: "#0ea5e9", // sky-500
     },
     {
         name: "Spring Boot",
         progress: 30,
-        fill: "#10b981",
+        fill: "#10b981", // emerald-500
     },
 ];
 
@@ -91,21 +95,21 @@ export const badges = [
         id: 1,
         name: "Iniciante",
         description: "Completou o módulo Fundamentos",
-        icon: "🏅",
+        icon: Award,
         unlockedDate: "2025-11-15",
     },
     {
         id: 2,
         name: "Aprendiz de POO",
         description: "75% de progresso em POO",
-        icon: "🎯",
+        icon: Target,
         unlockedDate: null,
     },
     {
         id: 3,
         name: "Mestre do Spring",
         description: "Completar Spring Boot",
-        icon: "⭐",
+        icon: Star,
         unlockedDate: null,
     },
 ];
@@ -116,5 +120,5 @@ export const profileStats = {
     modulesCompleted: 1,
     modulesInProgress: 2,
     topicCompleted: 11,
-    streak: 5, // dias consecutivos estudando
+    streak: 5,
 };

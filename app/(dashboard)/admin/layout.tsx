@@ -1,21 +1,33 @@
 // app/(dashboard)/admin/layout.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import AdminSidebar from "@/components/dashboard/AdminSidebar";
 import MobileMenu from "@/components/dashboard/MobileMenu";
 import DashboardFooter from "@/components/dashboard/DashboardFooter";
+import PageIllustration from "@/components/page-illustration";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+    LayoutDashboard,
+    Users,
+    BookOpen,
+    FileText,
+    CreditCard,
+    BarChart3,
+    Settings
+} from "lucide-react";
 
 const adminMenuItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
-    { href: "/admin/alunos", label: "Alunos", icon: "👥" },
-    { href: "/admin/modulos", label: "Módulos", icon: "📚" },
-    { href: "/admin/conteudos", label: "Conteúdos", icon: "📝" },
-    { href: "/admin/pagamentos", label: "Pagamentos", icon: "💰" },
-    { href: "/admin/relatorios", label: "Relatórios", icon: "📈" },
-    { href: "/admin/configuracoes", label: "Configurações", icon: "⚙️" },
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/alunos", label: "Alunos", icon: Users },
+    { href: "/admin/modulos", label: "Módulos", icon: BookOpen },
+    { href: "/admin/conteudos", label: "Conteúdos", icon: FileText },
+    { href: "/admin/pagamentos", label: "Pagamentos", icon: CreditCard },
+    { href: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
+    { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -26,7 +38,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!isLoading) {
             setShowContent(true);
         } else {
-            // Timeout de segurança: 1.5s
             const timer = setTimeout(() => setShowContent(true), 1500);
             return () => clearTimeout(timer);
         }
@@ -35,9 +46,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!showContent) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-950">
-                <div className="text-center">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-violet-600 border-r-transparent"></div>
-                    <p className="mt-4 text-gray-400">Carregando...</p>
+                <div className="text-center space-y-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-sky-500 mx-auto" strokeWidth={1.5} />
+                    <p className="text-sm text-gray-500">Carregando...</p>
                 </div>
             </div>
         );
@@ -48,11 +59,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <DashboardHeader />
             <div className="flex flex-1 overflow-hidden">
                 <AdminSidebar />
-                <MobileMenu items={adminMenuItems} title="Painel Admin" />
-                <main className="flex-1 overflow-y-auto">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+                <MobileMenu items={adminMenuItems} title="Code Plus Admin" />
+                <main className="relative flex-1 overflow-y-auto">
+                    {/* Background illustration */}
+                    <PageIllustration />
+
+                    {/* Content */}
+                    <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
                         {children}
                     </div>
+
+                    {/* Footer */}
                     <DashboardFooter />
                 </main>
             </div>

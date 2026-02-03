@@ -1,18 +1,24 @@
+// components/page-illustration.tsx
+
 import Image from "next/image";
 import Illustration from "@/public/images/page-illustration.svg";
 import BlurredShapeGray from "@/public/images/blurred-shape-gray.svg";
 import BlurredShape from "@/public/images/blurred-shape.svg";
 
+interface PageIllustrationProps {
+    multiple?: boolean;
+    className?: string;
+}
+
 export default function PageIllustration({
-  multiple = false,
-}: {
-  multiple?: boolean;
-}) {
-  return (
-    <>
-      {}
-      <div
-        className="
+                                             multiple = false,
+                                             className = "",
+                                         }: PageIllustrationProps) {
+    return (
+        <>
+            {/* Ilustração principal */}
+            <div
+                className={`
           pointer-events-none
           absolute
           left-1/2
@@ -22,23 +28,25 @@ export default function PageIllustration({
           opacity-90
           transition-all
           duration-500
-        "
-        aria-hidden="true"
-      >
-        <Image
-          className="max-w-none"
-          src={Illustration}
-          width={846}
-          height={594}
-          alt="Ilustração da página"
-        />
-      </div>
+          ${className}
+        `}
+                aria-hidden="true"
+            >
+                <Image
+                    className="max-w-none"
+                    src={Illustration}
+                    width={846}
+                    height={594}
+                    priority
+                    alt=""
+                />
+            </div>
 
-      {multiple && (
-        <>
-          {}
-          <div
-            className="
+            {multiple && (
+                <>
+                    {/* Forma desfocada cinza */}
+                    <div
+                        className="
               pointer-events-none
               absolute
               left-1/2
@@ -51,20 +59,20 @@ export default function PageIllustration({
               transition-opacity
               duration-700
             "
-            aria-hidden="true"
-          >
-            <Image
-              className="max-w-none"
-              src={BlurredShapeGray}
-              width={760}
-              height={668}
-              alt="Forma desfocada cinza"
-            />
-          </div>
+                        aria-hidden="true"
+                    >
+                        <Image
+                            className="max-w-none"
+                            src={BlurredShapeGray}
+                            width={760}
+                            height={668}
+                            alt=""
+                        />
+                    </div>
 
-          {}
-          <div
-            className="
+                    {/* Forma desfocada azul */}
+                    <div
+                        className="
               pointer-events-none
               absolute
               left-1/2
@@ -76,18 +84,18 @@ export default function PageIllustration({
               transition-opacity
               duration-700
             "
-            aria-hidden="true"
-          >
-            <Image
-              className="max-w-none"
-              src={BlurredShape}
-              width={760}
-              height={668}
-              alt="Forma desfocada azul"
-            />
-          </div>
+                        aria-hidden="true"
+                    >
+                        <Image
+                            className="max-w-none"
+                            src={BlurredShape}
+                            width={760}
+                            height={668}
+                            alt=""
+                        />
+                    </div>
+                </>
+            )}
         </>
-      )}
-    </>
-  );
+    );
 }

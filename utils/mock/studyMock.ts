@@ -1,12 +1,69 @@
 // utils/mock/studyMock.ts
 
-export const studyModules = [
+import { Code, Calculator, GitBranch } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+// Tipos exportados
+export interface QuizOption {
+    id: string;
+    text: string;
+    correct?: boolean;
+}
+
+export interface QuizQuestion {
+    id: number;
+    question: string;
+    options: QuizOption[];
+}
+
+export interface Quiz {
+    id: number;
+    title: string;
+    questions: QuizQuestion[];
+}
+
+export interface Material {
+    id: number;
+    title: string;
+    type: string;
+    url: string;
+}
+
+export interface Video {
+    id: number;
+    title: string;
+    youtubeId: string;
+    duration: string;
+    instructor: string;
+}
+
+export interface Topic {
+    id: string;
+    name: string;
+    description: string;
+    complexity: string;
+    videos: Video[];
+    materials: Material[];
+    quiz: Quiz;
+    completed: boolean;
+}
+
+export interface StudyModule {
+    id: string;
+    name: string;
+    description: string;
+    level: string;
+    icon: LucideIcon;
+    topics: Topic[];
+}
+
+export const studyModules: StudyModule[] = [
     {
         id: "fundamentos",
         name: "Fundamentos de Java",
         description: "Aprenda os conceitos básicos de Java e programação",
         level: "Iniciante",
-        icon: "🟠",
+        icon: Code,
         topics: [
             {
                 id: "variaveis",
@@ -17,7 +74,7 @@ export const studyModules = [
                     {
                         id: 1,
                         title: "Introdução a Variáveis em Java",
-                        youtubeId: "jQgz9wX4qvM", // Video real do YouTube (exemplo)
+                        youtubeId: "jQgz9wX4qvM",
                         duration: "12:34",
                         instructor: "Professor Carlos",
                     },
@@ -34,21 +91,18 @@ export const studyModules = [
                         id: 1,
                         title: "Apostila - Variáveis em Java",
                         type: "PDF",
-                        icon: "📄",
                         url: "#",
                     },
                     {
                         id: 2,
                         title: "Documentação Oracle",
-                        type: "Link Externo",
-                        icon: "🔗",
+                        type: "Link",
                         url: "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/variables.html",
                     },
                     {
                         id: 3,
                         title: "Exemplos de Código",
                         type: "GitHub",
-                        icon: "💻",
                         url: "#",
                     },
                 ],
@@ -136,7 +190,6 @@ export const studyModules = [
                         id: 1,
                         title: "Tabela de Operadores",
                         type: "PDF",
-                        icon: "📄",
                         url: "#",
                     },
                 ],
@@ -231,14 +284,12 @@ export const studyModules = [
                         id: 1,
                         title: "Guia Completo - Estruturas de Controle",
                         type: "PDF",
-                        icon: "📄",
                         url: "#",
                     },
                     {
                         id: 2,
                         title: "Documentação Oracle",
-                        type: "Link Externo",
-                        icon: "🔗",
+                        type: "Link",
                         url: "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/if.html",
                     },
                 ],
@@ -304,43 +355,52 @@ export const studyModules = [
     },
 ];
 
+// Helper para ícone de material baseado no tipo
+export function getMaterialIcon(type: string): string {
+    switch (type) {
+        case 'PDF':
+            return 'FileText';
+        case 'Link':
+            return 'ExternalLink';
+        case 'GitHub':
+            return 'Code';
+        default:
+            return 'File';
+    }
+}
+
 // Funções helper para feedback
 export const getQuizFeedback = (score: number, totalQuestions: number) => {
     const percentage = (score / totalQuestions) * 100;
 
     if (percentage === 100) {
         return {
-            message: "🎉 Você é incrível! Perfeito!",
+            message: "Perfeito! Você dominou esse assunto!",
             color: "emerald",
-            emoji: "⭐",
-            tip: "Continue assim! Você domina esse assunto!",
+            tip: "Continue assim! Você está no caminho certo.",
         };
     } else if (percentage >= 80) {
         return {
-            message: "🌟 Você está arrasando!",
-            color: "cyan",
-            emoji: "🚀",
-            tip: "Excelente desempenho! Revise apenas os pontos que errou.",
+            message: "Excelente desempenho!",
+            color: "sky",
+            tip: "Revise apenas os pontos que errou.",
         };
     } else if (percentage >= 60) {
         return {
-            message: "👍 Bom trabalho! Mas há espaço para melhorar.",
-            color: "yellow",
-            emoji: "💪",
-            tip: "Revise o material e tente novamente. Você consegue!",
+            message: "Bom trabalho! Há espaço para melhorar.",
+            color: "amber",
+            tip: "Revise o material e tente novamente.",
         };
     } else if (percentage >= 40) {
         return {
-            message: "📚 Continue estudando!",
-            color: "orange",
-            emoji: "🤔",
-            tip: "Estude o assunto novamente e tente fazer o quiz de novo.",
+            message: "Continue estudando!",
+            color: "amber",
+            tip: "Estude o assunto novamente antes de refazer o quiz.",
         };
     } else {
         return {
-            message: "💡 Se esforce mais!",
-            color: "red",
-            emoji: "❤️",
+            message: "Precisa de mais prática.",
+            color: "rose",
             tip: "Revise completamente o material antes de tentar novamente.",
         };
     }

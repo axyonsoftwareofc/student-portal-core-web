@@ -1,7 +1,7 @@
 // contexts/AuthContext.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, ReactNode, useCallback, useSyncExternalStore } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
 
@@ -28,31 +28,47 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Estado global persistente
-let globalUser: AppUser | null = null;
-let globalSupabaseUser: SupabaseUser | null = null;
-let isGlobalLoading = true;
-let hasInitialized = false;
+// ========== STORE EXTERNO ==========
+interface AuthStore {
+  user: AppUser | null;
+  supabaseUser: SupabaseUser | null;
+  isLoading: boolean;
+}
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AppUser | null>(globalUser);
-  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(globalSupabaseUser);
-  const [isLoading, setIsLoading] = useState(isGlobalLoading);
+let store: AuthStore = {
+  user: null,
+  supabaseUser: null,
+  isLoading: true,
+};
 
-  // Atualizar estados globais e locais
-  const updateState = useCallback((newUser: AppUser | null, newSupabaseUser: SupabaseUser | null, loading: boolean) => {
-    globalUser = newUser;
-    globalSupabaseUser = newSupabaseUser;
-    isGlobalLoading = loading;
-    setUser(newUser);
-    setSupabaseUser(newSupabaseUser);
-    setIsLoading(loading);
-  }, []);
+const listeners: Set<() => void> = new Set();
+let isInitialized = false;
+let authListenerSet = false;
 
-  // Buscar dados do usuário no banco
-  const fetchUserData = useCallback(async (userId: string): Promise<AppUser | null> => {
+function getSnapshot(): AuthStore {
+  return store;
+}
+
+function subscribe(callback: () => void): () => void {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+
+function updateStore(partial: Partial<AuthStore>) {
+  store = { ...store, ...partial };
+  listeners.forEach(listener => listener());
+}
+
+// Buscar dados do usuário com timeout de segurança
+async function fetchUserFromDB(userId: string): Promise<AppUser | null> {
+  const supabase = createClient();
+
+  const timeoutPromise = new Promise<null>((resolve) => {
+    setTimeout(() => resolve(null), 5000);
+  });
+
+  const queryPromise = (async () => {
     try {
-      const supabase = createClient();
       const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -60,86 +76,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
       if (error) {
-        console.error('[Auth] Erro buscar usuário:', error.message);
+        console.error('[Auth] Erro ao buscar usuário:', error.message);
         return null;
       }
+
       return data as AppUser;
-    } catch {
+    } catch (err) {
+      console.error('[Auth] Erro inesperado:', err);
       return null;
     }
-  }, []);
+  })();
 
-  // Inicialização
-  useEffect(() => {
-    // Se já inicializou e tem dados, usa eles
-    if (hasInitialized) {
-      setUser(globalUser);
-      setSupabaseUser(globalSupabaseUser);
-      setIsLoading(false);
-      return;
+  return Promise.race([queryPromise, timeoutPromise]);
+}
+
+// Setup do listener de auth (roda uma vez)
+function setupAuthListener() {
+  if (authListenerSet) return;
+  authListenerSet = true;
+
+  const supabase = createClient();
+
+  supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      if (!store.user || store.user.id !== session.user.id) {
+        updateStore({ isLoading: true });
+        const userData = await fetchUserFromDB(session.user.id);
+        updateStore({
+          user: userData,
+          supabaseUser: session.user,
+          isLoading: false,
+        });
+      }
+    } else if (event === 'SIGNED_OUT') {
+      updateStore({ user: null, supabaseUser: null, isLoading: false });
+      isInitialized = false;
+    } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+      updateStore({ supabaseUser: session.user });
+    }
+  });
+}
+
+// Inicialização
+async function initializeAuth() {
+  if (isInitialized) return;
+
+  setupAuthListener();
+
+  try {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session?.user) {
+      const userData = await fetchUserFromDB(session.user.id);
+      updateStore({
+        user: userData,
+        supabaseUser: session.user,
+        isLoading: false,
+      });
+    } else {
+      updateStore({ isLoading: false });
     }
 
-    const supabase = createClient();
-    let mounted = true;
+    isInitialized = true;
+  } catch (err) {
+    console.error('[Auth] Erro na inicialização:', err);
+    updateStore({ isLoading: false });
+    isInitialized = true;
+  }
+}
 
-    const init = async () => {
-      try {
-        // Primeiro, tentar pegar sessão existente
-        const { data: { session } } = await supabase.auth.getSession();
+// ========== PROVIDER ==========
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-        if (!mounted) return;
+  useEffect(() => {
+    initializeAuth();
+  }, []);
 
-        if (session?.user) {
-          const userData = await fetchUserData(session.user.id);
-          if (mounted && userData) {
-            hasInitialized = true;
-            updateState(userData, session.user, false);
-            return;
-          }
-        }
-
-        // Sem sessão ou sem usuário válido
-        hasInitialized = true;
-        updateState(null, null, false);
-      } catch (err) {
-        console.error('[Auth] Erro init:', err);
-        hasInitialized = true;
-        if (mounted) updateState(null, null, false);
-      }
-    };
-
-    init();
-
-    // Listener para mudanças de auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event: AuthChangeEvent, session: Session | null) => {
-          if (!mounted) return;
-
-          if (event === 'SIGNED_IN' && session?.user) {
-            const userData = await fetchUserData(session.user.id);
-            if (mounted && userData) {
-              updateState(userData, session.user, false);
-            }
-          } else if (event === 'SIGNED_OUT') {
-            hasInitialized = false;
-            updateState(null, null, false);
-          } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-            globalSupabaseUser = session.user;
-            setSupabaseUser(session.user);
-          }
-        }
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [fetchUserData, updateState]);
-
-  // Login
   const login = useCallback(async (email: string, password: string) => {
     try {
-      setIsLoading(true);
+      updateStore({ isLoading: true });
       const supabase = createClient();
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -148,36 +165,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        setIsLoading(false);
+        updateStore({ isLoading: false });
         return { success: false, error: translateError(error.message) };
       }
 
       if (data.user) {
-        const userData = await fetchUserData(data.user.id);
+        const userData = await fetchUserFromDB(data.user.id);
         if (userData) {
-          hasInitialized = true;
-          updateState(userData, data.user, false);
+          updateStore({
+            user: userData,
+            supabaseUser: data.user,
+            isLoading: false,
+          });
+          isInitialized = true;
           return {
             success: true,
             redirectTo: userData.role === 'admin' ? '/admin/dashboard' : '/aluno/dashboard'
           };
         }
-        setIsLoading(false);
+        updateStore({ isLoading: false });
         return { success: false, error: 'Perfil não encontrado' };
       }
 
-      setIsLoading(false);
+      updateStore({ isLoading: false });
       return { success: false, error: 'Erro desconhecido' };
     } catch {
-      setIsLoading(false);
+      updateStore({ isLoading: false });
       return { success: false, error: 'Erro ao fazer login' };
     }
-  }, [fetchUserData, updateState]);
+  }, []);
 
-  // Signup
   const signup = useCallback(async (email: string, password: string, name: string) => {
     try {
-      setIsLoading(true);
+      updateStore({ isLoading: true });
       const supabase = createClient();
 
       const { data, error } = await supabase.auth.signUp({
@@ -186,12 +206,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        setIsLoading(false);
+        updateStore({ isLoading: false });
         return { success: false, error: translateError(error.message) };
       }
 
       if (data.user) {
-        // Criar perfil
         await supabase.from('users').insert({
           id: data.user.id,
           email: email.trim().toLowerCase(),
@@ -200,24 +219,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           created_at: new Date().toISOString(),
         });
 
-        const userData = await fetchUserData(data.user.id);
+        const userData = await fetchUserFromDB(data.user.id);
         if (userData) {
-          hasInitialized = true;
-          updateState(userData, data.user, false);
+          updateStore({
+            user: userData,
+            supabaseUser: data.user,
+            isLoading: false,
+          });
+          isInitialized = true;
         }
 
         return { success: true, redirectTo: '/aluno/dashboard' };
       }
 
-      setIsLoading(false);
+      updateStore({ isLoading: false });
       return { success: false, error: 'Erro ao criar conta' };
     } catch {
-      setIsLoading(false);
+      updateStore({ isLoading: false });
       return { success: false, error: 'Erro ao criar conta' };
     }
-  }, [fetchUserData, updateState]);
+  }, []);
 
-  // Logout
   const logout = useCallback(async () => {
     try {
       const supabase = createClient();
@@ -226,24 +248,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ignora erros
     }
 
-    // Limpa estado
-    hasInitialized = false;
-    globalUser = null;
-    globalSupabaseUser = null;
+    store = { user: null, supabaseUser: null, isLoading: true };
+    isInitialized = false;
+    authListenerSet = false;
 
-    // Força reload limpo
     window.location.href = '/signin';
   }, []);
 
   return (
       <AuthContext.Provider value={{
-        user,
-        supabaseUser,
-        isLoading,
+        user: state.user,
+        supabaseUser: state.supabaseUser,
+        isLoading: state.isLoading,
         login,
         signup,
         logout,
-        isAuthenticated: !!user,
+        isAuthenticated: !!state.user,
       }}>
         {children}
       </AuthContext.Provider>

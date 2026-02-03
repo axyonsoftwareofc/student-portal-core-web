@@ -1,11 +1,69 @@
 // utils/mock/studyMock.ts
 
-export const studyModules = [
+import { Code, Calculator, GitBranch } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+// Tipos exportados
+export interface QuizOption {
+    id: string;
+    text: string;
+    correct?: boolean;
+}
+
+export interface QuizQuestion {
+    id: number;
+    question: string;
+    options: QuizOption[];
+}
+
+export interface Quiz {
+    id: number;
+    title: string;
+    questions: QuizQuestion[];
+}
+
+export interface Material {
+    id: number;
+    title: string;
+    type: string;
+    url: string;
+}
+
+export interface Video {
+    id: number;
+    title: string;
+    youtubeId: string;
+    duration: string;
+    instructor: string;
+}
+
+export interface Topic {
+    id: string;
+    name: string;
+    description: string;
+    complexity: string;
+    videos: Video[];
+    materials: Material[];
+    quiz: Quiz;
+    completed: boolean;
+}
+
+export interface StudyModule {
+    id: string;
+    name: string;
+    description: string;
+    level: string;
+    icon: LucideIcon;
+    topics: Topic[];
+}
+
+export const studyModules: StudyModule[] = [
     {
         id: "fundamentos",
         name: "Fundamentos de Java",
         description: "Aprenda os conceitos básicos de Java e programação",
         level: "Iniciante",
+        icon: Code,
         topics: [
             {
                 id: "variaveis",

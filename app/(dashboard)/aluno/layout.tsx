@@ -1,7 +1,9 @@
 // app/(dashboard)/aluno/layout.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import MobileMenu from "@/components/dashboard/MobileMenu";
@@ -40,9 +42,9 @@ export default function AlunoLayout({ children }: { children: React.ReactNode })
     if (!showContent) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-950">
-                <div className="text-center">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-sky-500 border-r-transparent"></div>
-                    <p className="mt-4 text-gray-500">Carregando...</p>
+                <div className="text-center space-y-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-sky-500 mx-auto" strokeWidth={1.5} />
+                    <p className="text-sm text-gray-500">Carregando...</p>
                 </div>
             </div>
         );
@@ -58,9 +60,12 @@ export default function AlunoLayout({ children }: { children: React.ReactNode })
                     {/* Background illustration */}
                     <PageIllustration />
 
+                    {/* Content */}
                     <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
                         {children}
                     </div>
+
+                    {/* Footer */}
                     <DashboardFooter />
                 </main>
             </div>

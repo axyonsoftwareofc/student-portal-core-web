@@ -1,55 +1,74 @@
 // components/dashboard/cards/StatCard.tsx
+import { LucideIcon } from "lucide-react";
+
+interface StatCardProps {
+    label: string;
+    value: string;
+    icon: LucideIcon;
+    color: 'sky' | 'emerald' | 'amber' | 'violet';
+    trend?: string;
+    description?: string;
+}
+
 export default function StatCard({
                                      label,
                                      value,
-                                     icon,
+                                     icon: Icon,
                                      color,
                                      trend,
                                      description,
-                                 }: {
-    label: string;
-    value: string;
-    icon: string;
-    color: string;
-    trend: string;
-    description: string;
-}) {
+                                 }: StatCardProps) {
+    const colorClasses = {
+        sky: {
+            icon: 'bg-sky-500/10 text-sky-400',
+            value: 'text-sky-400',
+        },
+        emerald: {
+            icon: 'bg-emerald-500/10 text-emerald-400',
+            value: 'text-emerald-400',
+        },
+        amber: {
+            icon: 'bg-amber-500/10 text-amber-400',
+            value: 'text-amber-400',
+        },
+        violet: {
+            icon: 'bg-violet-500/10 text-violet-400',
+            value: 'text-violet-400',
+        },
+    };
+
     return (
-        <div className="group relative h-full overflow-hidden rounded-lg sm:rounded-xl border border-gray-700/50 bg-gray-900/30 p-3 sm:p-4 lg:p-6 backdrop-blur transition-all duration-300 hover:border-violet-500/50 hover:bg-gray-900/60">
-            {/* Background gradient effect */}
-            <div
-                className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 transition-opacity duration-300 group-hover:opacity-5`}
-            />
-
-            {/* Content */}
-            <div className="relative z-10 flex flex-col gap-2 sm:gap-4">
-                {/* Header with icon and label */}
-                <div className="flex items-start justify-between">
-                    <p className="text-xs font-medium uppercase tracking-wider text-gray-400 line-clamp-1">
-                        {label}
-                    </p>
-                    <span className="text-lg sm:text-2xl">{icon}</span>
-                </div>
-
-                {/* Value */}
-                <div className="flex flex-col gap-1 sm:gap-2">
-                    <p
-                        className={`bg-gradient-to-r ${color} bg-clip-text text-xl sm:text-2xl lg:text-3xl font-bold text-transparent`}
-                    >
-                        {value}
-                    </p>
-
-                    {/* Trend and description */}
-                    <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                        <span className="text-xs font-semibold text-emerald-400">
-                            {trend}
-                        </span>
-                        <span className="text-xs text-gray-500 hidden sm:inline">
-                            {description}
-                        </span>
-                    </div>
+        <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-5 transition-all hover:bg-gray-900/50">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                    {label}
+                </p>
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${colorClasses[color].icon}`}>
+                    <Icon className="h-4 w-4" strokeWidth={1.5} />
                 </div>
             </div>
+
+            {/* Value */}
+            <p className={`mt-3 text-2xl sm:text-3xl font-bold ${colorClasses[color].value}`}>
+                {value}
+            </p>
+
+            {/* Trend and description */}
+            {(trend || description) && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {trend && (
+                        <span className="text-xs font-medium text-emerald-400">
+              {trend}
+            </span>
+                    )}
+                    {description && (
+                        <span className="text-xs text-gray-500">
+              {description}
+            </span>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

@@ -228,6 +228,55 @@ export interface ModuleFormData {
 }
 
 // ============================================
+// AULAS (LESSONS)
+// ============================================
+
+export type LessonType = 'VIDEO' | 'ARTICLE' | 'EXERCISE' | 'QUIZ';
+export type LessonStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface QuizQuestion {
+    id: string;
+    question: string;
+    options: {
+        id: string;
+        text: string;
+        correct: boolean;
+    }[];
+}
+
+export interface Lesson {
+    id: string;
+    module_id: string;
+    title: string;
+    description?: string | null;
+    type: LessonType;
+    youtube_id?: string | null;
+    duration?: string | null;
+    content?: string | null;
+    quiz_data?: QuizQuestion[] | null;
+    order_index: number;
+    status: LessonStatus;
+    views_count: number;
+    created_at: string;
+    updated_at: string;
+    // Relacionamentos (quando usar JOIN)
+    module?: Module;
+}
+
+export interface LessonFormData {
+    module_id: string;
+    title: string;
+    description?: string;
+    type: LessonType;
+    youtube_id?: string;
+    duration?: string;
+    content?: string;
+    quiz_data?: QuizQuestion[];
+    order_index?: number;
+    status?: LessonStatus;
+}
+
+// ============================================
 // TIPO DO DATABASE (para Supabase client tipado)
 // ============================================
 

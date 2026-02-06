@@ -1,18 +1,21 @@
 // app/(dashboard)/admin/relatorios/page.tsx
-
 'use client';
 
 import { useState } from 'react';
 import {
     BarChart3,
     TrendingUp,
-    Clock,
-    Star,
-    RefreshCcw,
+    Users,
+    BookOpen,
+    DollarSign,
     Trophy,
     FileSpreadsheet,
     FileText,
-    Send
+    RefreshCw,
+    Loader2,
+    CheckCircle,
+    Clock,
+    AlertTriangle,
 } from 'lucide-react';
 import {
     LineChart,
@@ -27,60 +30,52 @@ import {
     ResponsiveContainer,
     PieChart,
     Pie,
-    Cell
+    Cell,
 } from 'recharts';
+import { useReports } from '@/hooks/useReports';
 
-const enrollmentData = [
-    { month: 'Jan', alunos: 45 },
-    { month: 'Fev', alunos: 52 },
-    { month: 'Mar', alunos: 48 },
-    { month: 'Abr', alunos: 61 },
-    { month: 'Mai', alunos: 55 },
-    { month: 'Jun', alunos: 67 },
-];
+// Formatadores
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+    }).format(value);
+};
 
-const completionData = [
-    { modulo: 'Java', concluidos: 145, emAndamento: 35 },
-    { modulo: 'POO', concluidos: 128, emAndamento: 52 },
-    { modulo: 'Spring', concluidos: 98, emAndamento: 67 },
-    { modulo: 'APIs', concluidos: 76, emAndamento: 89 },
-];
+const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Nunca';
+    return new Date(dateString).toLocaleDateString('pt-BR');
+};
 
-const statusDistribution = [
-    { name: 'Ativos', value: 185, color: '#10b981' },
-    { name: 'Inativos', value: 45, color: '#6b7280' },
-    { name: 'Concluídos', value: 60, color: '#0ea5e9' },
-];
-
-const topStudents = [
-    { name: 'Pedro Oliveira', points: 1250, modules: 5 },
-    { name: 'Ana Silva', points: 1180, modules: 4 },
-    { name: 'Carlos Santos', points: 1120, modules: 5 },
-    { name: 'Mariana Costa', points: 1090, modules: 4 },
-    { name: 'João Ferreira', points: 1050, modules: 4 },
-];
-
+// Componente de Card de Métrica
 interface MetricCardProps {
     title: string;
-    value: string;
-    change: string;
-    changeType: 'positive' | 'negative';
-    icon: typeof TrendingUp;
+    value: string | number;
+    subtitle?: string;
+    icon: React.ElementType;
+    color: 'sky' | 'emerald' | 'amber' | 'rose';
 }
 
-function MetricCard({ title, value, change, changeType, icon: Icon }: MetricCardProps) {
+function MetricCard({ title, value, subtitle, icon: Icon, color }: MetricCardProps) {
+    const colorClasses = {
+        sky: 'bg-sky-500/10 text-sky-400',
+        emerald: 'bg-emerald-500/10 text-emerald-400',
+        amber: 'bg-amber-500/10 text-amber-400',
+        rose: 'bg-rose-500/10 text-rose-400',
+    };
+
     return (
-        <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6">
+        <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-5">
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-xs sm:text-sm text-gray-400">{title}</p>
-                    <p className="text-2xl sm:text-3xl font-semibold text-white">{value}</p>
-                    <p className={`text-xs mt-1 ${changeType === 'positive' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {changeType === 'positive' ? '↑' : '↓'} {change}
-                    </p>
+                    <p className="text-sm font-medium text-gray-400">{title}</p>
+                    <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+                    {subtitle && (
+                        <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
+                    )}
                 </div>
-                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-sky-500/10">
-                    <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-sky-400" strokeWidth={1.5} />
+                <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${colorClasses[color]}`}>
+                    <Icon className="h-5 w-5" strokeWidth={1.5} />
                 </div>
             </div>
         </div>
@@ -90,220 +85,328 @@ function MetricCard({ title, value, change, changeType, icon: Icon }: MetricCard
 export default function RelatoriosPage() {
     const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
 
+    const {
+        stats,
+        monthlyData,
+        moduleCompletion,
+        topStudents,
+        studentDistribution,
+        paymentDistribution,
+        isLoading,
+        refetch,
+    } = useReports(timeRange);
+
+    // Dados para o gráfico de barras de módulos
+    const moduleChartData = moduleCompletion.map(m => ({
+        modulo: m.moduleName.length > 15 ? m.moduleName.substring(0, 15) + '...' : m.moduleName,
+        concluidos: m.completedByStudents,
+        emAndamento: m.studentsInProgress,
+    }));
+
     return (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10">
                         <BarChart3 className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
                     </div>
                     <div>
-                        <h1 className="font-nacelle text-2xl sm:text-3xl font-semibold text-white">
-                            Relatórios e Análises
-                        </h1>
-                        <p className="text-sm text-gray-500">
-                            Métricas e insights sobre a plataforma
-                        </p>
-                    </div>
-                </div>
-                <div className="flex gap-1 sm:gap-2 bg-gray-900/50 border border-gray-800/50 p-1 rounded-lg">
-                    {(['week', 'month', 'year'] as const).map((range) => (
-                        <button
-                            key={range}
-                            onClick={() => setTimeRange(range)}
-                            className={`rounded-md px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors ${
-                                timeRange === range
-                                    ? 'bg-sky-600 text-white'
-                                    : 'text-gray-400 hover:text-white'
-                            }`}
-                        >
-                            {range === 'week' ? 'Semana' : range === 'month' ? 'Mês' : 'Ano'}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Key Metrics */}
-            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                    title="Engajamento"
-                    value="82%"
-                    change="5%"
-                    changeType="positive"
-                    icon={TrendingUp}
-                />
-                <MetricCard
-                    title="Tempo/Dia"
-                    value="2.4h"
-                    change="12%"
-                    changeType="positive"
-                    icon={Clock}
-                />
-                <MetricCard
-                    title="NPS Score"
-                    value="8.7"
-                    change="0.3"
-                    changeType="positive"
-                    icon={Star}
-                />
-                <MetricCard
-                    title="Retenção"
-                    value="91%"
-                    change="2%"
-                    changeType="negative"
-                    icon={RefreshCcw}
-                />
-            </div>
-
-            {/* Charts Row 1 */}
-            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-                {/* Enrollment Trend */}
-                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-white mb-4">
-                        Matrículas (6 meses)
-                    </h3>
-                    <div className="h-64 sm:h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={enrollmentData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                                <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
-                                <YAxis stroke="#6b7280" fontSize={12} />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: '#111827',
-                                        border: '1px solid rgba(55, 65, 81, 0.5)',
-                                        borderRadius: '8px',
-                                        fontSize: '12px',
-                                    }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="alunos"
-                                    stroke="#0ea5e9"
-                                    strokeWidth={2}
-                                    dot={{ fill: '#0ea5e9', r: 4 }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
+                        <h1 className="text-2xl font-bold text-white">Relatórios e Análises</h1>
+                        <p className="text-sm text-gray-400">Métricas e insights sobre a plataforma</p>
                     </div>
                 </div>
 
-                {/* Status Distribution */}
-                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-white mb-4">
-                        Status dos Alunos
-                    </h3>
-                    <div className="h-64 sm:h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={statusDistribution}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    label={({ name, value }) => `${name}: ${value}`}
-                                    outerRadius="70%"
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    fontSize={11}
-                                >
-                                    {statusDistribution.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: '#111827',
-                                        border: '1px solid rgba(55, 65, 81, 0.5)',
-                                        borderRadius: '8px',
-                                        fontSize: '12px',
-                                    }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
+                <div className="flex items-center gap-3">
+                    {/* Seletor de período */}
+                    <div className="flex gap-1 rounded-lg border border-gray-800/50 bg-gray-900/50 p-1">
+                        {(['week', 'month', 'year'] as const).map((range) => (
+                            <button
+                                key={range}
+                                onClick={() => setTimeRange(range)}
+                                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                                    timeRange === range
+                                        ? 'bg-sky-600 text-white'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                {range === 'week' ? 'Semana' : range === 'month' ? 'Mês' : 'Ano'}
+                            </button>
+                        ))}
                     </div>
+
+                    {/* Botão atualizar */}
+                    <button
+                        onClick={refetch}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white disabled:opacity-50"
+                    >
+                        {isLoading ? (
+                            <Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.5} />
+                        ) : (
+                            <RefreshCw className="h-5 w-5" strokeWidth={1.5} />
+                        )}
+                    </button>
                 </div>
             </div>
 
-            {/* Module Completion Chart */}
-            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-semibold text-white mb-4">
-                    Conclusão por Módulo
-                </h3>
-                <div className="h-64 sm:h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={completionData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                            <XAxis dataKey="modulo" stroke="#6b7280" fontSize={12} />
-                            <YAxis stroke="#6b7280" fontSize={12} />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: '#111827',
-                                    border: '1px solid rgba(55, 65, 81, 0.5)',
-                                    borderRadius: '8px',
-                                    fontSize: '12px',
-                                }}
-                            />
-                            <Legend wrapperStyle={{ fontSize: '12px' }} />
-                            <Bar dataKey="concluidos" fill="#10b981" name="Concluídos" />
-                            <Bar dataKey="emAndamento" fill="#0ea5e9" name="Em Andamento" />
-                        </BarChart>
-                    </ResponsiveContainer>
+            {isLoading ? (
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
                 </div>
-            </div>
+            ) : (
+                <>
+                    {/* Cards de Métricas Principais */}
+                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                        <MetricCard
+                            title="Alunos Ativos"
+                            value={stats.activeStudents}
+                            subtitle={`${stats.totalStudents} total`}
+                            icon={Users}
+                            color="sky"
+                        />
+                        <MetricCard
+                            title="Engajamento"
+                            value={`${stats.engagementRate}%`}
+                            subtitle={`${stats.totalLessonsCompleted} aulas concluídas`}
+                            icon={TrendingUp}
+                            color="emerald"
+                        />
+                        <MetricCard
+                            title="Receita Total"
+                            value={formatCurrency(stats.totalRevenue)}
+                            subtitle={`${formatCurrency(stats.pendingRevenue)} pendente`}
+                            icon={DollarSign}
+                            color="emerald"
+                        />
+                        <MetricCard
+                            title="Aulas Disponíveis"
+                            value={stats.totalLessons}
+                            subtitle={`${stats.totalModules} módulos`}
+                            icon={BookOpen}
+                            color="amber"
+                        />
+                    </div>
 
-            {/* Top Performing Students */}
-            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <Trophy className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
-                    <h3 className="text-base sm:text-lg font-semibold text-white">
-                        Top 5 Alunos do Mês
-                    </h3>
-                </div>
-                <div className="space-y-2 sm:space-y-3">
-                    {topStudents.map((student, index) => (
-                        <div
-                            key={index}
-                            className="flex items-center justify-between rounded-lg bg-gray-800/30 border border-gray-800/50 p-3 sm:p-4"
-                        >
-                            <div className="flex items-center gap-3 sm:gap-4">
-                                <span className="text-lg sm:text-2xl font-semibold text-sky-400 w-6 sm:w-8">
-                                    #{index + 1}
-                                </span>
-                                <div>
-                                    <p className="text-sm sm:text-base font-medium text-white">{student.name}</p>
-                                    <p className="text-xs sm:text-sm text-gray-400">
-                                        {student.modules} módulos
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-base sm:text-lg font-semibold text-sky-400">
-                                    {student.points}
-                                </p>
-                                <p className="text-xs text-gray-500">pts</p>
+                    {/* Gráficos - Linha 1 */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        {/* Evolução Mensal */}
+                        <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-6">
+                            <h3 className="mb-4 text-lg font-semibold text-white">
+                                Novos Alunos (6 meses)
+                            </h3>
+                            <div className="h-72">
+                                {monthlyData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={monthlyData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                                            <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
+                                            <YAxis stroke="#6b7280" fontSize={12} />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: '#111827',
+                                                    border: '1px solid rgba(55, 65, 81, 0.5)',
+                                                    borderRadius: '8px',
+                                                }}
+                                            />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="alunos"
+                                                stroke="#0ea5e9"
+                                                strokeWidth={2}
+                                                dot={{ fill: '#0ea5e9', r: 4 }}
+                                                name="Novos Alunos"
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-gray-500">
+                                        Sem dados para exibir
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    ))}
-                </div>
-            </div>
 
-            {/* Export Options */}
-            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
-                <button className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors">
-                    <FileSpreadsheet className="h-4 w-4" strokeWidth={1.5} />
-                    Excel
-                </button>
-                <button className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors">
-                    <FileText className="h-4 w-4" strokeWidth={1.5} />
-                    PDF
-                </button>
-                <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 transition-colors">
-                    <Send className="h-4 w-4" strokeWidth={1.5} />
-                    Enviar
-                </button>
-            </div>
+                        {/* Distribuição de Pagamentos */}
+                        <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-6">
+                            <h3 className="mb-4 text-lg font-semibold text-white">
+                                Status dos Pagamentos
+                            </h3>
+                            <div className="h-72">
+                                {paymentDistribution.some(d => d.value > 0) ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={paymentDistribution.filter(d => d.value > 0)}
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={false}
+                                                label={({ name, value }) => `${name}: ${value}`}
+                                                outerRadius="70%"
+                                                dataKey="value"
+                                                fontSize={12}
+                                            >
+                                                {paymentDistribution.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: '#111827',
+                                                    border: '1px solid rgba(55, 65, 81, 0.5)',
+                                                    borderRadius: '8px',
+                                                }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-gray-500">
+                                        Sem pagamentos registrados
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Gráfico de Conclusão por Módulo */}
+                    <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-white">
+                            Progresso por Módulo
+                        </h3>
+                        <div className="h-72">
+                            {moduleChartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={moduleChartData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                                        <XAxis dataKey="modulo" stroke="#6b7280" fontSize={11} />
+                                        <YAxis stroke="#6b7280" fontSize={12} />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: '#111827',
+                                                border: '1px solid rgba(55, 65, 81, 0.5)',
+                                                borderRadius: '8px',
+                                            }}
+                                        />
+                                        <Legend wrapperStyle={{ fontSize: '12px' }} />
+                                        <Bar dataKey="concluidos" fill="#10b981" name="Concluídos" />
+                                        <Bar dataKey="emAndamento" fill="#0ea5e9" name="Em Andamento" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-gray-500">
+                                    Sem dados de progresso
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Cards de Resumo Financeiro */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div className="flex items-center gap-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10">
+                                <CheckCircle className="h-6 w-6 text-emerald-400" strokeWidth={1.5} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-400">Recebido</p>
+                                <p className="text-xl font-bold text-emerald-400">
+                                    {formatCurrency(stats.totalRevenue)}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
+                                <Clock className="h-6 w-6 text-amber-400" strokeWidth={1.5} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-400">Pendente</p>
+                                <p className="text-xl font-bold text-amber-400">
+                                    {formatCurrency(stats.pendingRevenue)}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 rounded-lg border border-rose-500/20 bg-rose-500/5 p-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-rose-500/10">
+                                <AlertTriangle className="h-6 w-6 text-rose-400" strokeWidth={1.5} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-400">Atrasado</p>
+                                <p className="text-xl font-bold text-rose-400">
+                                    {formatCurrency(stats.overdueRevenue)}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Top 5 Alunos */}
+                    <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-6">
+                        <div className="mb-4 flex items-center gap-2">
+                            <Trophy className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
+                            <h3 className="text-lg font-semibold text-white">Top 5 Alunos</h3>
+                        </div>
+
+                        {topStudents.length > 0 ? (
+                            <div className="space-y-3">
+                                {topStudents.map((student, index) => (
+                                    <div
+                                        key={student.id}
+                                        className="flex items-center justify-between rounded-lg border border-gray-800/50 bg-gray-800/30 p-4"
+                                    >
+                                        <div className="flex items-center gap-4">
+                      <span className={`text-2xl font-bold ${
+                          index === 0 ? 'text-amber-400' :
+                              index === 1 ? 'text-gray-300' :
+                                  index === 2 ? 'text-amber-600' : 'text-gray-500'
+                      }`}>
+                        #{index + 1}
+                      </span>
+                                            <div>
+                                                <p className="font-medium text-white">{student.name}</p>
+                                                <p className="text-sm text-gray-500">{student.email}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-bold text-sky-400">
+                                                {student.lessonsCompleted} aulas
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {student.quizAverage > 0
+                                                    ? `Média quiz: ${student.quizAverage}%`
+                                                    : `Última atividade: ${formatDate(student.lastActivity)}`
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-8 text-center">
+                                <Users className="h-12 w-12 text-gray-600" strokeWidth={1.5} />
+                                <p className="mt-2 text-gray-400">Nenhum progresso registrado ainda</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Botões de Exportação */}
+                    <div className="flex flex-col justify-end gap-3 sm:flex-row">
+                        <button
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                            onClick={() => alert('Exportação para Excel em breve!')}
+                        >
+                            <FileSpreadsheet className="h-4 w-4" strokeWidth={1.5} />
+                            Exportar Excel
+                        </button>
+                        <button
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                            onClick={() => alert('Exportação para PDF em breve!')}
+                        >
+                            <FileText className="h-4 w-4" strokeWidth={1.5} />
+                            Exportar PDF
+                        </button>
+                    </div>
+                </>
+            )}
         </div>
     );
 }

@@ -14,12 +14,14 @@ import {
     Copy,
     Check,
     AlertTriangle,
-    X
+    X,
+    GraduationCap,
 } from 'lucide-react';
 import { useStudents, Student, StudentFormData } from '@/hooks/useStudents';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import StudentForm from '@/components/admin/StudentForm';
+import EnrollmentManager from '@/components/admin/EnrollmentManager';
 
 export default function AlunosPage() {
     const { students, isLoading, error, createStudent, updateStudent, deleteStudent, resendInvite } = useStudents();
@@ -33,6 +35,9 @@ export default function AlunosPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
     const [copySuccess, setCopySuccess] = useState(false);
+
+    // Estado para o modal de matrículas
+    const [enrollmentStudent, setEnrollmentStudent] = useState<{ id: string; name: string; email: string } | null>(null);
 
     const filteredStudents = students.filter(student =>
         student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,6 +118,15 @@ export default function AlunosPage() {
     const openDeleteDialog = (student: Student) => {
         setSelectedStudent(student);
         setIsDeleteDialogOpen(true);
+    };
+
+    // Abrir modal de matrículas
+    const openEnrollmentModal = (student: Student) => {
+        setEnrollmentStudent({
+            id: student.id,
+            name: student.name,
+            email: student.email,
+        });
     };
 
     const getStatusBadge = (status?: string) => {
@@ -228,6 +242,14 @@ export default function AlunosPage() {
                                         Desde {new Date(student.created_at).toLocaleDateString('pt-BR')}
                                     </span>
                                     <div className="flex-1" />
+                                    {/* Botão Matrículas - Mobile */}
+                                    <button
+                                        onClick={() => openEnrollmentModal(student)}
+                                        className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                                    >
+                                        <GraduationCap className="h-3 w-3" strokeWidth={1.5} />
+                                        Cursos
+                                    </button>
                                     {student.status === 'pending' && (
                                         <button
                                             onClick={() => handleResendInvite(student)}
@@ -289,6 +311,15 @@ export default function AlunosPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-3">
+                                                {/* Botão Matrículas - Desktop */}
+                                                <button
+                                                    onClick={() => openEnrollmentModal(student)}
+                                                    className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                                                    title="Gerenciar matrículas"
+                                                >
+                                                    <GraduationCap className="h-4 w-4" strokeWidth={1.5} />
+                                                    Cursos
+                                                </button>
                                                 {student.status === 'pending' && (
                                                     <button
                                                         onClick={() => handleResendInvite(student)}
@@ -447,6 +478,15 @@ export default function AlunosPage() {
                 isLoading={isSubmitting}
                 variant="danger"
             />
+
+            {/* Enrollment Manager Modal */}
+            {enrollmentStudent && (
+                <EnrollmentManager
+                    isOpen={!!enrollmentStudent}
+                    onClose={() => setEnrollmentStudent(null)}
+                    student={enrollmentStudent}
+                />
+            )}
         </div>
     );
 }

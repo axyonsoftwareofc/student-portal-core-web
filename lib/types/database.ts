@@ -196,6 +196,38 @@ export interface TaskFormData {
 }
 
 // ============================================
+// MÓDULOS
+// ============================================
+
+export type ModuleStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface Module {
+    id: string;
+    course_id: string;
+    name: string;
+    description?: string | null;
+    order_index: number;
+    status: ModuleStatus;
+    created_at: string;
+    updated_at: string;
+    // Relacionamentos (quando usar JOIN)
+    course?: Course;
+    // Campos calculados
+    _count?: {
+        materials?: number;
+        enrollments?: number;
+    };
+}
+
+export interface ModuleFormData {
+    course_id: string;
+    name: string;
+    description?: string;
+    order_index?: number;
+    status?: ModuleStatus;
+}
+
+// ============================================
 // TIPO DO DATABASE (para Supabase client tipado)
 // ============================================
 

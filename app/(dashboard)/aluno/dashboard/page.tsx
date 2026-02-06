@@ -1,245 +1,178 @@
 // app/(dashboard)/aluno/dashboard/page.tsx
 'use client';
 
-import StatCard from "@/components/dashboard/cards/StatCard";
+import Link from 'next/link';
 import {
-    dashboardStats,
-    studentData,
-    upcomingAssessments,
-    studySequence,
-    announcements,
-} from "@/utils/mock/studentMock";
-import Link from "next/link";
-import { CheckCircle, Clock, Lock } from "lucide-react";
+    BookOpen,
+    Layers,
+    CheckCircle,
+    Clock,
+    ArrowRight,
+    Loader2,
+    BarChart3,
+    PlayCircle
+} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useStudentCourses } from '@/hooks/useStudentCourses';
 
-export default function DashboardPage() {
-    const recentSequence = studySequence.slice(-3).reverse();
+export default function AlunoDashboardPage() {
+    const { user } = useAuth();
+    const { courses, isLoading } = useStudentCourses(user?.id || null);
+
+    // Calcular estatísticas gerais
+    const totalModules = courses.reduce((acc, c) => acc + (c.modules_count || 0), 0);
+    const totalLessons = courses.reduce((acc, c) => acc + (c.lessons_count || 0), 0);
+    const completedLessons = courses.reduce((acc, c) => acc + (c.completed_lessons || 0), 0);
+    const overallProgress = totalLessons > 0
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : 0;
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 text-sky-400 animate-spin" strokeWidth={1.5} />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 sm:space-y-8">
-            {/* Welcome section */}
+            {/* Header */}
             <div className="space-y-1">
                 <h1 className="font-nacelle text-2xl sm:text-3xl font-semibold text-white">
-                    Olá, {studentData.name.split(" ")[0]}
+                    Olá, {user?.name || 'Aluno'}! 👋
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Acompanhe seu progresso nos módulos
+                <p className="text-sm sm:text-base text-gray-500">
+                    Continue de onde parou e acompanhe seu progresso
                 </p>
             </div>
 
-            {/* Stats grid */}
+            {/* Stats Cards */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-                {dashboardStats.map((stat) => (
-                    <StatCard
-                        key={stat.id}
-                        label={stat.label}
-                        value={stat.value}
-                        icon={stat.icon}
-                        color={stat.color}
-                        trend={stat.trend}
-                        description={stat.description}
+                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10">
+                            <BarChart3 className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{overallProgress}%</p>
+                    <p className="text-xs text-gray-500">Progresso Geral</p>
+                </div>
+
+                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
+                            <CheckCircle className="h-5 w-5 text-emerald-400" strokeWidth={1.5} />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{completedLessons}/{totalLessons}</p>
+                    <p className="text-xs text-gray-500">Aulas Concluídas</p>
+                </div>
+
+                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
+                            <Layers className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{totalModules}</p>
+                    <p className="text-xs text-gray-500">Módulos</p>
+                </div>
+
+                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10">
+                            <BookOpen className="h-5 w-5 text-violet-400" strokeWidth={1.5} />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{courses.length}</p>
+                    <p className="text-xs text-gray-500">Cursos Ativos</p>
+                </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-6">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-white">Progresso Geral</h3>
+                    <span className="text-sm font-medium text-sky-400">{overallProgress}%</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-gray-800">
+                    <div
+                        className={`h-full transition-all duration-500 ${
+                            overallProgress === 100 ? 'bg-emerald-500' : 'bg-sky-500'
+                        }`}
+                        style={{ width: `${overallProgress}%` }}
                     />
-                ))}
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                    {completedLessons} de {totalLessons} aulas concluídas
+                </p>
             </div>
 
-            {/* Main content grid */}
-            <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
-                {/* Upcoming Assessments */}
-                <div className="lg:col-span-2 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-white">
-                            Próximas Avaliações
-                        </h2>
-                        <Link
-                            href="/aluno/modulos"
-                            className="text-sm text-gray-400 hover:text-sky-400 transition-colors"
-                        >
-                            Ver tudo →
-                        </Link>
-                    </div>
-
-                    <div className="space-y-3">
-                        {upcomingAssessments.map((assessment) => {
-                            const Icon = assessment.icon;
-                            return (
-                                <div
-                                    key={assessment.id}
-                                    className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 transition-all hover:bg-gray-900/50"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/10">
-                                                <Icon className="h-4 w-4 text-sky-400" strokeWidth={1.5} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h3 className="font-medium text-gray-200 text-sm truncate">
-                                                    {assessment.title}
-                                                </h3>
-                                                <p className="mt-0.5 text-xs text-gray-500 truncate">
-                                                    {assessment.topic}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="text-right flex-shrink-0">
-                      <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                              assessment.status === "Disponível"
-                                  ? "bg-emerald-500/10 text-emerald-400"
-                                  : "bg-sky-500/10 text-sky-400"
-                          }`}
-                      >
-                        {assessment.status}
-                      </span>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                {new Date(assessment.dueDate).toLocaleDateString("pt-BR")}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-3 flex items-center justify-between">
-                    <span className="text-xs text-gray-600">
-                      {assessment.difficulty}
-                    </span>
-                                        <button className="rounded-md px-3 py-1.5 text-xs font-medium bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 transition-colors">
-                                            Acessar
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Announcements */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-white">Avisos</h2>
-
-                    <div className="space-y-3">
-                        {announcements.slice(0, 4).map((announcement) => {
-                            const Icon = announcement.icon;
-                            return (
-                                <div
-                                    key={announcement.id}
-                                    className={`rounded-lg border p-4 transition-all hover:scale-[1.01] cursor-pointer ${
-                                        announcement.priority === "high"
-                                            ? "border-rose-500/20 bg-rose-950/20"
-                                            : announcement.type === "videoaula"
-                                                ? "border-sky-500/20 bg-sky-950/20"
-                                                : announcement.type === "material"
-                                                    ? "border-emerald-500/20 bg-emerald-950/20"
-                                                    : "border-gray-800/50 bg-gray-900/30"
-                                    }`}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <Icon className={`h-4 w-4 mt-0.5 ${
-                                            announcement.priority === "high" ? "text-rose-400" :
-                                                announcement.type === "videoaula" ? "text-sky-400" :
-                                                    announcement.type === "material" ? "text-emerald-400" :
-                                                        "text-gray-400"
-                                        }`} strokeWidth={1.5} />
-                                        <div className="min-w-0 flex-1">
-                                            <h3 className="font-medium text-gray-200 text-sm line-clamp-1">
-                                                {announcement.title}
-                                            </h3>
-                                            <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                                                {announcement.content}
-                                            </p>
-                                            <p className="mt-2 text-xs text-gray-600">
-                                                {new Date(announcement.date).toLocaleDateString("pt-BR")}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* Study Sequence */}
+            {/* Courses */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-white">
-                        Sequência de Estudo
-                    </h2>
+                    <h2 className="text-lg font-semibold text-white">Meus Cursos</h2>
                     <Link
-                        href="/aluno/desempenho"
-                        className="text-sm text-gray-400 hover:text-sky-400 transition-colors"
+                        href="/aluno/estudar"
+                        className="text-sm text-sky-400 hover:text-sky-300 flex items-center gap-1"
                     >
-                        Ver histórico →
+                        Ver todos
+                        <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                     </Link>
                 </div>
 
-                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-5">
-                    <div className="space-y-4">
-                        {recentSequence.map((item, index) => (
-                            <div key={item.id} className="flex gap-4">
-                                <div className="flex flex-col items-center">
+                {courses.length === 0 ? (
+                    <div className="text-center py-12 rounded-lg border border-gray-800/50 bg-gray-900/30">
+                        <BookOpen className="h-12 w-12 text-gray-600 mx-auto mb-3" strokeWidth={1.5} />
+                        <p className="text-gray-400">Você ainda não está matriculado em nenhum curso</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {courses.slice(0, 2).map((course) => (
+                            <Link
+                                key={course.id}
+                                href="/aluno/estudar"
+                                className="group rounded-lg border border-gray-800/50 bg-gray-900/30 p-5 transition-all hover:bg-gray-900/50 hover:border-gray-700"
+                            >
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10">
+                                        <BookOpen className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
+                                    </div>
+                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                        course.progress_percentage === 100
+                                            ? 'bg-emerald-500/10 text-emerald-400'
+                                            : 'bg-sky-500/10 text-sky-400'
+                                    }`}>
+                                        {course.progress_percentage}%
+                                    </span>
+                                </div>
+                                <h3 className="font-medium text-white mb-1">{course.name}</h3>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    {course.modules_count} módulos • {course.lessons_count} aulas
+                                </p>
+                                <div className="h-1.5 overflow-hidden rounded-full bg-gray-800">
                                     <div
-                                        className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                                            item.status === "Concluído"
-                                                ? "bg-emerald-500/10 text-emerald-400"
-                                                : item.status === "Em Progresso"
-                                                    ? "bg-sky-500/10 text-sky-400"
-                                                    : "bg-gray-800 text-gray-500"
-                                        }`}
-                                    >
-                                        {item.status === "Concluído" ? (
-                                            <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
-                                        ) : item.status === "Em Progresso" ? (
-                                            <Clock className="h-4 w-4" strokeWidth={1.5} />
-                                        ) : (
-                                            <Lock className="h-4 w-4" strokeWidth={1.5} />
-                                        )}
-                                    </div>
-                                    {index < recentSequence.length - 1 && (
-                                        <div className="mt-2 h-8 w-px bg-gray-800" />
-                                    )}
+                                        className="h-full bg-sky-500 transition-all"
+                                        style={{ width: `${course.progress_percentage}%` }}
+                                    />
                                 </div>
-
-                                <div className="flex-1 pb-4 min-w-0">
-                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2">
-                                        <div className="min-w-0">
-                                            <p className="text-xs text-gray-500 uppercase tracking-wider">
-                                                {item.module}
-                                            </p>
-                                            <h3 className="mt-0.5 font-medium text-gray-200 text-sm truncate">
-                                                {item.topic}
-                                            </h3>
-                                        </div>
-                                        <span
-                                            className={`inline-flex self-start items-center rounded-full px-2 py-0.5 text-xs font-medium flex-shrink-0 ${
-                                                item.status === "Concluído"
-                                                    ? "bg-emerald-500/10 text-emerald-400"
-                                                    : item.status === "Em Progresso"
-                                                        ? "bg-sky-500/10 text-sky-400"
-                                                        : "bg-gray-800 text-gray-500"
-                                            }`}
-                                        >
-                      {item.status}
-                    </span>
-                                    </div>
-                                    {item.completedDate && (
-                                        <p className="mt-1 text-xs text-gray-600">
-                                            {new Date(item.completedDate).toLocaleDateString("pt-BR")}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
+                            </Link>
                         ))}
                     </div>
+                )}
+            </div>
 
-                    <div className="mt-5 pt-4 border-t border-gray-800/50">
-                        <Link
-                            href="/aluno/desempenho"
-                            className="inline-flex items-center gap-2 text-sm font-medium text-sky-400 hover:text-sky-300 transition-colors"
-                        >
-                            Ver sequência completa (11 de 19)
-                            <span>→</span>
-                        </Link>
-                    </div>
-                </div>
+            {/* Quick Actions */}
+            <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-6">
+                <h3 className="font-semibold text-sky-300 mb-4">Continuar Estudando</h3>
+                <Link
+                    href="/aluno/estudar"
+                    className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-500"
+                >
+                    <PlayCircle className="h-4 w-4" strokeWidth={1.5} />
+                    Ir para área de estudos
+                </Link>
             </div>
         </div>
     );

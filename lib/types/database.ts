@@ -14,7 +14,19 @@ export type EnrollmentStatus = 'ACTIVE' | 'COMPLETED' | 'DROPPED' | 'SUSPENDED';
 export type PaymentStatus = 'PENDENTE' | 'PAGO' | 'ATRASADO' | 'CANCELADO' | 'REEMBOLSADO';
 export type PaymentMethod = 'PIX' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'BANK_SLIP' | 'BANK_TRANSFER';
 
-export type MaterialCategory = 'PDF' | 'VIDEO' | 'ARTICLE' | 'PRESENTATION' | 'DOCUMENT' | 'SPREADSHEET' | 'IMAGE' | 'AUDIO' | 'COMPRESSED' | 'OTHER';
+export type MaterialCategory =
+    | 'PDF'
+    | 'VIDEO'
+    | 'ARTICLE'
+    | 'PRESENTATION'
+    | 'DOCUMENT'
+    | 'SPREADSHEET'
+    | 'IMAGE'
+    | 'AUDIO'
+    | 'COMPRESSED'
+    | 'LINK'
+    | 'GITHUB'
+    | 'OTHER';
 
 export type TaskStatus = 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED' | 'RETURNED';
 export type SubmissionStatus = 'SUBMITTED' | 'GRADED' | 'RETURNED';
@@ -89,6 +101,7 @@ export interface Material {
     content_type?: string | null;
     user_id: string;
     course_id?: string | null;
+    lesson_id?: string | null;
     upload_date: string;
     downloads: number;
     created_at: string;
@@ -279,6 +292,63 @@ export interface LessonFormData {
 // ============================================
 // TIPO DO DATABASE (para Supabase client tipado)
 // ============================================
+
+// ============================================
+// PROGRESSO DO ALUNO
+// ============================================
+
+export interface LessonProgress {
+    id: string;
+    student_id: string;
+    lesson_id: string;
+    completed: boolean;
+    completed_at?: string | null;
+    quiz_score?: number | null;
+    quiz_total?: number | null;
+    quiz_answers?: Record<string, string> | null;
+    quiz_completed_at?: string | null;
+    created_at: string;
+    updated_at: string;
+    // Relacionamentos
+    lesson?: Lesson;
+    student?: User;
+}
+
+export interface LessonProgressFormData {
+    student_id: string;
+    lesson_id: string;
+    completed?: boolean;
+    quiz_score?: number;
+    quiz_total?: number;
+    quiz_answers?: Record<string, string>;
+}
+
+// ============================================
+// TIPOS AUXILIARES PARA ÁREA DO ALUNO
+// ============================================
+
+// Curso com informações extras para o aluno
+export interface StudentCourse extends Course {
+    enrollment?: Enrollment;
+    modules_count?: number;
+    lessons_count?: number;
+    completed_lessons?: number;
+    progress_percentage?: number;
+}
+
+// Módulo com informações extras para o aluno
+export interface StudentModule extends Module {
+    lessons_count?: number;
+    completed_lessons?: number;
+    progress_percentage?: number;
+    lessons?: StudentLesson[];
+}
+
+// Aula com informações extras para o aluno
+export interface StudentLesson extends Lesson {
+    progress?: LessonProgress | null;
+    is_completed?: boolean;
+}
 
 export type Database = {
     public: {

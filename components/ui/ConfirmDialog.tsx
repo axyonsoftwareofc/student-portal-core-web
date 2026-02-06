@@ -13,7 +13,7 @@ interface ConfirmDialogProps {
     confirmText?: string;
     cancelText?: string;
     isLoading?: boolean;
-    variant?: 'danger' | 'warning';
+    variant?: 'danger' | 'warning' | 'success';
 }
 
 export default function ConfirmDialog({
@@ -27,6 +27,12 @@ export default function ConfirmDialog({
                                           isLoading = false,
                                           variant = 'danger',
                                       }: ConfirmDialogProps) {
+    const variantClasses = {
+        danger: 'bg-rose-600 hover:bg-rose-500',
+        warning: 'bg-amber-600 hover:bg-amber-500',
+        success: 'bg-emerald-600 hover:bg-emerald-500',
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
             <div className="space-y-4">
@@ -43,11 +49,7 @@ export default function ConfirmDialog({
                     <button
                         onClick={onConfirm}
                         disabled={isLoading}
-                        className={`px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 ${
-                            variant === 'danger'
-                                ? 'bg-rose-600 hover:bg-rose-500'
-                                : 'bg-amber-600 hover:bg-amber-500'
-                        }`}
+                        className={`px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 ${variantClasses[variant]}`}
                     >
                         {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                         {confirmText}

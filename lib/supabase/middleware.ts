@@ -29,6 +29,7 @@ export async function updateSession(request: NextRequest) {
     // Rotas públicas - sempre permite
     const publicPaths = ['/', '/signin', '/signup', '/reset-password'];
     const isPublicPath = publicPaths.includes(pathname) ||
+        pathname.startsWith('/convite/') ||   // ✅ ADICIONADO
         pathname.startsWith('/auth/') ||
         pathname.startsWith('/api/') ||
         pathname.startsWith('/_next/');

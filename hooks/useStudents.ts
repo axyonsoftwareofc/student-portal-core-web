@@ -1,30 +1,15 @@
 // hooks/useStudents.ts
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import type { User, UserFormData } from '@/lib/types/database';
 
-export interface Student {
-    id: string;
-    email: string;
-    name: string;
-    role: 'student' | 'admin';
-    phone?: string | null;
-    avatar_url?: string | null;
-    created_at: string;
-    updated_at?: string | null;
-    invite_token?: string | null;
-    invite_expires_at?: string | null;
-    status?: 'pending' | 'active';
-}
+// Re-exportar para compatibilidade
+export type Student = User;
+export type StudentFormData = UserFormData;
 
-export interface StudentFormData {
-    name: string;
-    email: string;
-    phone?: string;
-}
-
-// Gerar token de convite aleatório
+// Gerar token de convite seguro
 function generateInviteToken(): string {
     return Array.from(crypto.getRandomValues(new Uint8Array(32)))
         .map(b => b.toString(16).padStart(2, '0'))
@@ -36,7 +21,9 @@ export function useStudents() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const supabase = createClient();
+    // Usar ref para o cliente Supabase (evita re-renders)
+    const supabaseRef = useRef(createClient());
+    const supabase = supabaseRef.current;
 
     // Buscar todos os alunos
     const fetchStudents = useCallback(async () => {
@@ -52,59 +39,73 @@ export function useStudents() {
 
             if (fetchError) throw fetchError;
 
-            setStudents(data as Student[]);
+            setStudents((data as Student[]) || []);
         } catch (err) {
-            console.error('Erro ao buscar alunos:', err);
-            setError('Erro ao carregar alunos');
+            console.error('[useStudents] Erro ao buscar alunos:', err);
+            setError('Erro ao carregar alunos. Tente novamente.');
         } finally {
             setIsLoading(false);
         }
     }, [supabase]);
 
     // Criar novo aluno com convite
-    const createStudent = async (data: StudentFormData): Promise<{ success: boolean; error?: string; inviteLink?: string }> => {
+    const createStudent = useCallback(async (
+        data: StudentFormData
+    ): Promise<{ success: boolean; error?: string; inviteLink?: string }> => {
         try {
+            // Verificar se email já existe
+            const { data: existing } = await supabase
+                .from('users')
+                .select('id')
+                .eq('email', data.email.toLowerCase().trim())
+                .maybeSingle();
+
+            if (existing) {
+                return { success: false, error: 'Este e-mail já está cadastrado' };
+            }
+
             const inviteToken = generateInviteToken();
             const inviteExpiresAt = new Date();
-            inviteExpiresAt.setDate(inviteExpiresAt.getDate() + 7); // Expira em 7 dias
+            inviteExpiresAt.setDate(inviteExpiresAt.getDate() + 7);
 
-            const newId = crypto.randomUUID();
+            const newStudent = {
+                id: crypto.randomUUID(),
+                email: data.email.toLowerCase().trim(),
+                name: data.name.trim(),
+                phone: data.phone?.trim() || null,
+                role: 'student' as const,
+                status: 'pending' as const,
+                invite_token: inviteToken,
+                invite_expires_at: inviteExpiresAt.toISOString(),
+            };
 
             const { error: insertError } = await supabase
                 .from('users')
-                .insert([{
-                    id: newId,
-                    email: data.email,
-                    name: data.name,
-                    phone: data.phone || null,
-                    role: 'student',
-                    status: 'pending',
-                    invite_token: inviteToken,
-                    invite_expires_at: inviteExpiresAt.toISOString(),
-                    created_at: new Date().toISOString(),
-                }]);
+                .insert([newStudent]);
 
             if (insertError) {
-                if (insertError.message.includes('duplicate')) {
-                    return { success: false, error: 'Este e-mail já está cadastrado' };
-                }
-                throw insertError;
+                console.error('[useStudents] Erro ao inserir:', insertError);
+                return { success: false, error: 'Erro ao cadastrar aluno' };
             }
 
             // Gerar link de convite
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
             const inviteLink = `${baseUrl}/convite/${inviteToken}`;
 
+            // Atualizar lista local
             await fetchStudents();
+
             return { success: true, inviteLink };
         } catch (err) {
-            console.error('Erro ao criar aluno:', err);
-            return { success: false, error: 'Erro ao criar aluno' };
+            console.error('[useStudents] Erro ao criar aluno:', err);
+            return { success: false, error: 'Erro inesperado ao criar aluno' };
         }
-    };
+    }, [supabase, fetchStudents]);
 
     // Reenviar convite
-    const resendInvite = async (id: string): Promise<{ success: boolean; error?: string; inviteLink?: string }> => {
+    const resendInvite = useCallback(async (
+        id: string
+    ): Promise<{ success: boolean; error?: string; inviteLink?: string }> => {
         try {
             const inviteToken = generateInviteToken();
             const inviteExpiresAt = new Date();
@@ -127,20 +128,27 @@ export function useStudents() {
             await fetchStudents();
             return { success: true, inviteLink };
         } catch (err) {
-            console.error('Erro ao reenviar convite:', err);
+            console.error('[useStudents] Erro ao reenviar convite:', err);
             return { success: false, error: 'Erro ao reenviar convite' };
         }
-    };
+    }, [supabase, fetchStudents]);
 
     // Atualizar aluno
-    const updateStudent = async (id: string, data: Partial<StudentFormData>): Promise<{ success: boolean; error?: string }> => {
+    const updateStudent = useCallback(async (
+        id: string,
+        data: Partial<StudentFormData>
+    ): Promise<{ success: boolean; error?: string }> => {
         try {
+            const updateData: Record<string, unknown> = {
+                updated_at: new Date().toISOString(),
+            };
+
+            if (data.name) updateData.name = data.name.trim();
+            if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
+
             const { error: updateError } = await supabase
                 .from('users')
-                .update({
-                    ...data,
-                    updated_at: new Date().toISOString(),
-                })
+                .update(updateData)
                 .eq('id', id);
 
             if (updateError) throw updateError;
@@ -148,13 +156,15 @@ export function useStudents() {
             await fetchStudents();
             return { success: true };
         } catch (err) {
-            console.error('Erro ao atualizar aluno:', err);
+            console.error('[useStudents] Erro ao atualizar aluno:', err);
             return { success: false, error: 'Erro ao atualizar aluno' };
         }
-    };
+    }, [supabase, fetchStudents]);
 
     // Excluir aluno
-    const deleteStudent = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    const deleteStudent = useCallback(async (
+        id: string
+    ): Promise<{ success: boolean; error?: string }> => {
         try {
             const { error: deleteError } = await supabase
                 .from('users')
@@ -166,11 +176,12 @@ export function useStudents() {
             await fetchStudents();
             return { success: true };
         } catch (err) {
-            console.error('Erro ao excluir aluno:', err);
+            console.error('[useStudents] Erro ao excluir aluno:', err);
             return { success: false, error: 'Erro ao excluir aluno' };
         }
-    };
+    }, [supabase, fetchStudents]);
 
+    // Buscar ao montar
     useEffect(() => {
         fetchStudents();
     }, [fetchStudents]);

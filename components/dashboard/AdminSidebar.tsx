@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import {
     LayoutDashboard,
     Users,
-    BookOpen,
+    GraduationCap,
+    Layers,
     FileText,
     CreditCard,
     BarChart3,
@@ -26,7 +27,12 @@ const menuItems = [
         href: "/admin/alunos",
     },
     {
-        icon: BookOpen,
+        icon: GraduationCap,
+        label: "Cursos",
+        href: "/admin/cursos",
+    },
+    {
+        icon: Layers,
         label: "Módulos",
         href: "/admin/modulos",
     },

@@ -11,8 +11,9 @@ export type CourseStatus = 'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'COMPLE
 
 export type EnrollmentStatus = 'ACTIVE' | 'COMPLETED' | 'DROPPED' | 'SUSPENDED';
 
-export type PaymentStatus = 'PENDENTE' | 'PAGO' | 'ATRASADO' | 'CANCELADO' | 'REEMBOLSADO';
-export type PaymentMethod = 'PIX' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'BANK_SLIP' | 'BANK_TRANSFER';
+// ✅ ATUALIZADO: Agora em inglês (consistente com o banco)
+export type PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+export type PaymentMethod = 'PIX' | 'CASH' | 'TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'OTHER';
 
 export type MaterialCategory =
     | 'PDF'
@@ -75,20 +76,53 @@ export interface Enrollment {
     course?: Course;
 }
 
+// ============================================
+// PAGAMENTOS
+// ============================================
+
 export interface Payment {
     id: string;
     student_id: string;
+    description: string;
     amount: number;
-    payment_date?: string | null;
     due_date: string;
+    paid_date: string | null;
     status: PaymentStatus;
-    payment_method?: PaymentMethod | null;
-    transaction_id?: string | null;
-    notes?: string | null;
+    payment_method: PaymentMethod | null;
+    notes: string | null;
     created_at: string;
     updated_at: string;
-    // Relacionamentos
-    student?: User;
+}
+
+// Para listagem (com dados do aluno via JOIN)
+export interface PaymentWithStudent extends Omit<Payment, 'student'> {
+    student: {
+        id: string;
+        name: string;
+        email: string;
+    } | null;
+}
+
+// Para formulários
+export interface PaymentFormData {
+    student_id: string;
+    description: string;
+    amount: number;
+    due_date: string;
+    paid_date?: string | null;
+    status?: PaymentStatus;
+    payment_method?: PaymentMethod | null;
+    notes?: string | null;
+}
+
+// Estatísticas
+export interface PaymentStats {
+    total_pending: number;
+    total_paid: number;
+    total_overdue: number;
+    count_pending: number;
+    count_paid: number;
+    count_overdue: number;
 }
 
 export interface Material {
@@ -191,15 +225,6 @@ export interface CourseFormData {
     status?: CourseStatus;
 }
 
-export interface PaymentFormData {
-    student_id: string;
-    amount: number;
-    due_date: string;
-    status?: PaymentStatus;
-    payment_method?: PaymentMethod;
-    notes?: string;
-}
-
 export interface TaskFormData {
     title: string;
     name: string;
@@ -290,10 +315,6 @@ export interface LessonFormData {
 }
 
 // ============================================
-// TIPO DO DATABASE (para Supabase client tipado)
-// ============================================
-
-// ============================================
 // PROGRESSO DO ALUNO
 // ============================================
 
@@ -349,6 +370,10 @@ export interface StudentLesson extends Lesson {
     progress?: LessonProgress | null;
     is_completed?: boolean;
 }
+
+// ============================================
+// TIPO DO DATABASE (para Supabase client tipado)
+// ============================================
 
 export type Database = {
     public: {

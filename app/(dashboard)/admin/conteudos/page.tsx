@@ -20,7 +20,8 @@ import {
     Loader2,
     AlertTriangle,
     Layers,
-    GraduationCap
+    GraduationCap,
+    Package
 } from 'lucide-react';
 import { useLessons, type LessonWithModule } from '@/hooks/useLessons';
 import { useModules } from '@/hooks/useModules';
@@ -29,6 +30,7 @@ import type { LessonFormData, LessonType, LessonStatus } from '@/lib/types/datab
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import LessonForm from '@/components/admin/LessonForm';
+import MaterialsManager from '@/components/admin/MaterialsManager';
 
 const typeConfig: Record<LessonType, { label: string; icon: typeof Video; color: string }> = {
     VIDEO: { label: 'Vídeo', icon: Video, color: 'sky' },
@@ -57,6 +59,7 @@ export default function ConteudosPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isMaterialsManagerOpen, setIsMaterialsManagerOpen] = useState(false);
     const [selectedLesson, setSelectedLesson] = useState<LessonWithModule | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -131,6 +134,11 @@ export default function ConteudosPage() {
     const openDeleteDialog = (lesson: LessonWithModule) => {
         setSelectedLesson(lesson);
         setIsDeleteDialogOpen(true);
+    };
+
+    const openMaterialsManager = (lesson: LessonWithModule) => {
+        setSelectedLesson(lesson);
+        setIsMaterialsManagerOpen(true);
     };
 
     const getTypeBadge = (type: LessonType) => {
@@ -284,7 +292,7 @@ export default function ConteudosPage() {
                         value={filterCourse}
                         onChange={(e) => {
                             setFilterCourse(e.target.value);
-                            setFilterModule('all'); // Reset module filter when course changes
+                            setFilterModule('all');
                         }}
                         className="w-full sm:w-auto rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 text-sm text-white focus:border-sky-500/50 focus:outline-none transition-colors"
                     >
@@ -402,6 +410,13 @@ export default function ConteudosPage() {
                                     </span>
                                     <div className="flex gap-3">
                                         <button
+                                            onClick={() => openMaterialsManager(lesson)}
+                                            className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-sky-400 transition-colors"
+                                        >
+                                            <Package className="h-4 w-4" strokeWidth={1.5} />
+                                            Materiais
+                                        </button>
+                                        <button
                                             onClick={() => openEditModal(lesson)}
                                             className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
                                         >
@@ -482,6 +497,19 @@ export default function ConteudosPage() {
                 isLoading={isSubmitting}
                 variant="danger"
             />
+
+            {/* Materials Manager */}
+            {selectedLesson && (
+                <MaterialsManager
+                    lessonId={selectedLesson.id}
+                    lessonTitle={selectedLesson.title}
+                    isOpen={isMaterialsManagerOpen}
+                    onClose={() => {
+                        setIsMaterialsManagerOpen(false);
+                        setSelectedLesson(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

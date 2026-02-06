@@ -9,6 +9,7 @@ import {
     GraduationCap,
     Layers,
     FileText,
+    Package,
     CreditCard,
     BarChart3,
     Settings,
@@ -40,6 +41,11 @@ const menuItems = [
         icon: FileText,
         label: "Conteúdos",
         href: "/admin/conteudos",
+    },
+    {
+        icon: Package,
+        label: "Materiais",
+        href: "/admin/materiais",
     },
     {
         icon: CreditCard,

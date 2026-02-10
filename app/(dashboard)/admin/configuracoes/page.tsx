@@ -23,7 +23,7 @@ import { useAdmins } from '@/hooks/useAdmins';
 import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { useAuth } from '@/contexts/AuthContext';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 
 export default function ConfiguracoesPage() {
     const { user } = useAuth();

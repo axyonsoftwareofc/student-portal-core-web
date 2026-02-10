@@ -19,7 +19,7 @@ import { useModules, type ModuleWithCourse } from '@/hooks/useModules';
 import { useCourses } from '@/hooks/useCourses';
 import type { ModuleFormData, ModuleStatus } from '@/lib/types/database';
 import Modal from '@/components/ui/Modal';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import ModuleForm from '@/components/admin/ModuleForm';
 import Link from 'next/link';
 

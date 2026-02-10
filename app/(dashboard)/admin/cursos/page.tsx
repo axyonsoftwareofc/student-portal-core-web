@@ -23,7 +23,7 @@ import { useCourses, type Course } from '@/hooks/useCourses';
 import { useModules } from '@/hooks/useModules';
 import type { CourseFormData, CourseStatus } from '@/lib/types/database';
 import Modal from '@/components/ui/Modal';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import CourseForm from '@/components/admin/CourseForm';
 
 const statusConfig: Record<CourseStatus, { label: string; color: string; icon: typeof CheckCircle }> = {

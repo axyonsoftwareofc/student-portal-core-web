@@ -22,7 +22,7 @@ import {
 import { useMaterials, type MaterialFormData } from '@/hooks/useMaterials';
 import type { Material, MaterialCategory } from '@/lib/types/database';
 import Modal from '@/components/ui/Modal';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import MaterialForm from './MaterialForm';
 
 interface MaterialsManagerProps {

@@ -28,7 +28,7 @@ import { useModules } from '@/hooks/useModules';
 import { useCourses } from '@/hooks/useCourses';
 import type { LessonFormData, LessonType, LessonStatus } from '@/lib/types/database';
 import Modal from '@/components/ui/Modal';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import LessonForm from '@/components/admin/LessonForm';
 import MaterialsManager from '@/components/admin/MaterialsManager';
 

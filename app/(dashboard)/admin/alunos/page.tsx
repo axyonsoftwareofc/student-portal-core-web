@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useStudents, Student, StudentFormData } from '@/hooks/useStudents';
 import Modal from '@/components/ui/Modal';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import StudentForm from '@/components/admin/StudentForm';
 import EnrollmentManager from '@/components/admin/EnrollmentManager';
 

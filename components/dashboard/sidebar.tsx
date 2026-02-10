@@ -117,15 +117,15 @@ export function Sidebar({ items, userType, title = "Code Plus" }: SidebarProps) 
                 </div>
             </aside>
 
-            {/* ==================== MOBILE TRIGGER ==================== */}
+            {/* ==================== MOBILE TRIGGER (TOPO ESQUERDO) ==================== */}
             <Button
-                variant="default"
+                variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg shadow-sky-500/20 lg:hidden"
+                className="fixed left-4 top-3 z-50 h-10 w-10 rounded-lg bg-gray-900/90 border border-gray-800 shadow-lg backdrop-blur-sm hover:bg-gray-800 lg:hidden"
                 aria-label="Abrir menu de navegação"
             >
-                <Menu className="h-6 w-6" strokeWidth={1.5} />
+                <Menu className="h-5 w-5 text-gray-300" strokeWidth={1.5} />
             </Button>
 
             {/* ==================== MOBILE DRAWER ==================== */}

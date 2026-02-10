@@ -29,7 +29,7 @@ import { useLessons } from '@/hooks/useLessons';
 import { useCourses } from '@/hooks/useCourses';
 import type { Material, MaterialCategory } from '@/lib/types/database';
 import Modal from '@/components/ui/Modal';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
 import MaterialForm from '@/components/admin/MaterialForm';
 
 // Ícone por categoria

@@ -19,7 +19,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 
 /**
  * Gera as iniciais do nome do usuário para o avatar.
@@ -52,10 +51,10 @@ export function DashboardHeader() {
         <header className="sticky top-0 z-40 border-b border-gray-800/50 bg-gray-950/95 backdrop-blur-xl">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-14 sm:h-16 items-center justify-between">
-                    {/* Logo */}
+                    {/* Logo - com margem à esquerda no mobile para o botão do menu */}
                     <Link
                         href={dashboardLink}
-                        className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
+                        className="flex items-center gap-2.5 transition-opacity hover:opacity-80 ml-12 lg:ml-0"
                     >
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-sky-600">
                             <GraduationCap className="h-4 w-4 text-white" strokeWidth={2} />
@@ -88,7 +87,7 @@ export function DashboardHeader() {
 
                                 {/* Chevron */}
                                 <ChevronDown
-                                    className="h-4 w-4 text-gray-500 transition-transform duration-200 group-data-[state=open]:rotate-180"
+                                    className="h-4 w-4 text-gray-500 transition-transform duration-200"
                                     strokeWidth={1.5}
                                 />
                             </button>

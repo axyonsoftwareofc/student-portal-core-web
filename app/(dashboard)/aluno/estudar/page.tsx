@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
     BookOpen,
@@ -10,6 +11,7 @@ import {
     CheckCircle,
     Clock,
     ArrowRight,
+    ArrowLeft,
     Loader2,
     AlertCircle,
     GraduationCap
@@ -21,13 +23,28 @@ import type { StudentCourse, StudentModule } from '@/lib/types/database';
 
 export default function EstudarPage() {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+
+    // Pegar curso da URL (se existir)
+    const cursoIdFromUrl = searchParams.get('curso');
+
     const { courses, isLoading: loadingCourses, error: coursesError } = useStudentCourses(user?.id || null);
 
-    // Se tiver apenas 1 curso, carregar módulos diretamente
-    const singleCourseId = courses.length === 1 ? courses[0].id : null;
-    const { modules, isLoading: loadingModules } = useStudentModules(singleCourseId, user?.id || null);
+    // Determinar qual curso carregar:
+    // 1. Se tem ?curso= na URL, usa esse
+    // 2. Se tem apenas 1 curso, usa esse automaticamente
+    // 3. Se tem múltiplos cursos e não tem ?curso=, mostra lista de cursos
+    const selectedCourseId = cursoIdFromUrl || (courses.length === 1 ? courses[0].id : null);
 
-    const isLoading = loadingCourses || (singleCourseId && loadingModules);
+    const { modules, course: selectedCourse, isLoading: loadingModules } = useStudentModules(
+        selectedCourseId,
+        user?.id || null
+    );
+
+    // Encontrar dados do curso selecionado (para exibir progresso)
+    const courseData = courses.find(c => c.id === selectedCourseId) || selectedCourse;
+
+    const isLoading = loadingCourses || (selectedCourseId && loadingModules);
 
     // Loading state
     if (isLoading) {
@@ -74,23 +91,33 @@ export default function EstudarPage() {
         );
     }
 
-    // Single course - show modules directly
-    if (courses.length === 1) {
-        const course = courses[0];
+    // Se tem curso selecionado (via URL ou único curso), mostra módulos
+    if (selectedCourseId && courseData) {
         return (
             <div className="space-y-6 sm:space-y-8">
                 {/* Header */}
                 <div className="space-y-1 sm:space-y-2">
+                    {/* Botão voltar (só mostra se tem múltiplos cursos) */}
+                    {courses.length > 1 && (
+                        <Link
+                            href="/aluno/estudar"
+                            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors mb-3"
+                        >
+                            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+                            Voltar para cursos
+                        </Link>
+                    )}
+
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10">
                             <BookOpen className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
                         </div>
                         <div>
                             <h1 className="font-nacelle text-2xl sm:text-3xl lg:text-4xl font-semibold text-white">
-                                {course.name}
+                                {courseData.name}
                             </h1>
                             <p className="text-sm sm:text-base text-gray-500">
-                                {course.progress_percentage}% concluído • {course.completed_lessons}/{course.lessons_count} aulas
+                                {(courseData as StudentCourse).progress_percentage ?? 0}% concluído • {(courseData as StudentCourse).completed_lessons ?? 0}/{(courseData as StudentCourse).lessons_count ?? 0} aulas
                             </p>
                         </div>
                     </div>
@@ -100,12 +127,14 @@ export default function EstudarPage() {
                 <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-gray-400">Progresso geral</span>
-                        <span className="text-sm font-medium text-sky-400">{course.progress_percentage}%</span>
+                        <span className="text-sm font-medium text-sky-400">
+                            {(courseData as StudentCourse).progress_percentage ?? 0}%
+                        </span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-gray-800">
                         <div
                             className="h-full bg-sky-500 transition-all duration-500"
-                            style={{ width: `${course.progress_percentage}%` }}
+                            style={{ width: `${(courseData as StudentCourse).progress_percentage ?? 0}%` }}
                         />
                     </div>
                 </div>
@@ -126,7 +155,7 @@ export default function EstudarPage() {
         );
     }
 
-    // Multiple courses - show course cards
+    // Multiple courses - show course cards (sem ?curso= na URL)
     return (
         <div className="space-y-6 sm:space-y-8">
             {/* Header */}
@@ -178,13 +207,13 @@ function CourseCard({ course }: { course: StudentCourse }) {
                     <span className={`inline-flex items-center rounded-full px-2 sm:px-3 py-1 text-xs font-medium ${
                         course.progress_percentage === 100
                             ? 'bg-emerald-500/10 text-emerald-400'
-                            : course.progress_percentage! > 0
+                            : (course.progress_percentage ?? 0) > 0
                                 ? 'bg-sky-500/10 text-sky-400'
                                 : 'bg-gray-800 text-gray-400'
                     }`}>
                         {course.progress_percentage === 100
                             ? 'Concluído'
-                            : course.progress_percentage! > 0
+                            : (course.progress_percentage ?? 0) > 0
                                 ? 'Em progresso'
                                 : 'Não iniciado'}
                     </span>
@@ -204,11 +233,11 @@ function CourseCard({ course }: { course: StudentCourse }) {
                 <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
                     <span className="flex items-center gap-1">
                         <Layers className="h-3.5 w-3.5" strokeWidth={1.5} />
-                        {course.modules_count} módulos
+                        {course.modules_count ?? 0} módulos
                     </span>
                     <span className="flex items-center gap-1">
                         <PlayCircle className="h-3.5 w-3.5" strokeWidth={1.5} />
-                        {course.lessons_count} aulas
+                        {course.lessons_count ?? 0} aulas
                     </span>
                 </div>
 
@@ -217,7 +246,7 @@ function CourseCard({ course }: { course: StudentCourse }) {
                     <div className="h-1.5 overflow-hidden rounded-full bg-gray-800">
                         <div
                             className="h-full bg-sky-500 transition-all duration-500"
-                            style={{ width: `${course.progress_percentage}%` }}
+                            style={{ width: `${course.progress_percentage ?? 0}%` }}
                         />
                     </div>
                 </div>
@@ -225,7 +254,7 @@ function CourseCard({ course }: { course: StudentCourse }) {
                 {/* Footer */}
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">
-                        {course.completed_lessons}/{course.lessons_count} aulas concluídas
+                        {course.completed_lessons ?? 0}/{course.lessons_count ?? 0} aulas concluídas
                     </span>
                     <ArrowRight
                         className="h-4 w-4 text-sky-400 group-hover:translate-x-1 transition-transform"
@@ -264,7 +293,7 @@ function ModulesList({ modules }: { modules: StudentModule[] }) {
                                 </div>
                                 {module.progress_percentage === 100 ? (
                                     <CheckCircle className="h-5 w-5 text-emerald-400" strokeWidth={1.5} />
-                                ) : module.progress_percentage! > 0 ? (
+                                ) : (module.progress_percentage ?? 0) > 0 ? (
                                     <Clock className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
                                 ) : (
                                     <Clock className="h-5 w-5 text-gray-600" strokeWidth={1.5} />
@@ -285,10 +314,10 @@ function ModulesList({ modules }: { modules: StudentModule[] }) {
                             <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
                                 <span className="flex items-center gap-1">
                                     <PlayCircle className="h-3.5 w-3.5" strokeWidth={1.5} />
-                                    {module.lessons_count} aulas
+                                    {module.lessons_count ?? 0} aulas
                                 </span>
                                 <span className="text-sky-400 font-medium">
-                                    {module.progress_percentage}%
+                                    {module.progress_percentage ?? 0}%
                                 </span>
                             </div>
 
@@ -299,7 +328,7 @@ function ModulesList({ modules }: { modules: StudentModule[] }) {
                                         className={`h-full transition-all duration-500 ${
                                             module.progress_percentage === 100 ? 'bg-emerald-500' : 'bg-sky-500'
                                         }`}
-                                        style={{ width: `${module.progress_percentage}%` }}
+                                        style={{ width: `${module.progress_percentage ?? 0}%` }}
                                     />
                                 </div>
                             </div>
@@ -307,7 +336,7 @@ function ModulesList({ modules }: { modules: StudentModule[] }) {
                             {/* Footer */}
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-gray-500">
-                                    {module.completed_lessons}/{module.lessons_count} concluídas
+                                    {module.completed_lessons ?? 0}/{module.lessons_count ?? 0} concluídas
                                 </span>
                                 <ArrowRight
                                     className="h-4 w-4 text-sky-400 group-hover:translate-x-1 transition-transform"

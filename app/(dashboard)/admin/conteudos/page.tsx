@@ -80,7 +80,6 @@ export default function ConteudosPage() {
         return matchesSearch && matchesType && matchesStatus && matchesModule && matchesCourse;
     });
 
-    // Estatísticas por tipo
     const statsByType = Object.entries(typeConfig).map(([type, config]) => ({
         type: type as LessonType,
         ...config,

@@ -5,13 +5,19 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
     const code = searchParams.get('code')
+    const type = searchParams.get('type')
 
     if (code) {
         const supabase = await createClient()
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error && data.user) {
-            // Buscar role do usuário para redirecionar corretamente
+            // Se for recovery (reset de senha), redireciona para página de nova senha
+            if (type === 'recovery') {
+                return NextResponse.redirect(`${origin}/update-password`)
+            }
+
+            // Login normal - buscar role do usuário
             const { data: userData, error: userError } = await supabase
                 .from('users')
                 .select('role')

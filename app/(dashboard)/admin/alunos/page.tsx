@@ -16,6 +16,8 @@ import {
     AlertTriangle,
     X,
     GraduationCap,
+    UserX,
+    UserCheck,
 } from 'lucide-react';
 import { useStudents, Student, StudentFormData } from '@/hooks/useStudents';
 import Modal from '@/components/ui/Modal';
@@ -24,25 +26,51 @@ import StudentForm from '@/components/admin/StudentForm';
 import EnrollmentManager from '@/components/admin/EnrollmentManager';
 
 export default function AlunosPage() {
-    const { students, isLoading, error, createStudent, updateStudent, deleteStudent, resendInvite } = useStudents();
+    const {
+        students,
+        isLoading,
+        error,
+        createStudent,
+        updateStudent,
+        deleteStudent,
+        suspendStudent,
+        reactivateStudent,
+        resendInvite
+    } = useStudents();
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'suspended'>('all');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
     const [isInviteLinkModalOpen, setIsInviteLinkModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
     const [copySuccess, setCopySuccess] = useState(false);
-
-    // Estado para o modal de matrículas
     const [enrollmentStudent, setEnrollmentStudent] = useState<{ id: string; name: string; email: string } | null>(null);
 
-    const filteredStudents = students.filter(student =>
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Filtrar alunos
+    const filteredStudents = students.filter(student => {
+        const matchesSearch =
+            student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            student.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesStatus =
+            statusFilter === 'all' ||
+            student.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+    });
+
+    // Contadores por status
+    const statusCounts = {
+        all: students.length,
+        active: students.filter(s => s.status === 'active').length,
+        pending: students.filter(s => s.status === 'pending').length,
+        suspended: students.filter(s => s.status === 'suspended').length,
+    };
 
     // Criar aluno
     const handleCreate = async (data: StudentFormData) => {
@@ -96,7 +124,28 @@ export default function AlunosPage() {
         return result;
     };
 
-    // Excluir aluno
+    // Suspender aluno
+    const handleSuspend = async () => {
+        if (!selectedStudent) return;
+
+        setIsSubmitting(true);
+        const result = await suspendStudent(selectedStudent.id);
+        setIsSubmitting(false);
+
+        if (result.success) {
+            setIsSuspendDialogOpen(false);
+            setSelectedStudent(null);
+        }
+    };
+
+    // Reativar aluno
+    const handleReactivate = async (student: Student) => {
+        setIsSubmitting(true);
+        await reactivateStudent(student.id);
+        setIsSubmitting(false);
+    };
+
+    // Excluir aluno permanentemente
     const handleDelete = async () => {
         if (!selectedStudent) return;
 
@@ -115,12 +164,16 @@ export default function AlunosPage() {
         setIsEditModalOpen(true);
     };
 
+    const openSuspendDialog = (student: Student) => {
+        setSelectedStudent(student);
+        setIsSuspendDialogOpen(true);
+    };
+
     const openDeleteDialog = (student: Student) => {
         setSelectedStudent(student);
         setIsDeleteDialogOpen(true);
     };
 
-    // Abrir modal de matrículas
     const openEnrollmentModal = (student: Student) => {
         setEnrollmentStudent({
             id: student.id,
@@ -130,18 +183,26 @@ export default function AlunosPage() {
     };
 
     const getStatusBadge = (status?: string) => {
-        if (status === 'pending') {
-            return (
-                <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400">
-                    Pendente
-                </span>
-            );
+        switch (status) {
+            case 'pending':
+                return (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-400">
+                        Pendente
+                    </span>
+                );
+            case 'suspended':
+                return (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-rose-500/10 text-rose-400">
+                        Suspenso
+                    </span>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-400">
+                        Ativo
+                    </span>
+                );
         }
-        return (
-            <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-400">
-                Ativo
-            </span>
-        );
     };
 
     return (
@@ -170,16 +231,46 @@ export default function AlunosPage() {
                 </button>
             </div>
 
-            {/* Search */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" strokeWidth={1.5} />
-                <input
-                    type="text"
-                    placeholder="Buscar por nome ou email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none transition-colors"
-                />
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search */}
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" strokeWidth={1.5} />
+                    <input
+                        type="text"
+                        placeholder="Buscar por nome ou email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none transition-colors"
+                    />
+                </div>
+
+                {/* Status Filter */}
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                    {(['all', 'active', 'pending', 'suspended'] as const).map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                                statusFilter === status
+                                    ? 'bg-sky-600 text-white'
+                                    : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
+                            }`}
+                        >
+                            {status === 'all' && 'Todos'}
+                            {status === 'active' && 'Ativos'}
+                            {status === 'pending' && 'Pendentes'}
+                            {status === 'suspended' && 'Suspensos'}
+                            <span className={`ml-1 px-1.5 py-0.5 rounded text-xs ${
+                                statusFilter === status
+                                    ? 'bg-sky-500/30'
+                                    : 'bg-gray-700'
+                            }`}>
+                                {statusCounts[status]}
+                            </span>
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Error State */}
@@ -224,7 +315,11 @@ export default function AlunosPage() {
                         {filteredStudents.map((student) => (
                             <div
                                 key={student.id}
-                                className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 space-y-3"
+                                className={`rounded-lg border bg-gray-900/30 p-4 space-y-3 ${
+                                    student.status === 'suspended'
+                                        ? 'border-rose-500/20 opacity-75'
+                                        : 'border-gray-800/50'
+                                }`}
                             >
                                 <div className="flex items-start justify-between">
                                     <div className="min-w-0">
@@ -242,30 +337,50 @@ export default function AlunosPage() {
                                         Desde {new Date(student.created_at).toLocaleDateString('pt-BR')}
                                     </span>
                                     <div className="flex-1" />
-                                    {/* Botão Matrículas - Mobile */}
-                                    <button
-                                        onClick={() => openEnrollmentModal(student)}
-                                        className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-                                    >
-                                        <GraduationCap className="h-3 w-3" strokeWidth={1.5} />
-                                        Cursos
-                                    </button>
-                                    {student.status === 'pending' && (
+
+                                    {/* Ações baseadas no status */}
+                                    {student.status === 'suspended' ? (
                                         <button
-                                            onClick={() => handleResendInvite(student)}
-                                            className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                                            onClick={() => handleReactivate(student)}
+                                            className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
                                         >
-                                            <Mail className="h-3 w-3" strokeWidth={1.5} />
-                                            Reenviar
+                                            <UserCheck className="h-3 w-3" strokeWidth={1.5} />
+                                            Reativar
                                         </button>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => openEnrollmentModal(student)}
+                                                className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                                            >
+                                                <GraduationCap className="h-3 w-3" strokeWidth={1.5} />
+                                                Cursos
+                                            </button>
+                                            {student.status === 'pending' && (
+                                                <button
+                                                    onClick={() => handleResendInvite(student)}
+                                                    className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                                                >
+                                                    <Mail className="h-3 w-3" strokeWidth={1.5} />
+                                                    Reenviar
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => openEditModal(student)}
+                                                className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                                            >
+                                                <Pencil className="h-3 w-3" strokeWidth={1.5} />
+                                                Editar
+                                            </button>
+                                            <button
+                                                onClick={() => openSuspendDialog(student)}
+                                                className="inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors"
+                                            >
+                                                <UserX className="h-3 w-3" strokeWidth={1.5} />
+                                                Suspender
+                                            </button>
+                                        </>
                                     )}
-                                    <button
-                                        onClick={() => openEditModal(student)}
-                                        className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors"
-                                    >
-                                        <Pencil className="h-3 w-3" strokeWidth={1.5} />
-                                        Editar
-                                    </button>
                                     <button
                                         onClick={() => openDeleteDialog(student)}
                                         className="inline-flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 transition-colors"
@@ -293,7 +408,12 @@ export default function AlunosPage() {
                                 </thead>
                                 <tbody className="divide-y divide-gray-800/50">
                                 {filteredStudents.map((student) => (
-                                    <tr key={student.id} className="hover:bg-gray-900/50 transition-colors">
+                                    <tr
+                                        key={student.id}
+                                        className={`hover:bg-gray-900/50 transition-colors ${
+                                            student.status === 'suspended' ? 'opacity-60' : ''
+                                        }`}
+                                    >
                                         <td className="px-6 py-4">
                                             <div>
                                                 <p className="font-medium text-white">{student.name}</p>
@@ -311,31 +431,49 @@ export default function AlunosPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-3">
-                                                {/* Botão Matrículas - Desktop */}
-                                                <button
-                                                    onClick={() => openEnrollmentModal(student)}
-                                                    className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
-                                                    title="Gerenciar matrículas"
-                                                >
-                                                    <GraduationCap className="h-4 w-4" strokeWidth={1.5} />
-                                                    Cursos
-                                                </button>
-                                                {student.status === 'pending' && (
+                                                {student.status === 'suspended' ? (
                                                     <button
-                                                        onClick={() => handleResendInvite(student)}
-                                                        className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
+                                                        onClick={() => handleReactivate(student)}
+                                                        className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                                                     >
-                                                        <Mail className="h-4 w-4" strokeWidth={1.5} />
-                                                        Reenviar
+                                                        <UserCheck className="h-4 w-4" strokeWidth={1.5} />
+                                                        Reativar
                                                     </button>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => openEnrollmentModal(student)}
+                                                            className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                                                            title="Gerenciar matrículas"
+                                                        >
+                                                            <GraduationCap className="h-4 w-4" strokeWidth={1.5} />
+                                                            Cursos
+                                                        </button>
+                                                        {student.status === 'pending' && (
+                                                            <button
+                                                                onClick={() => handleResendInvite(student)}
+                                                                className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
+                                                            >
+                                                                <Mail className="h-4 w-4" strokeWidth={1.5} />
+                                                                Reenviar
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => openEditModal(student)}
+                                                            className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
+                                                        >
+                                                            <Pencil className="h-4 w-4" strokeWidth={1.5} />
+                                                            Editar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => openSuspendDialog(student)}
+                                                            className="inline-flex items-center gap-1 text-sm text-amber-400 hover:text-amber-300 transition-colors"
+                                                        >
+                                                            <UserX className="h-4 w-4" strokeWidth={1.5} />
+                                                            Suspender
+                                                        </button>
+                                                    </>
                                                 )}
-                                                <button
-                                                    onClick={() => openEditModal(student)}
-                                                    className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
-                                                >
-                                                    <Pencil className="h-4 w-4" strokeWidth={1.5} />
-                                                    Editar
-                                                </button>
                                                 <button
                                                     onClick={() => openDeleteDialog(student)}
                                                     className="inline-flex items-center gap-1 text-sm text-rose-400 hover:text-rose-300 transition-colors"
@@ -358,7 +496,7 @@ export default function AlunosPage() {
             {!isLoading && students.length > 0 && filteredStudents.length === 0 && (
                 <div className="text-center py-12">
                     <Search className="h-8 w-8 text-gray-500 mx-auto mb-3" strokeWidth={1.5} />
-                    <p className="text-gray-400">Nenhum aluno encontrado para &ldquo;{searchTerm}&rdquo;</p>
+                    <p className="text-gray-400">Nenhum aluno encontrado</p>
                 </div>
             )}
 
@@ -464,6 +602,21 @@ export default function AlunosPage() {
                 />
             </Modal>
 
+            {/* Suspend Confirmation */}
+            <ConfirmDialog
+                isOpen={isSuspendDialogOpen}
+                onClose={() => {
+                    setIsSuspendDialogOpen(false);
+                    setSelectedStudent(null);
+                }}
+                onConfirm={handleSuspend}
+                title="Suspender Aluno"
+                message={`Tem certeza que deseja suspender o aluno "${selectedStudent?.name}"? Ele não poderá acessar o portal, mas seus dados serão preservados.`}
+                confirmText="Suspender"
+                isLoading={isSubmitting}
+                variant="warning"
+            />
+
             {/* Delete Confirmation */}
             <ConfirmDialog
                 isOpen={isDeleteDialogOpen}
@@ -472,9 +625,9 @@ export default function AlunosPage() {
                     setSelectedStudent(null);
                 }}
                 onConfirm={handleDelete}
-                title="Excluir Aluno"
-                message={`Tem certeza que deseja excluir o aluno "${selectedStudent?.name}"? Esta ação não pode ser desfeita.`}
-                confirmText="Excluir"
+                title="Excluir Aluno Permanentemente"
+                message={`Tem certeza que deseja EXCLUIR PERMANENTEMENTE o aluno "${selectedStudent?.name}"? Todo o histórico, progresso e pagamentos serão removidos. Esta ação NÃO pode ser desfeita!`}
+                confirmText="Excluir Permanentemente"
                 isLoading={isSubmitting}
                 variant="danger"
             />

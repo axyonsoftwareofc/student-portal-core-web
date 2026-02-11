@@ -130,7 +130,6 @@ export function useStudents() {
         newEmail: string
     ): Promise<{ success: boolean; error?: string }> => {
         try {
-            // Pegar o token da sessão atual
             const { data: { session } } = await supabase.auth.getSession();
 
             if (!session?.access_token) {
@@ -159,7 +158,7 @@ export function useStudents() {
         }
     }, [supabase]);
 
-    // Atualizar aluno (agora com suporte a email)
+    // Atualizar aluno (com suporte a email)
     const updateStudent = useCallback(async (
         id: string,
         data: Partial<StudentFormData>,
@@ -182,7 +181,6 @@ export function useStudents() {
             if (data.name) updateData.name = data.name.trim();
             if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
 
-            // Se só tinha email para atualizar e já foi feito, pular
             if (Object.keys(updateData).length > 1) {
                 const { error: updateError } = await supabase
                     .from('users')
@@ -200,10 +198,82 @@ export function useStudents() {
         }
     }, [supabase, fetchStudents, updateStudentEmail]);
 
+    // Suspender aluno (em vez de excluir)
+    const suspendStudent = useCallback(async (
+        id: string
+    ): Promise<{ success: boolean; error?: string }> => {
+        try {
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({
+                    status: 'suspended',
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', id);
+
+            if (updateError) throw updateError;
+
+            await fetchStudents();
+            return { success: true };
+        } catch (err) {
+            console.error('[useStudents] Erro ao suspender aluno:', err);
+            return { success: false, error: 'Erro ao suspender aluno' };
+        }
+    }, [supabase, fetchStudents]);
+
+    // Reativar aluno
+    const reactivateStudent = useCallback(async (
+        id: string
+    ): Promise<{ success: boolean; error?: string }> => {
+        try {
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({
+                    status: 'active',
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', id);
+
+            if (updateError) throw updateError;
+
+            await fetchStudents();
+            return { success: true };
+        } catch (err) {
+            console.error('[useStudents] Erro ao reativar aluno:', err);
+            return { success: false, error: 'Erro ao reativar aluno' };
+        }
+    }, [supabase, fetchStudents]);
+
+    // Excluir aluno permanentemente (com dados relacionados)
     const deleteStudent = useCallback(async (
         id: string
     ): Promise<{ success: boolean; error?: string }> => {
         try {
+            // 1. Excluir progresso de aulas
+            await supabase
+                .from('lesson_progress')
+                .delete()
+                .eq('student_id', id);
+
+            // 2. Excluir matrículas
+            await supabase
+                .from('enrollments')
+                .delete()
+                .eq('student_id', id);
+
+            // 3. Excluir pagamentos
+            await supabase
+                .from('payments')
+                .delete()
+                .eq('student_id', id);
+
+            // 4. Excluir submissões de tarefas
+            await supabase
+                .from('task_submissions')
+                .delete()
+                .eq('student_id', id);
+
+            // 5. Finalmente, excluir o usuário
             const { error: deleteError } = await supabase
                 .from('users')
                 .delete()
@@ -231,6 +301,8 @@ export function useStudents() {
         createStudent,
         updateStudent,
         deleteStudent,
+        suspendStudent,
+        reactivateStudent,
         resendInvite,
     };
 }

@@ -5,7 +5,7 @@
 // ============================================
 
 export type UserRole = 'admin' | 'student';
-export type UserStatus = 'pending' | 'active';
+export type UserStatus = 'pending' | 'active' | 'suspended';
 
 export type CourseStatus = 'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
 

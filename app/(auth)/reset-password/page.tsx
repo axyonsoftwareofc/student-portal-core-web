@@ -28,10 +28,16 @@ export default function ResetPasswordPage() {
     try {
       const supabase = createClient();
 
+      // Usar variável de ambiente ou fallback para origin
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const redirectUrl = `${siteUrl}/auth/callback?type=recovery`;
+
+      console.log('Redirect URL:', redirectUrl); // Debug
+
       const { error } = await supabase.auth.resetPasswordForEmail(
           email.trim().toLowerCase(),
           {
-            redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+            redirectTo: redirectUrl,
           }
       );
 
@@ -40,12 +46,13 @@ export default function ResetPasswordPage() {
       }
 
       setStatus('success');
-      setMessage('Email enviado! Verifique sua caixa de entrada (e spam) para redefinir sua senha.');
+      setMessage('Se este email estiver cadastrado, você receberá um link de recuperação. Verifique sua caixa de entrada e spam.');
       setEmail('');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao enviar email:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       setStatus('error');
-      setMessage('Erro ao enviar email. Verifique se o email está correto e tente novamente.');
+      setMessage(`Erro ao enviar email: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +92,7 @@ export default function ResetPasswordPage() {
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
                     <div>
-                      <p className="text-sm text-emerald-300 font-medium">Email enviado!</p>
+                      <p className="text-sm text-emerald-300 font-medium">Solicitação enviada!</p>
                       <p className="text-sm text-emerald-200/80 mt-1">{message}</p>
                     </div>
                   </div>

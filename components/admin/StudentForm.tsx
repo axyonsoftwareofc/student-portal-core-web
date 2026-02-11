@@ -3,11 +3,11 @@
 
 import { useState, useEffect } from 'react';
 import { Student, StudentFormData } from '@/hooks/useStudents';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface StudentFormProps {
     student?: Student | null;
-    onSubmit: (data: StudentFormData) => Promise<{ success: boolean; error?: string }>;
+    onSubmit: (data: StudentFormData, currentEmail?: string) => Promise<{ success: boolean; error?: string }>;
     onCancel: () => void;
     isLoading?: boolean;
 }
@@ -19,6 +19,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
         phone: '',
     });
     const [error, setError] = useState('');
+    const [showEmailWarning, setShowEmailWarning] = useState(false);
 
     useEffect(() => {
         if (student) {
@@ -29,6 +30,15 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
             });
         }
     }, [student]);
+
+    // Verificar se o email mudou
+    useEffect(() => {
+        if (student && formData.email.toLowerCase().trim() !== student.email.toLowerCase().trim()) {
+            setShowEmailWarning(true);
+        } else {
+            setShowEmailWarning(false);
+        }
+    }, [formData.email, student]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,7 +54,14 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
             return;
         }
 
-        const result = await onSubmit(formData);
+        // Validar formato do email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email.trim())) {
+            setError('Formato de e-mail inválido');
+            return;
+        }
+
+        const result = await onSubmit(formData, student?.email);
         if (!result.success && result.error) {
             setError(result.error);
         }
@@ -80,12 +97,19 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 text-white placeholder-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 text-white placeholder-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-colors"
                     placeholder="email@exemplo.com"
-                    disabled={isLoading || !!student}
+                    disabled={isLoading}
                 />
-                {student && (
-                    <p className="mt-1.5 text-xs text-gray-500">O e-mail não pode ser alterado</p>
+                {showEmailWarning && (
+                    <div className="mt-2 flex items-start gap-2 p-2 rounded-lg bg-amber-950/30 border border-amber-500/20">
+                        <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                        <p className="text-xs text-amber-300">
+                            {student?.status === 'active'
+                                ? 'Alterar o email de um aluno ativo afetará o login dele. O aluno precisará usar o novo email para acessar a plataforma.'
+                                : 'O email será atualizado. Um novo convite precisará ser enviado.'}
+                        </p>
+                    </div>
                 )}
             </div>
 

@@ -5,11 +5,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User, UserFormData } from '@/lib/types/database';
 
-// Re-exportar para compatibilidade
 export type Student = User;
 export type StudentFormData = UserFormData;
 
-// Gerar token de convite seguro
 function generateInviteToken(): string {
     return Array.from(crypto.getRandomValues(new Uint8Array(32)))
         .map(b => b.toString(16).padStart(2, '0'))
@@ -21,11 +19,9 @@ export function useStudents() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Usar ref para o cliente Supabase (evita re-renders)
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
-    // Buscar todos os alunos
     const fetchStudents = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -48,12 +44,10 @@ export function useStudents() {
         }
     }, [supabase]);
 
-    // Criar novo aluno com convite
     const createStudent = useCallback(async (
         data: StudentFormData
     ): Promise<{ success: boolean; error?: string; inviteLink?: string }> => {
         try {
-            // Verificar se email já existe
             const { data: existing } = await supabase
                 .from('users')
                 .select('id')
@@ -88,11 +82,9 @@ export function useStudents() {
                 return { success: false, error: 'Erro ao cadastrar aluno' };
             }
 
-            // Gerar link de convite
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
             const inviteLink = `${baseUrl}/convite/${inviteToken}`;
 
-            // Atualizar lista local
             await fetchStudents();
 
             return { success: true, inviteLink };
@@ -102,7 +94,6 @@ export function useStudents() {
         }
     }, [supabase, fetchStudents]);
 
-    // Reenviar convite
     const resendInvite = useCallback(async (
         id: string
     ): Promise<{ success: boolean; error?: string; inviteLink?: string }> => {
@@ -133,12 +124,57 @@ export function useStudents() {
         }
     }, [supabase, fetchStudents]);
 
-    // Atualizar aluno
-    const updateStudent = useCallback(async (
-        id: string,
-        data: Partial<StudentFormData>
+    // Função para atualizar email via API
+    const updateStudentEmail = useCallback(async (
+        userId: string,
+        newEmail: string
     ): Promise<{ success: boolean; error?: string }> => {
         try {
+            // Pegar o token da sessão atual
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (!session?.access_token) {
+                return { success: false, error: 'Sessão expirada. Faça login novamente.' };
+            }
+
+            const response = await fetch('/api/admin/update-user-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ userId, newEmail }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                return { success: false, error: result.error || 'Erro ao atualizar email' };
+            }
+
+            return { success: true };
+        } catch (err) {
+            console.error('[useStudents] Erro ao atualizar email:', err);
+            return { success: false, error: 'Erro de conexão ao atualizar email' };
+        }
+    }, [supabase]);
+
+    // Atualizar aluno (agora com suporte a email)
+    const updateStudent = useCallback(async (
+        id: string,
+        data: Partial<StudentFormData>,
+        currentEmail?: string
+    ): Promise<{ success: boolean; error?: string }> => {
+        try {
+            // Se o email mudou, usar a API especial
+            if (data.email && currentEmail && data.email.toLowerCase().trim() !== currentEmail.toLowerCase().trim()) {
+                const emailResult = await updateStudentEmail(id, data.email);
+                if (!emailResult.success) {
+                    return emailResult;
+                }
+            }
+
+            // Atualizar outros campos
             const updateData: Record<string, unknown> = {
                 updated_at: new Date().toISOString(),
             };
@@ -146,12 +182,15 @@ export function useStudents() {
             if (data.name) updateData.name = data.name.trim();
             if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
 
-            const { error: updateError } = await supabase
-                .from('users')
-                .update(updateData)
-                .eq('id', id);
+            // Se só tinha email para atualizar e já foi feito, pular
+            if (Object.keys(updateData).length > 1) {
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update(updateData)
+                    .eq('id', id);
 
-            if (updateError) throw updateError;
+                if (updateError) throw updateError;
+            }
 
             await fetchStudents();
             return { success: true };
@@ -159,9 +198,8 @@ export function useStudents() {
             console.error('[useStudents] Erro ao atualizar aluno:', err);
             return { success: false, error: 'Erro ao atualizar aluno' };
         }
-    }, [supabase, fetchStudents]);
+    }, [supabase, fetchStudents, updateStudentEmail]);
 
-    // Excluir aluno
     const deleteStudent = useCallback(async (
         id: string
     ): Promise<{ success: boolean; error?: string }> => {
@@ -181,7 +219,6 @@ export function useStudents() {
         }
     }, [supabase, fetchStudents]);
 
-    // Buscar ao montar
     useEffect(() => {
         fetchStudents();
     }, [fetchStudents]);

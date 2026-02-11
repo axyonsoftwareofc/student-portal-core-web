@@ -82,11 +82,11 @@ export default function AlunosPage() {
     };
 
     // Editar aluno
-    const handleEdit = async (data: StudentFormData) => {
+    const handleEdit = async (data: StudentFormData, currentEmail?: string) => {
         if (!selectedStudent) return { success: false, error: 'Aluno não selecionado' };
 
         setIsSubmitting(true);
-        const result = await updateStudent(selectedStudent.id, data);
+        const result = await updateStudent(selectedStudent.id, data, currentEmail);
         setIsSubmitting(false);
 
         if (result.success) {

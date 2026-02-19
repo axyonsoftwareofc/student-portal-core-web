@@ -6,18 +6,28 @@ import {
     BookOpen,
     Layers,
     CheckCircle,
-    Clock,
     ArrowRight,
     Loader2,
     BarChart3,
-    PlayCircle
+    PlayCircle,
+    ClipboardCheck,
+    Star,
+    AlertCircle,
+    RotateCcw,
+    Clock,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentCourses } from '@/hooks/useStudentCourses';
+import { useStudentSubmissions } from '@/hooks/useStudentSubmissions';
 
 export default function AlunoDashboardPage() {
     const { user } = useAuth();
     const { courses, isLoading } = useStudentCourses(user?.id || null);
+    const {
+        recentlyReviewed,
+        pendingCount,
+        isLoading: isLoadingSubmissions
+    } = useStudentSubmissions(user?.id || null);
 
     // Calcular estatísticas gerais
     const totalModules = courses.reduce((acc, c) => acc + (c.modules_count || 0), 0);
@@ -35,6 +45,16 @@ export default function AlunoDashboardPage() {
         );
     }
 
+    const getStatusConfig = (status: string) => {
+        const configs: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
+            approved: { label: 'Aprovado', color: 'emerald', icon: CheckCircle },
+            reviewed: { label: 'Corrigido', color: 'sky', icon: CheckCircle },
+            needs_revision: { label: 'Precisa Revisão', color: 'rose', icon: RotateCcw },
+            pending: { label: 'Pendente', color: 'amber', icon: Clock },
+        };
+        return configs[status] || configs.pending;
+    };
+
     return (
         <div className="space-y-6 sm:space-y-8">
             {/* Header */}
@@ -46,6 +66,89 @@ export default function AlunoDashboardPage() {
                     Continue de onde parou e acompanhe seu progresso
                 </p>
             </div>
+
+            {/* Alerta de Exercícios Corrigidos */}
+            {!isLoadingSubmissions && recentlyReviewed.length > 0 && (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-4 sm:p-5">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 flex-shrink-0">
+                            <ClipboardCheck className="h-5 w-5 text-emerald-400" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-emerald-300 mb-1">
+                                🎉 Exercícios Corrigidos!
+                            </h3>
+                            <p className="text-sm text-emerald-200/70 mb-3">
+                                {recentlyReviewed.length === 1
+                                    ? 'Você tem 1 exercício corrigido recentemente'
+                                    : `Você tem ${recentlyReviewed.length} exercícios corrigidos recentemente`
+                                }
+                            </p>
+
+                            <div className="space-y-2">
+                                {recentlyReviewed.slice(0, 3).map((submission) => {
+                                    const statusConfig = getStatusConfig(submission.status);
+                                    const StatusIcon = statusConfig.icon;
+
+                                    return (
+                                        <Link
+                                            key={submission.id}
+                                            href={`/aluno/estudar/${submission.content?.lesson?.module_id}/${submission.content?.lesson_id}`}
+                                            className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900/70 transition-colors"
+                                        >
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-white truncate">
+                                                    {submission.content?.title}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    {submission.content?.lesson?.title}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                {submission.grade !== null && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-800 text-sm">
+                                                        <Star className="h-3 w-3 text-amber-400" strokeWidth={1.5} />
+                                                        <span className="font-bold text-white">{submission.grade.toFixed(1)}</span>
+                                                    </span>
+                                                )}
+                                                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-${statusConfig.color}-500/10 text-${statusConfig.color}-400`}>
+                                                    <StatusIcon className="h-3 w-3" strokeWidth={1.5} />
+                                                    {statusConfig.label}
+                                                </span>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+
+                            {recentlyReviewed.length > 3 && (
+                                <Link
+                                    href="/aluno/estudar"
+                                    className="mt-3 inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300"
+                                >
+                                    Ver todos ({recentlyReviewed.length})
+                                    <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+                                </Link>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Alerta de Exercícios Pendentes */}
+            {!isLoadingSubmissions && pendingCount > 0 && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-4">
+                    <div className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 text-amber-400 flex-shrink-0" strokeWidth={1.5} />
+                        <p className="text-sm text-amber-200/80">
+                            {pendingCount === 1
+                                ? 'Você tem 1 exercício aguardando correção'
+                                : `Você tem ${pendingCount} exercícios aguardando correção`
+                            }
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">

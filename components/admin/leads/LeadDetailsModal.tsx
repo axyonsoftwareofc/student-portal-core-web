@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     X,
     Mail,
@@ -60,6 +61,7 @@ export function LeadDetailsModal({
                                      onDelete,
                                      onUpdateNotes,
                                  }: LeadDetailsModalProps) {
+    const router = useRouter();
     const [notes, setNotes] = useState<string>(lead.notes || '');
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
@@ -96,6 +98,25 @@ export function LeadDetailsModal({
         await handleAction(() => onDelete(lead.id));
     };
 
+    const handleConvertToStudent = async (): Promise<void> => {
+        try {
+            setIsProcessing(true);
+            await onConvertToStudent(lead.id);
+
+            const params = new URLSearchParams({
+                fromLead: '1',
+                name: lead.name,
+                email: lead.email,
+                phone: lead.phone,
+                leadId: lead.id,
+            });
+
+            router.push(`/admin/alunos?${params.toString()}`);
+        } catch {
+            setIsProcessing(false);
+        }
+    };
+
     const sourceLabel = lead.source ? SOURCE_LABELS[lead.source] || lead.source : 'Não informado';
 
     return (
@@ -107,8 +128,8 @@ export function LeadDetailsModal({
                     <div className="flex items-center gap-3">
                         <h2 className="text-lg font-bold text-white">{lead.name}</h2>
                         <span className={cn('px-2.5 py-0.5 rounded-full text-xs font-medium border', statusConfig.className)}>
-              {statusConfig.label}
-            </span>
+                            {statusConfig.label}
+                        </span>
                     </div>
                     <button
                         onClick={onClose}
@@ -213,7 +234,7 @@ export function LeadDetailsModal({
                             {(lead.status === 'new' || lead.status === 'contacted') && (
                                 <>
                                     <button
-                                        onClick={() => handleAction(() => onConvertToStudent(lead.id))}
+                                        onClick={handleConvertToStudent}
                                         disabled={isProcessing}
                                         className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all duration-200 disabled:opacity-50"
                                     >

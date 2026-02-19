@@ -13,6 +13,7 @@ import {
     BookOpen,
     BarChart,
     User,
+    StickyNote,
     type LucideIcon,
 } from "lucide-react";
 
@@ -98,6 +99,12 @@ export const studentNavItems: NavItem[] = [
         label: "Estudar",
         href: "/aluno/estudar",
         description: "Acessar conteúdos",
+    },
+    {
+        icon: StickyNote,
+        label: "Minhas Notas",
+        href: "/aluno/notas",
+        description: "Suas anotações de aula",
     },
     {
         icon: Layers,

@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-    ArrowLeft,
     Video,
     FileText,
     PenTool,
@@ -19,18 +18,19 @@ import {
     Clock,
     ChevronLeft,
     ChevronRight,
-    Paperclip
+    Paperclip,
+    StickyNote,
+    ArrowLeft,
+    X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentLessons } from '@/hooks/useStudentLessons';
 import { useStudentProgress } from '@/hooks/useStudentProgress';
 import { useLessonMaterials } from '@/hooks/useLessonMaterials';
+import { useLessonNote } from '@/hooks/useLessonNote';
+import { NoteSidePanel } from '@/components/student/notes/NoteSidePanel';
 import MaterialsList from '@/components/aluno/MaterialsList';
 import type { StudentLesson, QuizQuestion } from '@/lib/types/database';
-
-// ============================================
-// TIPOS E CONSTANTES PARA O QUIZ
-// ============================================
 
 interface ColorClasses {
     border: string;
@@ -46,34 +46,30 @@ const quizColorClasses: Record<string, ColorClasses> = {
         bg: "bg-emerald-950/20",
         icon: "bg-emerald-500/10",
         text: "text-emerald-400",
-        bar: "bg-emerald-500"
+        bar: "bg-emerald-500",
     },
     sky: {
         border: "border-sky-500/20",
         bg: "bg-sky-950/20",
         icon: "bg-sky-500/10",
         text: "text-sky-400",
-        bar: "bg-sky-500"
+        bar: "bg-sky-500",
     },
     amber: {
         border: "border-amber-500/20",
         bg: "bg-amber-950/20",
         icon: "bg-amber-500/10",
         text: "text-amber-400",
-        bar: "bg-amber-500"
+        bar: "bg-amber-500",
     },
     rose: {
         border: "border-rose-500/20",
         bg: "bg-rose-950/20",
         icon: "bg-rose-500/10",
         text: "text-rose-400",
-        bar: "bg-rose-500"
+        bar: "bg-rose-500",
     },
 };
-
-// ============================================
-// COMPONENTE PRINCIPAL
-// ============================================
 
 export default function AulaPage() {
     const params = useParams();
@@ -85,16 +81,28 @@ export default function AulaPage() {
     const { markAsComplete, saveQuizResult, isLoading: savingProgress } = useStudentProgress();
     const { materials, isLoading: loadingMaterials, incrementDownload } = useLessonMaterials(aulaId);
 
-    // Estado para aba ativa (quando há materiais)
     const [activeTab, setActiveTab] = useState<'content' | 'materials'>('content');
+    const [isNotesOpen, setIsNotesOpen] = useState<boolean>(false);
 
-    // Encontrar a aula atual e navegação
-    const currentIndex = lessons.findIndex(l => l.id === aulaId);
+    const currentIndex = lessons.findIndex((l: StudentLesson) => l.id === aulaId);
     const lesson = lessons[currentIndex];
     const prevLesson = currentIndex > 0 ? lessons[currentIndex - 1] : null;
     const nextLesson = currentIndex < lessons.length - 1 ? lessons[currentIndex + 1] : null;
 
-    // Loading
+    const {
+        note,
+        isLoading: isLoadingNote,
+        isSaving: isSavingNote,
+        lastSavedAt,
+        saveNote,
+        deleteNote: deleteNoteAction,
+    } = useLessonNote({
+        studentId: user?.id || '',
+        lessonId: aulaId,
+        moduleId: moduloId,
+        courseId: module?.course_id || '',
+    });
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -106,7 +114,6 @@ export default function AulaPage() {
         );
     }
 
-    // Error or not found
     if (error || !lesson || !module) {
         return (
             <div className="space-y-4">
@@ -128,191 +135,192 @@ export default function AulaPage() {
         );
     }
 
-    // Handler para marcar como concluído
     const handleMarkComplete = async () => {
         if (!user?.id) return;
-
-        const result = await markAsComplete({
-            lessonId: lesson.id,
-            studentId: user.id,
-        });
-
-        if (result.success) {
-            refetch();
-        }
+        const result = await markAsComplete({ lessonId: lesson.id, studentId: user.id });
+        if (result.success) refetch();
     };
 
-    // Handler para salvar quiz
     const handleQuizComplete = async (score: number, total: number, answers: Record<string, string>) => {
         if (!user?.id) return;
-
-        const result = await saveQuizResult({
-            lessonId: lesson.id,
-            studentId: user.id,
-            score,
-            total,
-            answers,
-        });
-
-        if (result.success) {
-            refetch();
-        }
+        const result = await saveQuizResult({ lessonId: lesson.id, studentId: user.id, score, total, answers });
+        if (result.success) refetch();
     };
 
-    // Verificar se tem materiais
     const hasMaterials = materials.length > 0 || loadingMaterials;
 
     return (
-        <div className="space-y-6">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm overflow-x-auto pb-2">
-                <Link
-                    href="/aluno/estudar"
-                    className="text-gray-500 hover:text-sky-400 transition-colors flex-shrink-0"
-                >
-                    Estudar
-                </Link>
-                <ChevronRight className="h-4 w-4 text-gray-600 flex-shrink-0" strokeWidth={1.5} />
-                <Link
-                    href={`/aluno/estudar/${moduloId}`}
-                    className="text-gray-500 hover:text-sky-400 transition-colors truncate max-w-[120px] sm:max-w-[200px]"
-                >
-                    {module.name}
-                </Link>
-                <ChevronRight className="h-4 w-4 text-gray-600 flex-shrink-0" strokeWidth={1.5} />
-                <span className="text-gray-300 truncate max-w-[120px] sm:max-w-[250px]">{lesson.title}</span>
-            </div>
+        <div className="relative">
+            <div className={`transition-all duration-300 ${isNotesOpen ? 'lg:mr-96' : ''}`}>
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 text-sm overflow-x-auto pb-2 flex-1 min-w-0">
+                            <Link
+                                href="/aluno/estudar"
+                                className="text-gray-500 hover:text-sky-400 transition-colors flex-shrink-0"
+                            >
+                                Estudar
+                            </Link>
+                            <ChevronRight className="h-4 w-4 text-gray-600 flex-shrink-0" strokeWidth={1.5} />
+                            <Link
+                                href={`/aluno/estudar/${moduloId}`}
+                                className="text-gray-500 hover:text-sky-400 transition-colors truncate max-w-[120px] sm:max-w-[200px]"
+                            >
+                                {module.name}
+                            </Link>
+                            <ChevronRight className="h-4 w-4 text-gray-600 flex-shrink-0" strokeWidth={1.5} />
+                            <span className="text-gray-300 truncate max-w-[120px] sm:max-w-[250px]">{lesson.title}</span>
+                        </div>
 
-            {/* Tabs (se tiver materiais) */}
-            {hasMaterials && (
-                <div className="flex gap-1 border-b border-gray-800/50 overflow-x-auto pb-px -mx-4 px-4 sm:mx-0 sm:px-0">
-                    <button
-                        onClick={() => setActiveTab('content')}
-                        className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors whitespace-nowrap ${
-                            activeTab === 'content'
-                                ? "border-b-2 border-sky-500 text-white"
-                                : "text-gray-500 hover:text-gray-300"
-                        }`}
-                    >
-                        {lesson.type === 'VIDEO' && <Video className="h-4 w-4" strokeWidth={1.5} />}
-                        {lesson.type === 'ARTICLE' && <FileText className="h-4 w-4" strokeWidth={1.5} />}
-                        {lesson.type === 'EXERCISE' && <PenTool className="h-4 w-4" strokeWidth={1.5} />}
-                        {lesson.type === 'QUIZ' && <HelpCircle className="h-4 w-4" strokeWidth={1.5} />}
-                        Conteúdo
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('materials')}
-                        className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors whitespace-nowrap ${
-                            activeTab === 'materials'
-                                ? "border-b-2 border-sky-500 text-white"
-                                : "text-gray-500 hover:text-gray-300"
-                        }`}
-                    >
-                        <Paperclip className="h-4 w-4" strokeWidth={1.5} />
-                        Materiais
-                        {materials.length > 0 && (
-                            <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-sky-500/10 text-sky-400">
-                                {materials.length}
-                            </span>
+                        <button
+                            onClick={() => setIsNotesOpen((prev) => !prev)}
+                            className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-all text-sm font-medium"
+                        >
+                            {isNotesOpen ? (
+                                <X className="h-4 w-4" strokeWidth={1.5} />
+                            ) : (
+                                <StickyNote className="h-4 w-4" strokeWidth={1.5} />
+                            )}
+
+                            <span className="hidden sm:inline">
+        {isNotesOpen ? 'Fechar' : 'Anotações'}
+    </span>
+                        </button>
+                    </div>
+
+                    {hasMaterials && (
+                        <div className="flex gap-1 border-b border-gray-800/50 overflow-x-auto pb-px -mx-4 px-4 sm:mx-0 sm:px-0">
+                            <button
+                                onClick={() => setActiveTab('content')}
+                                className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors whitespace-nowrap ${
+                                    activeTab === 'content'
+                                        ? "border-b-2 border-sky-500 text-white"
+                                        : "text-gray-500 hover:text-gray-300"
+                                }`}
+                            >
+                                {lesson.type === 'VIDEO' && <Video className="h-4 w-4" strokeWidth={1.5} />}
+                                {lesson.type === 'ARTICLE' && <FileText className="h-4 w-4" strokeWidth={1.5} />}
+                                {lesson.type === 'EXERCISE' && <PenTool className="h-4 w-4" strokeWidth={1.5} />}
+                                {lesson.type === 'QUIZ' && <HelpCircle className="h-4 w-4" strokeWidth={1.5} />}
+                                Conteúdo
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('materials')}
+                                className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors whitespace-nowrap ${
+                                    activeTab === 'materials'
+                                        ? "border-b-2 border-sky-500 text-white"
+                                        : "text-gray-500 hover:text-gray-300"
+                                }`}
+                            >
+                                <Paperclip className="h-4 w-4" strokeWidth={1.5} />
+                                Materiais
+                                {materials.length > 0 && (
+                                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-sky-500/10 text-sky-400">
+                                        {materials.length}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                    )}
+
+                    {activeTab === 'content' ? (
+                        <>
+                            {lesson.type === 'VIDEO' && (
+                                <VideoContent
+                                    lesson={lesson}
+                                    onComplete={handleMarkComplete}
+                                    isCompleted={lesson.is_completed || false}
+                                    isSaving={savingProgress}
+                                />
+                            )}
+                            {lesson.type === 'ARTICLE' && (
+                                <ArticleContent
+                                    lesson={lesson}
+                                    onComplete={handleMarkComplete}
+                                    isCompleted={lesson.is_completed || false}
+                                    isSaving={savingProgress}
+                                />
+                            )}
+                            {lesson.type === 'EXERCISE' && (
+                                <ExerciseContent
+                                    lesson={lesson}
+                                    onComplete={handleMarkComplete}
+                                    isCompleted={lesson.is_completed || false}
+                                    isSaving={savingProgress}
+                                />
+                            )}
+                            {lesson.type === 'QUIZ' && (
+                                <QuizContent
+                                    lesson={lesson}
+                                    onComplete={handleQuizComplete}
+                                    isCompleted={lesson.is_completed || false}
+                                    isSaving={savingProgress}
+                                />
+                            )}
+                        </>
+                    ) : (
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                <Paperclip className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
+                                Materiais da Aula
+                            </h2>
+                            <MaterialsList
+                                materials={materials}
+                                isLoading={loadingMaterials}
+                                onDownload={incrementDownload}
+                            />
+                        </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-800/50">
+                        {prevLesson ? (
+                            <Link
+                                href={`/aluno/estudar/${moduloId}/${prevLesson.id}`}
+                                className="flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors"
+                            >
+                                <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
+                                <span className="hidden sm:inline">Anterior:</span>
+                                <span className="truncate max-w-[100px] sm:max-w-[150px]">{prevLesson.title}</span>
+                            </Link>
+                        ) : (
+                            <div />
                         )}
-                    </button>
+                        {nextLesson ? (
+                            <Link
+                                href={`/aluno/estudar/${moduloId}/${nextLesson.id}`}
+                                className="flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors"
+                            >
+                                <span className="hidden sm:inline">Próxima:</span>
+                                <span className="truncate max-w-[100px] sm:max-w-[150px]">{nextLesson.title}</span>
+                                <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
+                            </Link>
+                        ) : (
+                            <Link
+                                href={`/aluno/estudar/${moduloId}`}
+                                className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                            >
+                                <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
+                                Voltar ao módulo
+                            </Link>
+                        )}
+                    </div>
                 </div>
-            )}
-
-            {/* Content based on active tab */}
-            {activeTab === 'content' ? (
-                <>
-                    {lesson.type === 'VIDEO' && (
-                        <VideoContent
-                            lesson={lesson}
-                            onComplete={handleMarkComplete}
-                            isCompleted={lesson.is_completed || false}
-                            isSaving={savingProgress}
-                        />
-                    )}
-
-                    {lesson.type === 'ARTICLE' && (
-                        <ArticleContent
-                            lesson={lesson}
-                            onComplete={handleMarkComplete}
-                            isCompleted={lesson.is_completed || false}
-                            isSaving={savingProgress}
-                        />
-                    )}
-
-                    {lesson.type === 'EXERCISE' && (
-                        <ExerciseContent
-                            lesson={lesson}
-                            onComplete={handleMarkComplete}
-                            isCompleted={lesson.is_completed || false}
-                            isSaving={savingProgress}
-                        />
-                    )}
-
-                    {lesson.type === 'QUIZ' && (
-                        <QuizContent
-                            lesson={lesson}
-                            onComplete={handleQuizComplete}
-                            isCompleted={lesson.is_completed || false}
-                            isSaving={savingProgress}
-                        />
-                    )}
-                </>
-            ) : (
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <Paperclip className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
-                        Materiais da Aula
-                    </h2>
-                    <MaterialsList
-                        materials={materials}
-                        isLoading={loadingMaterials}
-                        onDownload={incrementDownload}
-                    />
-                </div>
-            )}
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-800/50">
-                {prevLesson ? (
-                    <Link
-                        href={`/aluno/estudar/${moduloId}/${prevLesson.id}`}
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors"
-                    >
-                        <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-                        <span className="hidden sm:inline">Anterior:</span>
-                        <span className="truncate max-w-[100px] sm:max-w-[150px]">{prevLesson.title}</span>
-                    </Link>
-                ) : (
-                    <div />
-                )}
-
-                {nextLesson ? (
-                    <Link
-                        href={`/aluno/estudar/${moduloId}/${nextLesson.id}`}
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors"
-                    >
-                        <span className="hidden sm:inline">Próxima:</span>
-                        <span className="truncate max-w-[100px] sm:max-w-[150px]">{nextLesson.title}</span>
-                        <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
-                    </Link>
-                ) : (
-                    <Link
-                        href={`/aluno/estudar/${moduloId}`}
-                        className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
-                    >
-                        <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
-                        Voltar ao módulo
-                    </Link>
-                )}
             </div>
+
+            <NoteSidePanel
+                isOpen={isNotesOpen}
+                lessonTitle={lesson.title}
+                noteContent={note?.content || ''}
+                isSaving={isSavingNote}
+                isLoading={isLoadingNote}
+                lastSavedAt={lastSavedAt}
+                onContentChange={saveNote}
+                onDelete={deleteNoteAction}
+                onClose={() => setIsNotesOpen(false)}
+            />
         </div>
     );
 }
-
-// ============================================
-// VIDEO CONTENT
-// ============================================
 
 function VideoContent({
                           lesson,
@@ -327,7 +335,6 @@ function VideoContent({
 }) {
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 flex-shrink-0">
                     <Video className="h-5 w-5 text-emerald-400" strokeWidth={1.5} />
@@ -359,7 +366,6 @@ function VideoContent({
                 </div>
             </div>
 
-            {/* Video Player */}
             {lesson.youtube_id ? (
                 <div className="rounded-lg border border-gray-800/50 bg-gray-900/50 overflow-hidden">
                     <div className="aspect-video bg-black">
@@ -381,7 +387,6 @@ function VideoContent({
                 </div>
             )}
 
-            {/* Mark as complete button */}
             {!isCompleted && (
                 <button
                     onClick={onComplete}
@@ -400,10 +405,6 @@ function VideoContent({
     );
 }
 
-// ============================================
-// ARTICLE CONTENT
-// ============================================
-
 function ArticleContent({
                             lesson,
                             onComplete,
@@ -417,7 +418,6 @@ function ArticleContent({
 }) {
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10 flex-shrink-0">
                     <FileText className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
@@ -443,7 +443,6 @@ function ArticleContent({
                 </div>
             </div>
 
-            {/* Article Content */}
             <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6 lg:p-8">
                 {lesson.content ? (
                     <div className="prose prose-invert prose-sky max-w-none">
@@ -459,7 +458,6 @@ function ArticleContent({
                 )}
             </div>
 
-            {/* Mark as complete button */}
             {!isCompleted && (
                 <button
                     onClick={onComplete}
@@ -478,10 +476,6 @@ function ArticleContent({
     );
 }
 
-// ============================================
-// EXERCISE CONTENT
-// ============================================
-
 function ExerciseContent({
                              lesson,
                              onComplete,
@@ -495,7 +489,6 @@ function ExerciseContent({
 }) {
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 flex-shrink-0">
                     <PenTool className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
@@ -521,7 +514,6 @@ function ExerciseContent({
                 </div>
             </div>
 
-            {/* Exercise Instructions */}
             <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-4 sm:p-6 lg:p-8">
                 <h3 className="font-semibold text-amber-300 mb-4 flex items-center gap-2">
                     <BookOpen className="h-5 w-5" strokeWidth={1.5} />
@@ -536,7 +528,6 @@ function ExerciseContent({
                 )}
             </div>
 
-            {/* Mark as complete button */}
             {!isCompleted && (
                 <button
                     onClick={onComplete}
@@ -555,10 +546,6 @@ function ExerciseContent({
     );
 }
 
-// ============================================
-// QUIZ CONTENT
-// ============================================
-
 function QuizContent({
                          lesson,
                          onComplete,
@@ -570,9 +557,9 @@ function QuizContent({
     isCompleted: boolean;
     isSaving: boolean;
 }) {
-    const [quizStarted, setQuizStarted] = useState(false);
+    const [quizStarted, setQuizStarted] = useState<boolean>(false);
     const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
-    const [quizSubmitted, setQuizSubmitted] = useState(false);
+    const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
 
     const questions = (lesson.quiz_data as QuizQuestion[]) || [];
     const totalQuestions = questions.length;
@@ -580,9 +567,9 @@ function QuizContent({
     const previousScore = lesson.progress?.quiz_score;
     const previousTotal = lesson.progress?.quiz_total;
 
-    const calculateScore = () => {
-        return questions.filter(q => {
-            const correctOption = q.options.find(o => o.correct);
+    const calculateScore = (): number => {
+        return questions.filter((q: QuizQuestion) => {
+            const correctOption = q.options.find((o) => o.correct);
             return quizAnswers[q.id] === correctOption?.id;
         }).length;
     };
@@ -801,7 +788,7 @@ function QuizContent({
             </div>
 
             <div className="space-y-4 sm:space-y-6">
-                {questions.map((question, index) => (
+                {questions.map((question: QuizQuestion, index: number) => (
                     <div
                         key={question.id}
                         className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-5"

@@ -17,6 +17,12 @@ interface DashboardStats {
     totalMaterials: number;
     totalViews: number;
     completedLessons: number;
+    // Novas stats de exercícios
+    totalExercises: number;
+    pendingExercises: number;
+    approvedExercises: number;
+    needsRevisionExercises: number;
+    classAverage: number | null;
 }
 
 interface RecentStudent {
@@ -42,6 +48,25 @@ interface RecentProgress {
     completed_at: string;
 }
 
+interface PendingExercise {
+    id: string;
+    student_id: string;
+    student_name: string;
+    content_title: string;
+    lesson_title: string;
+    module_id: string;
+    lesson_id: string;
+    created_at: string;
+}
+
+interface StudentWithDifficulty {
+    id: string;
+    name: string;
+    email: string;
+    average: number;
+    totalExercises: number;
+}
+
 export function useAdminDashboard() {
     const [stats, setStats] = useState<DashboardStats>({
         totalStudents: 0,
@@ -56,10 +81,17 @@ export function useAdminDashboard() {
         totalMaterials: 0,
         totalViews: 0,
         completedLessons: 0,
+        totalExercises: 0,
+        pendingExercises: 0,
+        approvedExercises: 0,
+        needsRevisionExercises: 0,
+        classAverage: null,
     });
     const [recentStudents, setRecentStudents] = useState<RecentStudent[]>([]);
     const [topLessons, setTopLessons] = useState<TopLesson[]>([]);
     const [recentProgress, setRecentProgress] = useState<RecentProgress[]>([]);
+    const [pendingExercises, setPendingExercises] = useState<PendingExercise[]>([]);
+    const [studentsNeedingHelp, setStudentsNeedingHelp] = useState<StudentWithDifficulty[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const supabaseRef = useRef(createClient());
@@ -81,6 +113,8 @@ export function useAdminDashboard() {
                 recentStudentsResult,
                 topLessonsResult,
                 recentProgressResult,
+                exerciseSubmissionsResult,
+                pendingExercisesResult,
             ] = await Promise.all([
                 // Total de alunos
                 supabase
@@ -154,6 +188,34 @@ export function useAdminDashboard() {
                     .eq('completed', true)
                     .order('completed_at', { ascending: false })
                     .limit(5),
+
+                // Todas as submissões de exercícios (para stats)
+                supabase
+                    .from('exercise_submissions')
+                    .select('id, status, grade, student_id'),
+
+                // Exercícios pendentes de correção (com detalhes)
+                supabase
+                    .from('exercise_submissions')
+                    .select(`
+                        id,
+                        student_id,
+                        created_at,
+                        student:users!exercise_submissions_student_id_fkey (
+                            name
+                        ),
+                        content:lesson_contents!exercise_submissions_content_id_fkey (
+                            title,
+                            lesson_id,
+                            lesson:lessons (
+                                title,
+                                module_id
+                            )
+                        )
+                    `)
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: true })
+                    .limit(5),
             ]);
 
             // Processar estatísticas de alunos
@@ -174,6 +236,81 @@ export function useAdminDashboard() {
             const publishedLessons = lessons.filter((l: { status: string }) => l.status === 'PUBLISHED').length;
             const totalViews = lessons.reduce((acc: number, l: { views_count: number }) => acc + (l.views_count || 0), 0);
 
+            // Processar estatísticas de exercícios
+            const exerciseSubmissions = exerciseSubmissionsResult.data || [];
+            const totalExercises = exerciseSubmissions.length;
+            const pendingExercisesCount = exerciseSubmissions.filter(
+                (s: { status: string }) => s.status === 'pending'
+            ).length;
+            const approvedExercises = exerciseSubmissions.filter(
+                (s: { status: string }) => s.status === 'approved' || s.status === 'reviewed'
+            ).length;
+            const needsRevisionExercises = exerciseSubmissions.filter(
+                (s: { status: string }) => s.status === 'needs_revision'
+            ).length;
+
+            // Calcular média da turma
+            const gradesWithValues = exerciseSubmissions
+                .filter((s: { grade: number | null }) => s.grade !== null)
+                .map((s: { grade: number }) => s.grade);
+            const classAverage = gradesWithValues.length > 0
+                ? gradesWithValues.reduce((a: number, b: number) => a + b, 0) / gradesWithValues.length
+                : null;
+
+            // Calcular alunos com dificuldade (média < 6)
+            const studentGrades: Record<string, { grades: number[]; name: string; email: string }> = {};
+
+// Extrair IDs únicos dos alunos
+            const studentIdsSet = new Set<string>();
+            exerciseSubmissions.forEach((s: { student_id: string }) => {
+                studentIdsSet.add(s.student_id);
+            });
+            const studentIds = Array.from(studentIdsSet);
+
+            if (studentIds.length > 0) {
+                const { data: studentData } = await supabase
+                    .from('users')
+                    .select('id, name, email')
+                    .in('id', studentIds);
+
+                interface StudentData {
+                    id: string;
+                    name: string;
+                    email: string;
+                }
+
+                const studentMap = new Map<string, StudentData>(
+                    (studentData || []).map((s: StudentData) => [s.id, s])
+                );
+
+                exerciseSubmissions.forEach((submission: { student_id: string; grade: number | null }) => {
+                    if (submission.grade !== null) {
+                        if (!studentGrades[submission.student_id]) {
+                            const student = studentMap.get(submission.student_id);
+                            studentGrades[submission.student_id] = {
+                                grades: [],
+                                name: student?.name || 'Aluno',
+                                email: student?.email || '',
+                            };
+                        }
+                        studentGrades[submission.student_id].grades.push(submission.grade);
+                    }
+                });
+            }
+
+            const studentsWithDifficulty: StudentWithDifficulty[] = Object.entries(studentGrades)
+                .map(([id, data]) => ({
+                    id,
+                    name: data.name,
+                    email: data.email,
+                    average: data.grades.reduce((a, b) => a + b, 0) / data.grades.length,
+                    totalExercises: data.grades.length,
+                }))
+                .filter((s) => s.average < 6)
+                .sort((a, b) => a.average - b.average);
+
+            setStudentsNeedingHelp(studentsWithDifficulty);
+
             // Atualizar stats
             setStats({
                 totalStudents: students.length,
@@ -188,6 +325,11 @@ export function useAdminDashboard() {
                 totalMaterials: materialsResult.count || 0,
                 totalViews,
                 completedLessons: progressResult.count || 0,
+                totalExercises,
+                pendingExercises: pendingExercisesCount,
+                approvedExercises,
+                needsRevisionExercises,
+                classAverage,
             });
 
             // Atualizar alunos recentes
@@ -239,6 +381,32 @@ export function useAdminDashboard() {
                     }))
             );
 
+            // Atualizar exercícios pendentes
+            interface PendingExerciseRaw {
+                id: string;
+                student_id: string;
+                created_at: string;
+                student: { name: string } | null;
+                content: {
+                    title: string;
+                    lesson_id: string;
+                    lesson: { title: string; module_id: string } | null;
+                } | null;
+            }
+
+            setPendingExercises(
+                (pendingExercisesResult.data || []).map((e: PendingExerciseRaw) => ({
+                    id: e.id,
+                    student_id: e.student_id,
+                    student_name: e.student?.name || 'Aluno',
+                    content_title: e.content?.title || 'Exercício',
+                    lesson_title: e.content?.lesson?.title || 'Aula',
+                    module_id: e.content?.lesson?.module_id || '',
+                    lesson_id: e.content?.lesson_id || '',
+                    created_at: e.created_at,
+                }))
+            );
+
         } catch (err) {
             console.error('Erro ao buscar dados do dashboard:', err);
             setError('Erro ao carregar dados do dashboard');
@@ -256,6 +424,8 @@ export function useAdminDashboard() {
         recentStudents,
         topLessons,
         recentProgress,
+        pendingExercises,
+        studentsNeedingHelp,
         isLoading,
         error,
         refetch: fetchDashboardData,

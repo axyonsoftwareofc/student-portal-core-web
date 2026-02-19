@@ -1,7 +1,8 @@
 // app/(dashboard)/admin/alunos/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
     Users,
     Plus,
@@ -25,7 +26,17 @@ import ConfirmDialog from '@/components/ui/confirm-dialog';
 import StudentForm from '@/components/admin/StudentForm';
 import EnrollmentManager from '@/components/admin/EnrollmentManager';
 
+interface PrefilledStudentData {
+    name: string;
+    email: string;
+    phone: string;
+    leadId: string;
+}
+
 export default function AlunosPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
     const {
         students,
         isLoading,
@@ -38,21 +49,41 @@ export default function AlunosPage() {
         resendInvite
     } = useStudents();
 
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'suspended'>('all');
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
-    const [isInviteLinkModalOpen, setIsInviteLinkModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+    const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState<boolean>(false);
+    const [isInviteLinkModalOpen, setIsInviteLinkModalOpen] = useState<boolean>(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [inviteLink, setInviteLink] = useState('');
-    const [copySuccess, setCopySuccess] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [inviteLink, setInviteLink] = useState<string>('');
+    const [copySuccess, setCopySuccess] = useState<boolean>(false);
     const [enrollmentStudent, setEnrollmentStudent] = useState<{ id: string; name: string; email: string } | null>(null);
+    const [prefilledData, setPrefilledData] = useState<PrefilledStudentData | null>(null);
 
-    // Filtrar alunos
-    const filteredStudents = students.filter(student => {
+    useEffect(() => {
+        const fromLead = searchParams.get('fromLead');
+        const name = searchParams.get('name');
+        const email = searchParams.get('email');
+        const phone = searchParams.get('phone');
+        const leadId = searchParams.get('leadId');
+
+        if (fromLead === '1' && name && email && leadId) {
+            setPrefilledData({
+                name: decodeURIComponent(name),
+                email: decodeURIComponent(email),
+                phone: phone ? decodeURIComponent(phone) : '',
+                leadId,
+            });
+            setIsCreateModalOpen(true);
+
+            router.replace('/admin/alunos', { scroll: false });
+        }
+    }, [searchParams, router]);
+
+    const filteredStudents = students.filter((student: Student) => {
         const matchesSearch =
             student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             student.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -64,15 +95,13 @@ export default function AlunosPage() {
         return matchesSearch && matchesStatus;
     });
 
-    // Contadores por status
     const statusCounts = {
         all: students.length,
-        active: students.filter(s => s.status === 'active').length,
-        pending: students.filter(s => s.status === 'pending').length,
-        suspended: students.filter(s => s.status === 'suspended').length,
+        active: students.filter((s: Student) => s.status === 'active').length,
+        pending: students.filter((s: Student) => s.status === 'pending').length,
+        suspended: students.filter((s: Student) => s.status === 'suspended').length,
     };
 
-    // Criar aluno
     const handleCreate = async (data: StudentFormData) => {
         setIsSubmitting(true);
         const result = await createStudent(data);
@@ -80,14 +109,14 @@ export default function AlunosPage() {
 
         if (result.success && result.inviteLink) {
             setIsCreateModalOpen(false);
+            setPrefilledData(null);
             setInviteLink(result.inviteLink);
             setIsInviteLinkModalOpen(true);
         }
         return result;
     };
 
-    // Reenviar convite
-    const handleResendInvite = async (student: Student) => {
+    const handleResendInvite = async (student: Student): Promise<void> => {
         setIsSubmitting(true);
         const result = await resendInvite(student.id);
         setIsSubmitting(false);
@@ -98,8 +127,7 @@ export default function AlunosPage() {
         }
     };
 
-    // Copiar link
-    const handleCopyLink = async () => {
+    const handleCopyLink = async (): Promise<void> => {
         try {
             await navigator.clipboard.writeText(inviteLink);
             setCopySuccess(true);
@@ -109,7 +137,6 @@ export default function AlunosPage() {
         }
     };
 
-    // Editar aluno
     const handleEdit = async (data: StudentFormData, currentEmail?: string) => {
         if (!selectedStudent) return { success: false, error: 'Aluno não selecionado' };
 
@@ -124,8 +151,7 @@ export default function AlunosPage() {
         return result;
     };
 
-    // Suspender aluno
-    const handleSuspend = async () => {
+    const handleSuspend = async (): Promise<void> => {
         if (!selectedStudent) return;
 
         setIsSubmitting(true);
@@ -138,15 +164,13 @@ export default function AlunosPage() {
         }
     };
 
-    // Reativar aluno
-    const handleReactivate = async (student: Student) => {
+    const handleReactivate = async (student: Student): Promise<void> => {
         setIsSubmitting(true);
         await reactivateStudent(student.id);
         setIsSubmitting(false);
     };
 
-    // Excluir aluno permanentemente
-    const handleDelete = async () => {
+    const handleDelete = async (): Promise<void> => {
         if (!selectedStudent) return;
 
         setIsSubmitting(true);
@@ -159,27 +183,32 @@ export default function AlunosPage() {
         }
     };
 
-    const openEditModal = (student: Student) => {
+    const openEditModal = (student: Student): void => {
         setSelectedStudent(student);
         setIsEditModalOpen(true);
     };
 
-    const openSuspendDialog = (student: Student) => {
+    const openSuspendDialog = (student: Student): void => {
         setSelectedStudent(student);
         setIsSuspendDialogOpen(true);
     };
 
-    const openDeleteDialog = (student: Student) => {
+    const openDeleteDialog = (student: Student): void => {
         setSelectedStudent(student);
         setIsDeleteDialogOpen(true);
     };
 
-    const openEnrollmentModal = (student: Student) => {
+    const openEnrollmentModal = (student: Student): void => {
         setEnrollmentStudent({
             id: student.id,
             name: student.name,
             email: student.email,
         });
+    };
+
+    const handleCloseCreateModal = (): void => {
+        setIsCreateModalOpen(false);
+        setPrefilledData(null);
     };
 
     const getStatusBadge = (status?: string) => {
@@ -240,7 +269,7 @@ export default function AlunosPage() {
                         type="text"
                         placeholder="Buscar por nome ou email..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                         className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none transition-colors"
                     />
                 </div>
@@ -312,7 +341,7 @@ export default function AlunosPage() {
             {!isLoading && filteredStudents.length > 0 && (
                 <>
                     <div className="block lg:hidden space-y-3">
-                        {filteredStudents.map((student) => (
+                        {filteredStudents.map((student: Student) => (
                             <div
                                 key={student.id}
                                 className={`rounded-lg border bg-gray-900/30 p-4 space-y-3 ${
@@ -338,7 +367,6 @@ export default function AlunosPage() {
                                     </span>
                                     <div className="flex-1" />
 
-                                    {/* Ações baseadas no status */}
                                     {student.status === 'suspended' ? (
                                         <button
                                             onClick={() => handleReactivate(student)}
@@ -407,7 +435,7 @@ export default function AlunosPage() {
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-800/50">
-                                {filteredStudents.map((student) => (
+                                {filteredStudents.map((student: Student) => (
                                     <tr
                                         key={student.id}
                                         className={`hover:bg-gray-900/50 transition-colors ${
@@ -503,14 +531,27 @@ export default function AlunosPage() {
             {/* Create Modal */}
             <Modal
                 isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                title="Novo Aluno"
+                onClose={handleCloseCreateModal}
+                title={prefilledData ? "Converter Lead em Aluno" : "Novo Aluno"}
                 size="md"
             >
+                {prefilledData && (
+                    <div className="mb-4 flex items-center gap-2 p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/20">
+                        <UserCheck className="h-4 w-4 text-emerald-400 flex-shrink-0" strokeWidth={1.5} />
+                        <p className="text-sm text-emerald-300">
+                            Dados importados do lead. Revise e confirme para criar o aluno.
+                        </p>
+                    </div>
+                )}
                 <StudentForm
                     onSubmit={handleCreate}
-                    onCancel={() => setIsCreateModalOpen(false)}
+                    onCancel={handleCloseCreateModal}
                     isLoading={isSubmitting}
+                    initialData={prefilledData ? {
+                        name: prefilledData.name,
+                        email: prefilledData.email,
+                        phone: prefilledData.phone,
+                    } : undefined}
                 />
             </Modal>
 

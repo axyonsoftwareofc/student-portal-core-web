@@ -7,19 +7,30 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface StudentFormProps {
     student?: Student | null;
+    initialData?: {
+        name: string;
+        email: string;
+        phone?: string;
+    };
     onSubmit: (data: StudentFormData, currentEmail?: string) => Promise<{ success: boolean; error?: string }>;
     onCancel: () => void;
     isLoading?: boolean;
 }
 
-export default function StudentForm({ student, onSubmit, onCancel, isLoading }: StudentFormProps) {
+export default function StudentForm({
+                                        student,
+                                        initialData,
+                                        onSubmit,
+                                        onCancel,
+                                        isLoading
+                                    }: StudentFormProps) {
     const [formData, setFormData] = useState<StudentFormData>({
         name: '',
         email: '',
         phone: '',
     });
-    const [error, setError] = useState('');
-    const [showEmailWarning, setShowEmailWarning] = useState(false);
+    const [error, setError] = useState<string>('');
+    const [showEmailWarning, setShowEmailWarning] = useState<boolean>(false);
 
     useEffect(() => {
         if (student) {
@@ -28,10 +39,15 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
                 email: student.email,
                 phone: student.phone || '',
             });
+        } else if (initialData) {
+            setFormData({
+                name: initialData.name,
+                email: initialData.email,
+                phone: initialData.phone || '',
+            });
         }
-    }, [student]);
+    }, [student, initialData]);
 
-    // Verificar se o email mudou
     useEffect(() => {
         if (student && formData.email.toLowerCase().trim() !== student.email.toLowerCase().trim()) {
             setShowEmailWarning(true);
@@ -40,7 +56,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
         }
     }, [formData.email, student]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
         setError('');
 
@@ -54,7 +70,6 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
             return;
         }
 
-        // Validar formato do email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email.trim())) {
             setError('Formato de e-mail inválido');
@@ -82,7 +97,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
                 <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 text-white placeholder-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-colors"
                     placeholder="Nome do aluno"
                     disabled={isLoading}
@@ -96,7 +111,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
                 <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 text-white placeholder-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-colors"
                     placeholder="email@exemplo.com"
                     disabled={isLoading}
@@ -120,7 +135,7 @@ export default function StudentForm({ student, onSubmit, onCancel, isLoading }: 
                 <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 text-white placeholder-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-colors"
                     placeholder="(00) 00000-0000"
                     disabled={isLoading}

@@ -19,9 +19,13 @@ import {
     AlertTriangle,
     Video,
     PenTool,
-    HelpCircle
+    HelpCircle,
+    ClipboardCheck,
 } from "lucide-react";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { ExerciseStatsCards } from "@/components/admin/dashboard/ExerciseStatsCards";
+import { PendingExercisesList } from "@/components/admin/dashboard/PendingExercisesList";
+import { StudentsNeedingHelpCard } from "@/components/admin/dashboard/StudentsNeedingHelpCard";
 
 export default function AdminDashboardPage() {
     const {
@@ -29,6 +33,8 @@ export default function AdminDashboardPage() {
         recentStudents,
         topLessons,
         recentProgress,
+        pendingExercises,
+        studentsNeedingHelp,
         isLoading,
         error,
         refetch
@@ -187,6 +193,30 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
 
+            {/* Exercícios Section */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                    <ClipboardCheck className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
+                    <h2 className="text-lg font-semibold text-white">Exercícios</h2>
+                </div>
+
+                <ExerciseStatsCards
+                    totalExercises={stats.totalExercises}
+                    pendingExercises={stats.pendingExercises}
+                    approvedExercises={stats.approvedExercises}
+                    needsRevisionExercises={stats.needsRevisionExercises}
+                    classAverage={stats.classAverage}
+                />
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <PendingExercisesList
+                        exercises={pendingExercises}
+                        totalPending={stats.pendingExercises}
+                    />
+                    <StudentsNeedingHelpCard students={studentsNeedingHelp} />
+                </div>
+            </div>
+
             {/* Stats Grid - Secundários */}
             <div className="grid gap-4 sm:gap-5 grid-cols-2 lg:grid-cols-3">
                 {/* Materiais */}
@@ -238,7 +268,7 @@ export default function AdminDashboardPage() {
                             Aulas Mais Vistas
                         </h2>
                         <Link
-                            href="/admin/conteudos"
+                            href="/admin/aulas"
                             className="text-sm text-gray-400 hover:text-sky-400 transition-colors"
                         >
                             Ver todas →
@@ -410,6 +440,23 @@ export default function AdminDashboardPage() {
                     </Link>
 
                     <Link
+                        href="/admin/correcoes"
+                        className="group rounded-lg border border-gray-800/50 bg-gray-900/30 p-5 transition-all hover:bg-gray-900/50 hover:border-gray-700"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-500/10">
+                                <ClipboardCheck className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
+                            </div>
+                            <div>
+                                <p className="font-medium text-gray-200 text-sm">Correções</p>
+                                <p className="text-xs text-gray-500">
+                                    {stats.pendingExercises > 0 ? `${stats.pendingExercises} pendente${stats.pendingExercises !== 1 ? 's' : ''}` : 'Em dia'}
+                                </p>
+                            </div>
+                        </div>
+                    </Link>
+
+                    <Link
                         href="/admin/modulos"
                         className="group rounded-lg border border-gray-800/50 bg-gray-900/30 p-5 transition-all hover:bg-gray-900/50 hover:border-gray-700"
                     >
@@ -425,7 +472,7 @@ export default function AdminDashboardPage() {
                     </Link>
 
                     <Link
-                        href="/admin/conteudos"
+                        href="/admin/aulas"
                         className="group rounded-lg border border-gray-800/50 bg-gray-900/30 p-5 transition-all hover:bg-gray-900/50 hover:border-gray-700"
                     >
                         <div className="flex items-center gap-4">
@@ -433,22 +480,7 @@ export default function AdminDashboardPage() {
                                 <FileText className="h-5 w-5 text-violet-400" strokeWidth={1.5} />
                             </div>
                             <div>
-                                <p className="font-medium text-gray-200 text-sm">Novo Conteúdo</p>
-                                <p className="text-xs text-gray-500">Adicionar</p>
-                            </div>
-                        </div>
-                    </Link>
-
-                    <Link
-                        href="/admin/materiais"
-                        className="group rounded-lg border border-gray-800/50 bg-gray-900/30 p-5 transition-all hover:bg-gray-900/50 hover:border-gray-700"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-500/10">
-                                <Package className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
-                            </div>
-                            <div>
-                                <p className="font-medium text-gray-200 text-sm">Novo Material</p>
+                                <p className="font-medium text-gray-200 text-sm">Nova Aula</p>
                                 <p className="text-xs text-gray-500">Adicionar</p>
                             </div>
                         </div>

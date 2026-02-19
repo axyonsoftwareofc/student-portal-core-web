@@ -2,6 +2,7 @@
 import {
     LayoutDashboard,
     Users,
+    UserPlus,
     GraduationCap,
     Layers,
     FileText,
@@ -15,23 +16,13 @@ import {
     type LucideIcon,
 } from "lucide-react";
 
-/**
- * Tipo para item de navegação.
- */
 export interface NavItem {
-    /** Ícone do Lucide React */
     icon: LucideIcon;
-    /** Texto exibido no menu */
     label: string;
-    /** Rota de destino */
     href: string;
-    /** Descrição para acessibilidade (opcional) */
     description?: string;
 }
 
-/**
- * Itens de navegação do menu Admin.
- */
 export const adminNavItems: NavItem[] = [
     {
         icon: LayoutDashboard,
@@ -44,6 +35,12 @@ export const adminNavItems: NavItem[] = [
         label: "Alunos",
         href: "/admin/alunos",
         description: "Gerenciar alunos",
+    },
+    {
+        icon: UserPlus,
+        label: "Leads",
+        href: "/admin/leads",
+        description: "Gerenciar interessados",
     },
     {
         icon: GraduationCap,
@@ -89,9 +86,6 @@ export const adminNavItems: NavItem[] = [
     },
 ];
 
-/**
- * Itens de navegação do menu Aluno.
- */
 export const studentNavItems: NavItem[] = [
     {
         icon: LayoutDashboard,
@@ -125,9 +119,6 @@ export const studentNavItems: NavItem[] = [
     },
 ];
 
-/**
- * Retorna os itens de navegação baseado no tipo de usuário.
- */
 export function getNavItems(userType: "admin" | "student"): NavItem[] {
     return userType === "admin" ? adminNavItems : studentNavItems;
 }

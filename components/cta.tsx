@@ -1,12 +1,10 @@
 // components/cta.tsx
-
 import Image from "next/image";
 import BlurredShape from "@/public/images/blurred-shape.svg";
 
 export default function Cta() {
     return (
         <section className="relative overflow-hidden">
-            {/* Decorative blur shape */}
             <div
                 className="pointer-events-none absolute bottom-0 left-1/2 -z-10 -mb-24 ml-20 -translate-x-1/2"
                 aria-hidden="true"
@@ -42,14 +40,13 @@ export default function Cta() {
                             Comece agora sua jornada na programação
                         </h2>
 
-                        {/* CTA Button */}
                         <div
                             className="flex justify-center"
                             data-aos="fade-up"
                             data-aos-delay={400}
                         >
                             <a
-                                href="/signup"
+                                href="/inscreva-se"
                                 className="
                   inline-flex
                   items-center

@@ -1,4 +1,4 @@
-// components/admin/PaymentForm.tsx
+// components/admin/payments/payment-form.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -36,7 +36,7 @@ const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
     { value: 'OTHER', label: 'Outro' },
 ];
 
-export default function PaymentForm({
+export function PaymentForm({
                                         isOpen,
                                         onClose,
                                         onSubmit,

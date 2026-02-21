@@ -1,6 +1,8 @@
 // app/(dashboard)/aluno/estudar/[modulo]/[aula]/page.tsx
 'use client';
 
+import { InteractiveExercise } from '@/components/student/exercises/InteractiveExercise';
+import type { InteractiveExerciseData } from '@/lib/types/content-import';
 import { useStudentExercise } from '@/hooks/useStudentExercise';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
@@ -33,6 +35,7 @@ import { useStudentLessonContents } from '@/hooks/useStudentLessonContents';
 import { useContentProgress } from '@/hooks/useContentProgress';
 import { useLessonNote } from '@/hooks/useLessonNote';
 import { NoteSidePanel } from '@/components/student/notes/NoteSidePanel';
+import { MarkdownRenderer } from '@/components/common/markdown-renderer';
 import type { LessonContentWithProgress, LessonContentType, QuizQuestion } from '@/lib/types/lesson-contents';
 
 const typeConfig: Record<LessonContentType, { icon: typeof Video; color: string; label: string }> = {
@@ -82,7 +85,6 @@ export default function AulaPage() {
         courseId: module?.course_id || '',
     });
 
-    // Encontrar primeiro conteúdo não concluído
     useEffect(() => {
         if (contents.length > 0) {
             const firstIncomplete = contents.findIndex((c) => !c.is_completed);
@@ -108,7 +110,6 @@ export default function AulaPage() {
 
         if (result.success) {
             await refetch();
-            // Auto-avançar para próximo conteúdo
             if (activeContentIndex < contents.length - 1) {
                 setActiveContentIndex(activeContentIndex + 1);
             }
@@ -228,8 +229,8 @@ export default function AulaPage() {
                             </Link>
                             <ChevronRight className="h-4 w-4 text-gray-600 flex-shrink-0" strokeWidth={1.5} />
                             <span className="text-gray-300 truncate max-w-[120px] sm:max-w-[250px]">
-                                {lesson.title}
-                            </span>
+                {lesson.title}
+              </span>
                         </div>
 
                         <button
@@ -242,8 +243,8 @@ export default function AulaPage() {
                                 <StickyNote className="h-4 w-4" strokeWidth={1.5} />
                             )}
                             <span className="hidden sm:inline">
-                                {isNotesOpen ? 'Fechar' : 'Anotações'}
-                            </span>
+                {isNotesOpen ? 'Fechar' : 'Anotações'}
+              </span>
                         </button>
                     </div>
 
@@ -260,18 +261,17 @@ export default function AulaPage() {
                             </div>
                             {isLessonCompleted && (
                                 <span className="flex-shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                    <CheckCircle className="h-3.5 w-3.5" strokeWidth={1.5} />
-                                    Concluída
-                                </span>
+                  <CheckCircle className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  Concluída
+                </span>
                             )}
                         </div>
 
-                        {/* Progress Bar */}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-400">
-                                    Progresso: {completedCount}/{totalCount} conteúdos
-                                </span>
+                <span className="text-gray-400">
+                  Progresso: {completedCount}/{totalCount} conteúdos
+                </span>
                                 <span className="text-sky-400 font-medium">{progressPercentage}%</span>
                             </div>
                             <div className="h-2 rounded-full bg-gray-800 overflow-hidden">
@@ -303,21 +303,21 @@ export default function AulaPage() {
                                                 : 'border-gray-800 bg-gray-900/30 hover:border-gray-700'
                                     }`}
                                 >
-                                    <span className={`flex items-center justify-center h-6 w-6 rounded-full ${
-                                        isCompleted
-                                            ? 'bg-emerald-500/20'
-                                            : isActive
-                                                ? 'bg-sky-500/20'
-                                                : 'bg-gray-800'
-                                    }`}>
-                                        {isCompleted ? (
-                                            <CheckCircle className="h-3.5 w-3.5 text-emerald-400" strokeWidth={1.5} />
-                                        ) : isActive ? (
-                                            <Play className="h-3 w-3 text-sky-400" strokeWidth={1.5} />
-                                        ) : (
-                                            <Circle className="h-3 w-3 text-gray-600" strokeWidth={1.5} />
-                                        )}
-                                    </span>
+                  <span className={`flex items-center justify-center h-6 w-6 rounded-full ${
+                      isCompleted
+                          ? 'bg-emerald-500/20'
+                          : isActive
+                              ? 'bg-sky-500/20'
+                              : 'bg-gray-800'
+                  }`}>
+                    {isCompleted ? (
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-400" strokeWidth={1.5} />
+                    ) : isActive ? (
+                        <Play className="h-3 w-3 text-sky-400" strokeWidth={1.5} />
+                    ) : (
+                        <Circle className="h-3 w-3 text-gray-600" strokeWidth={1.5} />
+                    )}
+                  </span>
                                     <div className="text-left">
                                         <p className={`text-sm font-medium ${
                                             isActive ? 'text-white' : isCompleted ? 'text-emerald-300' : 'text-gray-400'
@@ -424,27 +424,26 @@ function ContentViewer({ content, onComplete, onQuizComplete, isSaving }: Conten
 
     return (
         <div className="space-y-6">
-            {/* Content Header */}
             <div className="flex items-start gap-3">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-${config.color}-500/10 flex-shrink-0`}>
                     <Icon className={`h-5 w-5 text-${config.color}-400`} strokeWidth={1.5} />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-${config.color}-500/10 text-${config.color}-400`}>
-                            {config.label}
-                        </span>
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-${config.color}-500/10 text-${config.color}-400`}>
+              {config.label}
+            </span>
                         {content.duration && (
                             <span className="text-xs text-gray-500 flex items-center gap-1">
-                                <Clock className="h-3 w-3" strokeWidth={1.5} />
+                <Clock className="h-3 w-3" strokeWidth={1.5} />
                                 {content.duration}
-                            </span>
+              </span>
                         )}
                         {content.is_completed && (
                             <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-500/10 text-emerald-400">
-                                <CheckCircle className="h-3 w-3" strokeWidth={1.5} />
-                                Concluído
-                            </span>
+                <CheckCircle className="h-3 w-3" strokeWidth={1.5} />
+                Concluído
+              </span>
                         )}
                     </div>
                     <h2 className="font-semibold text-lg text-white">{content.title}</h2>
@@ -454,7 +453,6 @@ function ContentViewer({ content, onComplete, onQuizComplete, isSaving }: Conten
                 </div>
             </div>
 
-            {/* Content Body */}
             {content.type === 'VIDEO' && (
                 <VideoContentView content={content} onComplete={onComplete} isSaving={isSaving} />
             )}
@@ -499,6 +497,10 @@ function VideoContentView({
                         />
                     </div>
                 </div>
+            ) : content.content ? (
+                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6">
+                    <MarkdownRenderer content={content.content} />
+                </div>
             ) : (
                 <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-12 text-center">
                     <Video className="h-12 w-12 text-gray-600 mx-auto mb-3" strokeWidth={1.5} />
@@ -535,13 +537,9 @@ function ArticleContentView({
 }) {
     return (
         <div className="space-y-4">
-            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6">
+            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6 lg:p-8">
                 {content.content ? (
-                    <div className="prose prose-invert prose-sky max-w-none">
-                        <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
-                            {content.content}
-                        </div>
-                    </div>
+                    <MarkdownRenderer content={content.content} />
                 ) : (
                     <div className="text-center py-8">
                         <FileText className="h-12 w-12 text-gray-600 mx-auto mb-3" strokeWidth={1.5} />
@@ -578,7 +576,7 @@ function ExerciseContentView({
     isSaving: boolean;
 }) {
     const { user } = useAuth();
-    const { submission, isLoading: isLoadingSubmission, isSaving: isSavingSubmission, submitAnswer, refetch } = useStudentExercise(
+    const { submission, isLoading: isLoadingSubmission, isSaving: isSavingSubmission, submitAnswer } = useStudentExercise(
         content.id,
         user?.id || null
     );
@@ -589,14 +587,12 @@ function ExerciseContentView({
     const [answerUrl, setAnswerUrl] = useState<string>('');
     const [isEditing, setIsEditing] = useState<boolean>(false);
 
-    // Carregar dados da submissão existente
     useEffect(() => {
         if (submission) {
             setAnswerText(submission.answer_text || '');
             setAnswerCode(submission.answer_code || '');
             setAnswerUrl(submission.answer_url || '');
 
-            // Definir tab ativa baseado no que foi preenchido
             if (submission.answer_code) setActiveTab('code');
             else if (submission.answer_text) setActiveTab('text');
             else if (submission.answer_url) setActiveTab('link');
@@ -618,6 +614,17 @@ function ExerciseContentView({
 
     const hasAnswer = answerText.trim() || answerCode.trim() || answerUrl.trim();
 
+    const isInteractive = content.description?.startsWith('interactive:');
+    let interactiveData: InteractiveExerciseData | null = null;
+
+    if (isInteractive && content.content) {
+        try {
+            interactiveData = JSON.parse(content.content) as InteractiveExerciseData;
+        } catch {
+            interactiveData = null;
+        }
+    }
+
     const getStatusBadge = () => {
         if (!submission) return null;
 
@@ -632,12 +639,11 @@ function ExerciseContentView({
 
         return (
             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-${config.color}-500/10 text-${config.color}-400`}>
-                {config.label}
-            </span>
+        {config.label}
+      </span>
         );
     };
 
-    // Loading state
     if (isLoadingSubmission) {
         return (
             <div className="flex items-center justify-center py-8">
@@ -646,26 +652,44 @@ function ExerciseContentView({
         );
     }
 
-    // Se já submeteu e não está editando, mostrar resultado
+    if (isInteractive && interactiveData) {
+        return (
+            <div className="space-y-4">
+                <InteractiveExercise data={interactiveData} />
+
+                {!content.is_completed && (
+                    <button
+                        onClick={onComplete}
+                        disabled={isSaving}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                        {isSaving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />
+                        ) : (
+                            <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
+                        )}
+                        Marcar como concluído
+                    </button>
+                )}
+            </div>
+        );
+    }
+
     if (submission && !isEditing) {
         return (
             <div className="space-y-4">
-                {/* Instruções */}
                 <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-4 sm:p-6">
                     <h3 className="font-semibold text-amber-300 mb-4 flex items-center gap-2">
                         <BookOpen className="h-5 w-5" strokeWidth={1.5} />
                         Instruções do Exercício
                     </h3>
                     {content.content ? (
-                        <div className="whitespace-pre-wrap text-amber-100/80 leading-relaxed">
-                            {content.content}
-                        </div>
+                        <MarkdownRenderer content={content.content} className="text-amber-100/80" />
                     ) : (
                         <p className="text-amber-100/60">Nenhuma instrução disponível</p>
                     )}
                 </div>
 
-                {/* Status da submissão */}
                 <div className={`rounded-lg border p-4 sm:p-6 ${
                     submission.status === 'approved'
                         ? 'border-emerald-500/20 bg-emerald-950/20'
@@ -692,15 +716,14 @@ function ExerciseContentView({
                         {getStatusBadge()}
                     </div>
 
-                    {/* Nota e Feedback */}
                     {(submission.status === 'approved' || submission.status === 'reviewed' || submission.status === 'needs_revision') && (
                         <div className="space-y-3 mb-4">
                             {submission.grade !== null && (
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm text-gray-400">Nota:</span>
                                     <span className="text-lg font-bold text-white">
-                                        {submission.grade.toFixed(1)} / 10
-                                    </span>
+                    {submission.grade.toFixed(1)} / 10
+                  </span>
                                 </div>
                             )}
                             {submission.feedback && (
@@ -714,7 +737,6 @@ function ExerciseContentView({
                         </div>
                     )}
 
-                    {/* Preview da resposta */}
                     <div className="space-y-2">
                         <p className="text-sm text-gray-400">Sua resposta:</p>
                         <div className="rounded-lg bg-gray-900/50 p-3 text-sm text-gray-300 max-h-32 overflow-y-auto">
@@ -738,7 +760,6 @@ function ExerciseContentView({
                         </div>
                     </div>
 
-                    {/* Botão de editar (só se ainda está pendente) */}
                     {submission.status === 'pending' && (
                         <button
                             onClick={() => setIsEditing(true)}
@@ -763,32 +784,26 @@ function ExerciseContentView({
         );
     }
 
-    // Formulário de resposta
     return (
         <div className="space-y-4">
-            {/* Instruções */}
             <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-4 sm:p-6">
                 <h3 className="font-semibold text-amber-300 mb-4 flex items-center gap-2">
                     <BookOpen className="h-5 w-5" strokeWidth={1.5} />
                     Instruções do Exercício
                 </h3>
                 {content.content ? (
-                    <div className="whitespace-pre-wrap text-amber-100/80 leading-relaxed">
-                        {content.content}
-                    </div>
+                    <MarkdownRenderer content={content.content} className="text-amber-100/80" />
                 ) : (
                     <p className="text-amber-100/60">Nenhuma instrução disponível</p>
                 )}
             </div>
 
-            {/* Formulário de resposta */}
             <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6">
                 <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
                     <PenTool className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
                     Sua Resposta
                 </h3>
 
-                {/* Tabs */}
                 <div className="flex gap-1 mb-4 border-b border-gray-800/50">
                     <button
                         onClick={() => setActiveTab('code')}
@@ -822,7 +837,6 @@ function ExerciseContentView({
                     </button>
                 </div>
 
-                {/* Conteúdo das tabs */}
                 {activeTab === 'code' && (
                     <textarea
                         value={answerCode}
@@ -853,7 +867,6 @@ function ExerciseContentView({
                     />
                 )}
 
-                {/* Botões */}
                 <div className="flex gap-3 mt-4">
                     {isEditing && (
                         <button
@@ -989,7 +1002,6 @@ function QuizContentView({
         );
     }
 
-    // Mostrar resultado anterior
     if (content.is_completed && !quizStarted && previousScore !== undefined && previousScore !== null) {
         const feedback = getFeedback(previousScore, previousTotal || totalQuestions);
 
@@ -1012,7 +1024,6 @@ function QuizContentView({
         );
     }
 
-    // Tela inicial
     if (!quizStarted && !quizSubmitted) {
         return (
             <div className="rounded-lg border border-violet-500/20 bg-violet-950/20 p-6 text-center">
@@ -1031,7 +1042,6 @@ function QuizContentView({
         );
     }
 
-    // Resultado após enviar
     if (quizSubmitted) {
         const feedback = getFeedback(currentScore, totalQuestions);
 
@@ -1053,7 +1063,6 @@ function QuizContentView({
         );
     }
 
-    // Quiz em andamento
     return (
         <div className="space-y-4">
             {questions.map((question, index) => (

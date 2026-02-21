@@ -20,7 +20,10 @@ import {
     ExternalLink,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { MarkdownRenderer } from '@/components/common/markdown-renderer';
+import { InteractiveExercise } from '@/components/student/exercises/InteractiveExercise';
 import type { LessonContent, LessonContentType, QuizQuestion } from '@/lib/types/lesson-contents';
+import type { InteractiveExerciseData } from '@/lib/types/content-import';
 
 interface LessonPreviewModalProps {
     lessonId: string;
@@ -101,7 +104,6 @@ export default function LessonPreviewModal({
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
             <div className="relative bg-gray-900 border border-gray-700/50 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-                {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800/50 bg-amber-950/20">
                     <div className="flex items-center gap-3">
                         <Eye className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
@@ -118,7 +120,6 @@ export default function LessonPreviewModal({
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 overflow-hidden flex">
                     {isLoading ? (
                         <div className="flex-1 flex items-center justify-center">
@@ -140,7 +141,6 @@ export default function LessonPreviewModal({
                         </div>
                     ) : (
                         <>
-                            {/* Sidebar - Lista de conteúdos */}
                             <div className="w-64 border-r border-gray-800/50 overflow-y-auto hidden lg:block">
                                 <div className="p-4">
                                     <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">
@@ -162,13 +162,13 @@ export default function LessonPreviewModal({
                                                             : 'hover:bg-gray-800/50'
                                                     }`}
                                                 >
-                                                    <span className={`flex items-center justify-center h-6 w-6 rounded ${
-                                                        isActive ? 'bg-sky-500/20' : 'bg-gray-800'
-                                                    }`}>
-                                                        <Icon className={`h-3.5 w-3.5 ${
-                                                            isActive ? 'text-sky-400' : 'text-gray-500'
-                                                        }`} strokeWidth={1.5} />
-                                                    </span>
+                          <span className={`flex items-center justify-center h-6 w-6 rounded ${
+                              isActive ? 'bg-sky-500/20' : 'bg-gray-800'
+                          }`}>
+                            <Icon className={`h-3.5 w-3.5 ${
+                                isActive ? 'text-sky-400' : 'text-gray-500'
+                            }`} strokeWidth={1.5} />
+                          </span>
                                                     <div className="flex-1 min-w-0">
                                                         <p className={`text-sm truncate ${
                                                             isActive ? 'text-white font-medium' : 'text-gray-400'
@@ -187,7 +187,6 @@ export default function LessonPreviewModal({
                                 </div>
                             </div>
 
-                            {/* Main Content */}
                             <div className="flex-1 overflow-y-auto">
                                 <div className="p-6">
                                     {activeContent && (
@@ -199,7 +198,6 @@ export default function LessonPreviewModal({
                     )}
                 </div>
 
-                {/* Footer - Navigation */}
                 {contents.length > 0 && (
                     <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800/50">
                         <button
@@ -244,68 +242,70 @@ function ContentPreview({ content }: { content: LessonContent }) {
     const config = typeConfig[content.type];
     const Icon = config.icon;
 
+    const isInteractive = content.description?.startsWith('interactive:');
+    let interactiveData: InteractiveExerciseData | null = null;
+
+    if (isInteractive && content.content) {
+        try {
+            interactiveData = JSON.parse(content.content) as InteractiveExerciseData;
+        } catch {
+            interactiveData = null;
+        }
+    }
+
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-start gap-3">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-${config.color}-500/10 flex-shrink-0`}>
                     <Icon className={`h-5 w-5 text-${config.color}-400`} strokeWidth={1.5} />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-${config.color}-500/10 text-${config.color}-400`}>
-                            {config.label}
-                        </span>
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-${config.color}-500/10 text-${config.color}-400`}>
+              {config.label}
+            </span>
                         {content.duration && (
                             <span className="text-xs text-gray-500 flex items-center gap-1">
-                                <Clock className="h-3 w-3" strokeWidth={1.5} />
+                <Clock className="h-3 w-3" strokeWidth={1.5} />
                                 {content.duration}
-                            </span>
+              </span>
+                        )}
+                        {isInteractive && (
+                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-sky-500/10 text-sky-400">
+                Interativo
+              </span>
                         )}
                     </div>
                     <h2 className="text-xl font-semibold text-white">{content.title}</h2>
-                    {content.description && (
+                    {content.description && !isInteractive && (
                         <p className="text-sm text-gray-500 mt-1">{content.description}</p>
                     )}
                 </div>
             </div>
 
-            {/* Content based on type */}
-            {content.type === 'VIDEO' && content.youtube_id && (
-                <div className="rounded-lg border border-gray-800/50 bg-gray-900/50 overflow-hidden">
-                    <div className="aspect-video bg-black">
-                        <iframe
-                            width="100%"
-                            height="100%"
-                            src={`https://www.youtube.com/embed/${content.youtube_id}`}
-                            title={content.title}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                        />
-                    </div>
-                </div>
+            {content.type === 'VIDEO' && (
+                <VideoPreview content={content} />
             )}
 
             {content.type === 'ARTICLE' && content.content && (
-                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-6">
-                    <div className="prose prose-invert prose-sky max-w-none">
-                        <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
-                            {content.content}
-                        </div>
-                    </div>
+                <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6 lg:p-8">
+                    <MarkdownRenderer content={content.content} />
                 </div>
             )}
 
-            {content.type === 'EXERCISE' && content.content && (
-                <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-6">
+            {content.type === 'EXERCISE' && isInteractive && interactiveData && (
+                <div className="rounded-lg border border-amber-500/20 bg-amber-950/10 p-4 sm:p-6">
+                    <InteractiveExercise data={interactiveData} />
+                </div>
+            )}
+
+            {content.type === 'EXERCISE' && !isInteractive && content.content && (
+                <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-4 sm:p-6">
                     <h3 className="font-semibold text-amber-300 mb-4 flex items-center gap-2">
                         <PenTool className="h-5 w-5" strokeWidth={1.5} />
                         Instruções do Exercício
                     </h3>
-                    <div className="whitespace-pre-wrap text-amber-100/80 leading-relaxed">
-                        {content.content}
-                    </div>
+                    <MarkdownRenderer content={content.content} className="text-amber-100/80" />
                 </div>
             )}
 
@@ -337,6 +337,41 @@ function ContentPreview({ content }: { content: LessonContent }) {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function VideoPreview({ content }: { content: LessonContent }) {
+    if (content.youtube_id) {
+        return (
+            <div className="rounded-lg border border-gray-800/50 bg-gray-900/50 overflow-hidden">
+                <div className="aspect-video bg-black">
+                    <iframe
+                        width="100%"
+                        height="100%"
+                        src={`https://www.youtube.com/embed/${content.youtube_id}`}
+                        title={content.title}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    />
+                </div>
+            </div>
+        );
+    }
+
+    if (content.content) {
+        return (
+            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 sm:p-6">
+                <MarkdownRenderer content={content.content} />
+            </div>
+        );
+    }
+
+    return (
+        <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-12 text-center">
+            <Video className="h-12 w-12 text-gray-600 mx-auto mb-3" strokeWidth={1.5} />
+            <p className="text-gray-400">Vídeo não disponível</p>
         </div>
     );
 }
@@ -387,8 +422,8 @@ function QuizPreview({ quizData }: { quizData: QuizQuestion[] | null }) {
                                     <Circle className="h-4 w-4 text-gray-600 flex-shrink-0" strokeWidth={1.5} />
                                 )}
                                 <span className={option.correct ? 'text-emerald-300' : 'text-gray-300'}>
-                                    {option.text}
-                                </span>
+                  {option.text}
+                </span>
                                 {option.correct && (
                                     <span className="ml-auto text-xs text-emerald-400">✓ Correta</span>
                                 )}

@@ -14,6 +14,7 @@ import {
     BarChart,
     User,
     StickyNote,
+    Upload,
     type LucideIcon,
 } from "lucide-react";
 
@@ -60,6 +61,12 @@ export const adminNavItems: NavItem[] = [
         label: "Aulas",
         href: "/admin/aulas",
         description: "Gerenciar aulas e conteúdos",
+    },
+    {
+        icon: Upload,
+        label: "Importar",
+        href: "/admin/importar",
+        description: "Importar conteúdo via JSON",
     },
     {
         icon: ClipboardCheck,

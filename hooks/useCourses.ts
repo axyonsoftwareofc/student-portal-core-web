@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Course, CourseFormData, CourseStatus } from '@/lib/types/database';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
+import type { Course, CourseFormData } from '@/lib/types/database';
 
 export type { Course, CourseFormData };
 
@@ -15,7 +16,6 @@ export function useCourses() {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
-    // Buscar todos os cursos
     const fetchCourses = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -32,12 +32,12 @@ export function useCourses() {
         } catch (err) {
             console.error('[useCourses] Erro ao buscar cursos:', err);
             setError('Erro ao carregar cursos');
+            showErrorToast('Erro ao carregar cursos', 'Verifique sua conexão');
         } finally {
             setIsLoading(false);
         }
     }, [supabase]);
 
-    // Criar curso
     const createCourse = useCallback(async (
         data: CourseFormData
     ): Promise<{ success: boolean; error?: string; course?: Course }> => {
@@ -57,14 +57,16 @@ export function useCourses() {
             if (insertError) throw insertError;
 
             await fetchCourses();
+
+            showSuccessToast('Curso criado!', data.name);
             return { success: true, course: newCourse as Course };
         } catch (err) {
             console.error('[useCourses] Erro ao criar curso:', err);
+            showErrorToast('Erro ao criar curso', 'Tente novamente');
             return { success: false, error: 'Erro ao criar curso' };
         }
     }, [supabase, fetchCourses]);
 
-    // Atualizar curso
     const updateCourse = useCallback(async (
         id: string,
         data: Partial<CourseFormData>
@@ -88,14 +90,16 @@ export function useCourses() {
             if (updateError) throw updateError;
 
             await fetchCourses();
+
+            showSuccessToast('Curso atualizado!', data.name || 'Alterações salvas');
             return { success: true };
         } catch (err) {
             console.error('[useCourses] Erro ao atualizar curso:', err);
+            showErrorToast('Erro ao atualizar curso', 'Tente novamente');
             return { success: false, error: 'Erro ao atualizar curso' };
         }
     }, [supabase, fetchCourses]);
 
-    // Excluir curso
     const deleteCourse = useCallback(async (
         id: string
     ): Promise<{ success: boolean; error?: string }> => {
@@ -108,9 +112,12 @@ export function useCourses() {
             if (deleteError) throw deleteError;
 
             await fetchCourses();
+
+            showSuccessToast('Curso excluído', 'Registro removido com sucesso');
             return { success: true };
         } catch (err) {
             console.error('[useCourses] Erro ao excluir curso:', err);
+            showErrorToast('Erro ao excluir curso', 'Verifique se não há módulos vinculados');
             return { success: false, error: 'Erro ao excluir curso' };
         }
     }, [supabase, fetchCourses]);

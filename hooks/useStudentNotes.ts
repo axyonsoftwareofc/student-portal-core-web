@@ -3,6 +3,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import {
     StudentNote,
     StudentNoteWithDetails,
@@ -77,6 +78,7 @@ export function useStudentNotes(): UseStudentNotesReturn {
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar anotações';
                 setError(errorMessage);
+                showErrorToast('Erro ao carregar anotações', 'Verifique sua conexão');
                 console.error('useStudentNotes - fetchNotesByStudent error:', err);
             } finally {
                 setIsLoading(false);
@@ -155,6 +157,7 @@ export function useStudentNotes(): UseStudentNotesReturn {
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Erro ao salvar anotação';
                 setError(errorMessage);
+                showErrorToast('Erro ao salvar anotação', errorMessage);
                 throw err;
             }
         },
@@ -176,9 +179,12 @@ export function useStudentNotes(): UseStudentNotesReturn {
                 setNotes((previousNotes: StudentNoteWithDetails[]) =>
                     previousNotes.filter((note: StudentNoteWithDetails) => note.id !== noteId)
                 );
+
+                showSuccessToast('Anotação excluída', 'Registro removido com sucesso');
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir anotação';
                 setError(errorMessage);
+                showErrorToast('Erro ao excluir anotação', errorMessage);
                 throw err;
             }
         },

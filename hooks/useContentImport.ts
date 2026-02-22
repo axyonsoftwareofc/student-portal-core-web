@@ -174,6 +174,10 @@ export function useContentImport(): UseContentImportReturn {
             ordering_items: exercise.ordering_items,
             true_false_statements: exercise.true_false_statements,
             fill_blank_data: exercise.fill_blank_data,
+            matching_data: exercise.matching_data,
+            multiple_select_data: exercise.multiple_select_data,
+            code_completion_data: exercise.code_completion_data,    // NOVO
+            drag_drop_data: exercise.drag_drop_data,                // NOVO
         };
 
         return {

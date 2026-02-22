@@ -73,6 +73,354 @@ function validateArticleContent(content: ImportArticleContent, index: number, er
     }
 }
 
+function validateFillBlankContent(content: ImportExerciseContent, index: number, errors: ValidationError[]): void {
+    if (!content.fill_blank_data) {
+        errors.push({
+            field: `contents[${index}].fill_blank_data`,
+            message: `Exercício "${content.title}": fill_blank precisa de fill_blank_data`
+        });
+        return;
+    }
+
+    const fillData = content.fill_blank_data;
+
+    if (!fillData.text_with_blanks?.trim()) {
+        errors.push({
+            field: `contents[${index}].fill_blank_data.text_with_blanks`,
+            message: `Exercício "${content.title}": text_with_blanks é obrigatório`
+        });
+    }
+
+    if (!fillData.blanks || !Array.isArray(fillData.blanks) || fillData.blanks.length < 1) {
+        errors.push({
+            field: `contents[${index}].fill_blank_data.blanks`,
+            message: `Exercício "${content.title}": deve ter pelo menos 1 lacuna`
+        });
+        return;
+    }
+
+    fillData.blanks.forEach((blank, blankIndex) => {
+        if (!blank.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].fill_blank_data.blanks[${blankIndex}].id`,
+                message: `Exercício "${content.title}", lacuna ${blankIndex + 1}: id é obrigatório`
+            });
+        }
+
+        if (!blank.correct_answer?.trim()) {
+            errors.push({
+                field: `contents[${index}].fill_blank_data.blanks[${blankIndex}].correct_answer`,
+                message: `Exercício "${content.title}", lacuna ${blankIndex + 1}: correct_answer é obrigatório`
+            });
+        }
+
+        if (blank.alternatives && blank.alternatives.length > 0) {
+            const correctInAlternatives = blank.alternatives.some(
+                (alt) => alt.toLowerCase() === blank.correct_answer?.toLowerCase()
+            );
+            if (!correctInAlternatives) {
+                errors.push({
+                    field: `contents[${index}].fill_blank_data.blanks[${blankIndex}].alternatives`,
+                    message: `Exercício "${content.title}", lacuna ${blankIndex + 1}: correct_answer deve estar nas alternatives`
+                });
+            }
+        }
+    });
+
+    const text = fillData.text_with_blanks || '';
+    const placeholderMatches = text.match(/\{(\d+)\}|_{3,}/g) || [];
+
+    if (placeholderMatches.length !== fillData.blanks.length) {
+        errors.push({
+            field: `contents[${index}].fill_blank_data`,
+            message: `Exercício "${content.title}": número de lacunas no texto (${placeholderMatches.length}) não bate com blanks array (${fillData.blanks.length})`
+        });
+    }
+}
+
+function validateMatchingContent(content: ImportExerciseContent, index: number, errors: ValidationError[]): void {
+    if (!content.matching_data) {
+        errors.push({
+            field: `contents[${index}].matching_data`,
+            message: `Exercício "${content.title}": matching precisa de matching_data`
+        });
+        return;
+    }
+
+    const matchingData = content.matching_data;
+
+    if (!matchingData.pairs || !Array.isArray(matchingData.pairs) || matchingData.pairs.length < 2) {
+        errors.push({
+            field: `contents[${index}].matching_data.pairs`,
+            message: `Exercício "${content.title}": matching deve ter pelo menos 2 pares`
+        });
+        return;
+    }
+
+    matchingData.pairs.forEach((pair, pairIndex) => {
+        if (!pair.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].matching_data.pairs[${pairIndex}].id`,
+                message: `Exercício "${content.title}", par ${pairIndex + 1}: id é obrigatório`
+            });
+        }
+
+        if (!pair.left?.trim()) {
+            errors.push({
+                field: `contents[${index}].matching_data.pairs[${pairIndex}].left`,
+                message: `Exercício "${content.title}", par ${pairIndex + 1}: left (termo) é obrigatório`
+            });
+        }
+
+        if (!pair.right?.trim()) {
+            errors.push({
+                field: `contents[${index}].matching_data.pairs[${pairIndex}].right`,
+                message: `Exercício "${content.title}", par ${pairIndex + 1}: right (correspondência) é obrigatório`
+            });
+        }
+    });
+
+    const ids = matchingData.pairs.map((p) => p.id);
+    const uniqueIds = new Set(ids);
+    if (uniqueIds.size !== ids.length) {
+        errors.push({
+            field: `contents[${index}].matching_data.pairs`,
+            message: `Exercício "${content.title}": IDs dos pares devem ser únicos`
+        });
+    }
+}
+
+function validateMultipleSelectContent(content: ImportExerciseContent, index: number, errors: ValidationError[]): void {
+    if (!content.multiple_select_data) {
+        errors.push({
+            field: `contents[${index}].multiple_select_data`,
+            message: `Exercício "${content.title}": multiple_select precisa de multiple_select_data`
+        });
+        return;
+    }
+
+    const selectData = content.multiple_select_data;
+
+    if (!selectData.options || !Array.isArray(selectData.options) || selectData.options.length < 2) {
+        errors.push({
+            field: `contents[${index}].multiple_select_data.options`,
+            message: `Exercício "${content.title}": multiple_select deve ter pelo menos 2 opções`
+        });
+        return;
+    }
+
+    const correctOptions = selectData.options.filter((opt) => opt.correct);
+    if (correctOptions.length < 1) {
+        errors.push({
+            field: `contents[${index}].multiple_select_data.options`,
+            message: `Exercício "${content.title}": deve ter pelo menos 1 opção correta`
+        });
+    }
+
+    const incorrectOptions = selectData.options.filter((opt) => !opt.correct);
+    if (incorrectOptions.length < 1) {
+        errors.push({
+            field: `contents[${index}].multiple_select_data.options`,
+            message: `Exercício "${content.title}": deve ter pelo menos 1 opção incorreta`
+        });
+    }
+
+    selectData.options.forEach((option, optIndex) => {
+        if (!option.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].multiple_select_data.options[${optIndex}].id`,
+                message: `Exercício "${content.title}", opção ${optIndex + 1}: id é obrigatório`
+            });
+        }
+
+        if (!option.text?.trim()) {
+            errors.push({
+                field: `contents[${index}].multiple_select_data.options[${optIndex}].text`,
+                message: `Exercício "${content.title}", opção ${optIndex + 1}: text é obrigatório`
+            });
+        }
+
+        if (typeof option.correct !== 'boolean') {
+            errors.push({
+                field: `contents[${index}].multiple_select_data.options[${optIndex}].correct`,
+                message: `Exercício "${content.title}", opção ${optIndex + 1}: correct deve ser true ou false`
+            });
+        }
+    });
+
+    const ids = selectData.options.map((o) => o.id);
+    const uniqueIds = new Set(ids);
+    if (uniqueIds.size !== ids.length) {
+        errors.push({
+            field: `contents[${index}].multiple_select_data.options`,
+            message: `Exercício "${content.title}": IDs das opções devem ser únicos`
+        });
+    }
+}
+
+function validateCodeCompletionContent(content: ImportExerciseContent, index: number, errors: ValidationError[]): void {
+    if (!content.code_completion_data) {
+        errors.push({
+            field: `contents[${index}].code_completion_data`,
+            message: `Exercício "${content.title}": code_completion precisa de code_completion_data`
+        });
+        return;
+    }
+
+    const codeData = content.code_completion_data;
+
+    if (!codeData.language?.trim()) {
+        errors.push({
+            field: `contents[${index}].code_completion_data.language`,
+            message: `Exercício "${content.title}": language é obrigatório (ex: "java", "python")`
+        });
+    }
+
+    if (!codeData.code_template?.trim()) {
+        errors.push({
+            field: `contents[${index}].code_completion_data.code_template`,
+            message: `Exercício "${content.title}": code_template é obrigatório`
+        });
+    }
+
+    if (!codeData.blanks || !Array.isArray(codeData.blanks) || codeData.blanks.length < 1) {
+        errors.push({
+            field: `contents[${index}].code_completion_data.blanks`,
+            message: `Exercício "${content.title}": deve ter pelo menos 1 lacuna`
+        });
+        return;
+    }
+
+    codeData.blanks.forEach((blank, blankIndex) => {
+        if (!blank.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].code_completion_data.blanks[${blankIndex}].id`,
+                message: `Exercício "${content.title}", lacuna ${blankIndex + 1}: id é obrigatório`
+            });
+        }
+
+        if (!blank.correct_answer?.trim()) {
+            errors.push({
+                field: `contents[${index}].code_completion_data.blanks[${blankIndex}].correct_answer`,
+                message: `Exercício "${content.title}", lacuna ${blankIndex + 1}: correct_answer é obrigatório`
+            });
+        }
+
+        if (blank.alternatives && blank.alternatives.length > 0) {
+            const correctInAlternatives = blank.alternatives.some(
+                (alt) => alt === blank.correct_answer
+            );
+            if (!correctInAlternatives) {
+                errors.push({
+                    field: `contents[${index}].code_completion_data.blanks[${blankIndex}].alternatives`,
+                    message: `Exercício "${content.title}", lacuna ${blankIndex + 1}: correct_answer deve estar nas alternatives`
+                });
+            }
+        }
+    });
+
+    const template = codeData.code_template || '';
+    const placeholderMatches = template.match(/\{(\d+)\}|_{3,}/g) || [];
+
+    if (placeholderMatches.length !== codeData.blanks.length) {
+        errors.push({
+            field: `contents[${index}].code_completion_data`,
+            message: `Exercício "${content.title}": número de lacunas no código (${placeholderMatches.length}) não bate com blanks array (${codeData.blanks.length})`
+        });
+    }
+}
+
+function validateDragDropContent(content: ImportExerciseContent, index: number, errors: ValidationError[]): void {
+    if (!content.drag_drop_data) {
+        errors.push({
+            field: `contents[${index}].drag_drop_data`,
+            message: `Exercício "${content.title}": drag_drop precisa de drag_drop_data`
+        });
+        return;
+    }
+
+    const dragData = content.drag_drop_data;
+
+    if (!dragData.items || !Array.isArray(dragData.items) || dragData.items.length < 2) {
+        errors.push({
+            field: `contents[${index}].drag_drop_data.items`,
+            message: `Exercício "${content.title}": drag_drop deve ter pelo menos 2 itens`
+        });
+        return;
+    }
+
+    if (!dragData.zones || !Array.isArray(dragData.zones) || dragData.zones.length < 1) {
+        errors.push({
+            field: `contents[${index}].drag_drop_data.zones`,
+            message: `Exercício "${content.title}": drag_drop deve ter pelo menos 1 zona`
+        });
+        return;
+    }
+
+    const itemIds = new Set<string>();
+    dragData.items.forEach((item, itemIndex) => {
+        if (!item.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].drag_drop_data.items[${itemIndex}].id`,
+                message: `Exercício "${content.title}", item ${itemIndex + 1}: id é obrigatório`
+            });
+        } else {
+            itemIds.add(item.id);
+        }
+
+        if (!item.content?.trim()) {
+            errors.push({
+                field: `contents[${index}].drag_drop_data.items[${itemIndex}].content`,
+                message: `Exercício "${content.title}", item ${itemIndex + 1}: content é obrigatório`
+            });
+        }
+    });
+
+    dragData.zones.forEach((zone, zoneIndex) => {
+        if (!zone.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].drag_drop_data.zones[${zoneIndex}].id`,
+                message: `Exercício "${content.title}", zona ${zoneIndex + 1}: id é obrigatório`
+            });
+        }
+
+        if (!zone.label?.trim()) {
+            errors.push({
+                field: `contents[${index}].drag_drop_data.zones[${zoneIndex}].label`,
+                message: `Exercício "${content.title}", zona ${zoneIndex + 1}: label é obrigatório`
+            });
+        }
+
+        if (!zone.correct_item_id?.trim()) {
+            errors.push({
+                field: `contents[${index}].drag_drop_data.zones[${zoneIndex}].correct_item_id`,
+                message: `Exercício "${content.title}", zona ${zoneIndex + 1}: correct_item_id é obrigatório`
+            });
+        } else if (!itemIds.has(zone.correct_item_id)) {
+            errors.push({
+                field: `contents[${index}].drag_drop_data.zones[${zoneIndex}].correct_item_id`,
+                message: `Exercício "${content.title}", zona ${zoneIndex + 1}: correct_item_id "${zone.correct_item_id}" não existe nos itens`
+            });
+        }
+    });
+
+    if (itemIds.size !== dragData.items.length) {
+        errors.push({
+            field: `contents[${index}].drag_drop_data.items`,
+            message: `Exercício "${content.title}": IDs dos itens devem ser únicos`
+        });
+    }
+
+    const zoneIds = dragData.zones.map((z) => z.id);
+    const uniqueZoneIds = new Set(zoneIds);
+    if (uniqueZoneIds.size !== zoneIds.length) {
+        errors.push({
+            field: `contents[${index}].drag_drop_data.zones`,
+            message: `Exercício "${content.title}": IDs das zonas devem ser únicos`
+        });
+    }
+}
+
 function validateExerciseContent(content: ImportExerciseContent, index: number, errors: ValidationError[]): void {
     if (!content.content?.trim()) {
         errors.push({ field: `contents[${index}].content`, message: `Exercício "${content.title}": enunciado é obrigatório` });
@@ -87,7 +435,7 @@ function validateExerciseContent(content: ImportExerciseContent, index: number, 
         errors.push({ field: `contents[${index}].difficulty`, message: `Exercício "${content.title}": dificuldade deve ser easy, medium ou hard` });
     }
 
-    const validTypes = ['ordering', 'true_false', 'fill_blank', 'code', 'text', 'open'];
+    const validTypes = ['ordering', 'true_false', 'fill_blank', 'matching', 'multiple_select', 'code_completion', 'drag_drop', 'code', 'text', 'open'];
     if (!content.exercise_type || !validTypes.includes(content.exercise_type)) {
         errors.push({ field: `contents[${index}].exercise_type`, message: `Exercício "${content.title}": exercise_type deve ser ${validTypes.join(', ')}` });
     }
@@ -98,6 +446,26 @@ function validateExerciseContent(content: ImportExerciseContent, index: number, 
 
     if (content.exercise_type === 'true_false' && (!content.true_false_statements || content.true_false_statements.length < 1)) {
         errors.push({ field: `contents[${index}].true_false_statements`, message: `Exercício "${content.title}": true_false precisa de pelo menos 1 afirmação` });
+    }
+
+    if (content.exercise_type === 'fill_blank') {
+        validateFillBlankContent(content, index, errors);
+    }
+
+    if (content.exercise_type === 'matching') {
+        validateMatchingContent(content, index, errors);
+    }
+
+    if (content.exercise_type === 'multiple_select') {
+        validateMultipleSelectContent(content, index, errors);
+    }
+
+    if (content.exercise_type === 'code_completion') {
+        validateCodeCompletionContent(content, index, errors);
+    }
+
+    if (content.exercise_type === 'drag_drop') {
+        validateDragDropContent(content, index, errors);
     }
 }
 

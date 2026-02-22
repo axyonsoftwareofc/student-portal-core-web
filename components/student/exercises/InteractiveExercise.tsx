@@ -1,7 +1,7 @@
 // components/student/exercises/InteractiveExercise.tsx
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
     CheckCircle,
     XCircle,
@@ -12,10 +12,24 @@ import {
     RotateCcw,
     Eye,
     Lightbulb,
+    PenLine,
+    Link2,
+    ListChecks,
+    Code2,
+    Move
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from '@/components/common/markdown-renderer';
-import type { InteractiveExerciseData, OrderingItem, TrueFalseStatement } from '@/lib/types/content-import';
+import type {
+    InteractiveExerciseData,
+    OrderingItem,
+    TrueFalseStatement,
+    FillBlankData,
+    MatchingData,
+    MatchingPair,
+    MultipleSelectData,
+    MultipleSelectOption,
+} from '@/lib/types/content-import';
 
 interface InteractiveExerciseProps {
     data: InteractiveExerciseData;
@@ -27,9 +41,276 @@ export function InteractiveExercise({ data }: InteractiveExerciseProps) {
             return <OrderingExercise data={data} />;
         case 'true_false':
             return <TrueFalseExercise data={data} />;
+        case 'fill_blank':
+            return <FillBlankExercise data={data} />;
+        case 'matching':
+            return <MatchingExercise data={data} />;
+        case 'multiple_select':
+            return <MultipleSelectExercise data={data} />;
+        case 'code_completion':
+            return <CodeCompletionExercise data={data} />;
+        case 'drag_drop':
+            return <DragDropExercise data={data} />;
         default:
             return <OpenExercise data={data} />;
     }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAG AND DROP EXERCISE (NOVO!)
+// ═══════════════════════════════════════════════════════════════
+
+function DragDropExercise({ data }: { data: InteractiveExerciseData }) {
+    const dragData = data.drag_drop_data;
+    const items = dragData?.items || [];
+    const zones = dragData?.zones || [];
+
+    const [placements, setPlacements] = useState<Record<string, string>>({});  // zoneId -> itemId
+    const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+    const [submitted, setSubmitted] = useState<boolean>(false);
+    const [showExplanation, setShowExplanation] = useState<boolean>(false);
+
+    // Itens disponíveis (não colocados em nenhuma zona)
+    const availableItems = useMemo(() => {
+        const placedItemIds = new Set(Object.values(placements));
+        return items.filter((item) => !placedItemIds.has(item.id));
+    }, [items, placements]);
+
+    const handleDragStart = useCallback((itemId: string) => {
+        if (submitted) return;
+        setDraggedItemId(itemId);
+    }, [submitted]);
+
+    const handleDragEnd = useCallback(() => {
+        setDraggedItemId(null);
+    }, []);
+
+    const handleDropOnZone = useCallback((zoneId: string) => {
+        if (submitted || !draggedItemId) return;
+
+        // Remove o item de qualquer zona anterior
+        setPlacements((prev) => {
+            const newPlacements = { ...prev };
+
+            // Remove de zona anterior se existir
+            Object.keys(newPlacements).forEach((key) => {
+                if (newPlacements[key] === draggedItemId) {
+                    delete newPlacements[key];
+                }
+            });
+
+            // Coloca na nova zona
+            newPlacements[zoneId] = draggedItemId;
+
+            return newPlacements;
+        });
+
+        setDraggedItemId(null);
+    }, [submitted, draggedItemId]);
+
+    const handleRemoveFromZone = useCallback((zoneId: string) => {
+        if (submitted) return;
+        setPlacements((prev) => {
+            const newPlacements = { ...prev };
+            delete newPlacements[zoneId];
+            return newPlacements;
+        });
+    }, [submitted]);
+
+    const handleClickToPlace = useCallback((itemId: string) => {
+        if (submitted) return;
+
+        // Encontra a primeira zona vazia
+        const emptyZone = zones.find((zone) => !placements[zone.id]);
+
+        if (emptyZone) {
+            setPlacements((prev) => ({
+                ...prev,
+                [emptyZone.id]: itemId,
+            }));
+        }
+    }, [submitted, zones, placements]);
+
+    const handleSubmit = useCallback((): void => {
+        setSubmitted(true);
+    }, []);
+
+    const handleRetry = useCallback((): void => {
+        setPlacements({});
+        setSubmitted(false);
+        setShowExplanation(false);
+    }, []);
+
+    const allZonesFilled = zones.every((zone) => placements[zone.id]);
+
+    const correctCount = useMemo(() => {
+        if (!submitted) return 0;
+        return zones.filter((zone) => placements[zone.id] === zone.correct_item_id).length;
+    }, [submitted, zones, placements]);
+
+    const getItemById = useCallback((itemId: string) => {
+        return items.find((item) => item.id === itemId);
+    }, [items]);
+
+    if (!dragData) {
+        return (
+            <div className="p-4 rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-300">
+                Erro: Dados do exercício drag_drop não encontrados.
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <Move className="h-4 w-4 text-sky-400" strokeWidth={1.5} />
+                <span className="text-sm font-medium text-gray-300">Arraste os itens para as posições corretas</span>
+                <DifficultyBadge difficulty={data.difficulty} />
+            </div>
+
+            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
+                <MarkdownRenderer content={data.instruction} />
+            </div>
+
+            {/* Itens disponíveis */}
+            <div className="space-y-2">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Itens disponíveis</p>
+                <div className="flex flex-wrap gap-2 min-h-[3rem] p-3 rounded-lg border border-dashed border-gray-700 bg-gray-900/30">
+                    {availableItems.length === 0 ? (
+                        <span className="text-sm text-gray-600 italic">Todos os itens foram posicionados</span>
+                    ) : (
+                        availableItems.map((item) => (
+                            <div
+                                key={item.id}
+                                draggable={!submitted}
+                                onDragStart={() => handleDragStart(item.id)}
+                                onDragEnd={handleDragEnd}
+                                onClick={() => handleClickToPlace(item.id)}
+                                className={cn(
+                                    "px-3 py-2 rounded-lg border text-sm font-medium transition-all select-none",
+                                    !submitted && "cursor-grab active:cursor-grabbing bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20",
+                                    submitted && "bg-gray-800 border-gray-700 text-gray-400 cursor-default",
+                                    draggedItemId === item.id && "opacity-50 ring-2 ring-sky-500"
+                                )}
+                            >
+                                {item.content}
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Zonas de drop */}
+            <div className="space-y-2">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">Posicione aqui</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                    {zones.map((zone) => {
+                        const placedItemId = placements[zone.id];
+                        const placedItem = placedItemId ? getItemById(placedItemId) : null;
+                        const isCorrect = submitted && placedItemId === zone.correct_item_id;
+                        const isWrong = submitted && placedItemId && placedItemId !== zone.correct_item_id;
+                        const correctItem = submitted && isWrong ? getItemById(zone.correct_item_id) : null;
+
+                        return (
+                            <div
+                                key={zone.id}
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={() => handleDropOnZone(zone.id)}
+                                className={cn(
+                                    "relative p-4 rounded-lg border-2 border-dashed transition-all min-h-[5rem]",
+                                    !submitted && !placedItem && "border-gray-700 bg-gray-900/30",
+                                    !submitted && placedItem && "border-sky-500/50 bg-sky-500/5",
+                                    !submitted && draggedItemId && !placedItem && "border-sky-500 bg-sky-500/10",
+                                    submitted && isCorrect && "border-emerald-500/50 bg-emerald-500/5",
+                                    submitted && isWrong && "border-rose-500/50 bg-rose-500/5"
+                                )}
+                            >
+                                <p className="text-xs text-gray-500 mb-2">{zone.label}</p>
+
+                                {placedItem ? (
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className={cn(
+                                            "px-3 py-1.5 rounded-lg text-sm font-medium",
+                                            !submitted && "bg-sky-500/20 text-sky-300",
+                                            submitted && isCorrect && "bg-emerald-500/20 text-emerald-300",
+                                            submitted && isWrong && "bg-rose-500/20 text-rose-300"
+                                        )}>
+                                            {placedItem.content}
+                                        </span>
+
+                                        <div className="flex items-center gap-1">
+                                            {submitted && isCorrect && (
+                                                <CheckCircle className="h-5 w-5 text-emerald-400" strokeWidth={1.5} />
+                                            )}
+                                            {submitted && isWrong && (
+                                                <XCircle className="h-5 w-5 text-rose-400" strokeWidth={1.5} />
+                                            )}
+                                            {!submitted && (
+                                                <button
+                                                    onClick={() => handleRemoveFromZone(zone.id)}
+                                                    className="p-1 text-gray-500 hover:text-gray-300 transition-colors"
+                                                >
+                                                    <XCircle className="h-4 w-4" strokeWidth={1.5} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center h-8 text-gray-600 text-sm">
+                                        {submitted ? '(vazio)' : 'Arraste um item aqui'}
+                                    </div>
+                                )}
+
+                                {submitted && isWrong && correctItem && (
+                                    <p className="mt-2 text-xs text-emerald-400">
+                                        Correto: {correctItem.content}
+                                    </p>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {!submitted ? (
+                <button
+                    onClick={handleSubmit}
+                    disabled={!allZonesFilled}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
+                    Verificar Resposta
+                </button>
+            ) : (
+                <div className="space-y-3">
+                    <FeedbackMessage score={correctCount} total={zones.length} />
+
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            onClick={handleRetry}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-gray-300 text-sm font-medium hover:bg-gray-700 transition-colors"
+                        >
+                            <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
+                            Tentar novamente
+                        </button>
+                        <button
+                            onClick={() => setShowExplanation(!showExplanation)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500/10 text-sky-400 text-sm font-medium hover:bg-sky-500/20 transition-colors"
+                        >
+                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                            {showExplanation ? 'Ocultar explicação' : 'Ver explicação'}
+                        </button>
+                    </div>
+
+                    {showExplanation && (
+                        <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-4">
+                            <MarkdownRenderer content={data.answer_explanation} />
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 }
 
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
@@ -43,8 +324,8 @@ function DifficultyBadge({ difficulty }: { difficulty: string }) {
 
     return (
         <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", className)}>
-      {label}
-    </span>
+            {label}
+        </span>
     );
 }
 
@@ -52,48 +333,877 @@ function FeedbackMessage({ score, total }: { score: number; total: number }) {
     const percentage = total > 0 ? (score / total) * 100 : 0;
 
     let message: string;
-    let color: string;
-    let icon: typeof Trophy;
+    let colorClass: string;
+    let Icon: typeof Trophy;
 
     if (percentage === 100) {
         message = "Perfeito! Você acertou tudo! 🎉";
-        color = "emerald";
-        icon = Trophy;
+        colorClass = "bg-emerald-500/10 border-emerald-500/20 text-emerald-300";
+        Icon = Trophy;
     } else if (percentage >= 80) {
         message = "Excelente! Quase perfeito!";
-        color = "sky";
-        icon = CheckCircle;
+        colorClass = "bg-sky-500/10 border-sky-500/20 text-sky-300";
+        Icon = CheckCircle;
     } else if (percentage >= 60) {
         message = "Bom trabalho! Mas revise os erros.";
-        color = "amber";
-        icon = Lightbulb;
+        colorClass = "bg-amber-500/10 border-amber-500/20 text-amber-300";
+        Icon = Lightbulb;
     } else if (percentage >= 40) {
         message = "Precisa estudar mais este tema.";
-        color = "amber";
-        icon = Lightbulb;
+        colorClass = "bg-amber-500/10 border-amber-500/20 text-amber-300";
+        Icon = Lightbulb;
     } else {
         message = "Releia o conteúdo e tente novamente!";
-        color = "rose";
-        icon = RotateCcw;
+        colorClass = "bg-rose-500/10 border-rose-500/20 text-rose-300";
+        Icon = RotateCcw;
     }
 
-    const Icon = icon;
-
     return (
-        <div className={cn(
-            "flex items-center gap-3 p-4 rounded-lg border",
-            `bg-${color}-500/10 border-${color}-500/20`
-        )}>
-            <Icon className={`h-6 w-6 text-${color}-400 shrink-0`} strokeWidth={1.5} />
+        <div className={cn("flex items-center gap-3 p-4 rounded-lg border", colorClass)}>
+            <Icon className="h-6 w-6 shrink-0" strokeWidth={1.5} />
             <div>
-                <p className={`font-semibold text-${color}-300`}>
+                <p className="font-semibold">
                     {score}/{total} correto(s)
                 </p>
-                <p className="text-sm text-gray-400">{message}</p>
+                <p className="text-sm opacity-80">{message}</p>
             </div>
         </div>
     );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// MULTIPLE SELECT EXERCISE (NOVO!)
+// ═══════════════════════════════════════════════════════════════
+
+function MultipleSelectExercise({ data }: { data: InteractiveExerciseData }) {
+    const selectData = data.multiple_select_data;
+    const options = selectData?.options || [];
+
+    const [selectedOptions, setSelectedOptions] = useState<Set<string>>(new Set());
+    const [submitted, setSubmitted] = useState<boolean>(false);
+    const [showExplanation, setShowExplanation] = useState<boolean>(false);
+
+    const handleToggleOption = useCallback((optionId: string): void => {
+        if (submitted) return;
+        setSelectedOptions((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(optionId)) {
+                newSet.delete(optionId);
+            } else {
+                newSet.add(optionId);
+            }
+            return newSet;
+        });
+    }, [submitted]);
+
+    const handleSubmit = useCallback((): void => {
+        setSubmitted(true);
+    }, []);
+
+    const handleRetry = useCallback((): void => {
+        setSelectedOptions(new Set());
+        setSubmitted(false);
+        setShowExplanation(false);
+    }, []);
+
+    const correctOptions = useMemo(() => {
+        return options.filter((opt) => opt.correct);
+    }, [options]);
+
+    const correctCount = useMemo(() => {
+        if (!submitted) return 0;
+
+        let correct = 0;
+        let incorrect = 0;
+
+        options.forEach((opt) => {
+            const isSelected = selectedOptions.has(opt.id);
+            if (opt.correct && isSelected) {
+                correct++;
+            } else if (!opt.correct && isSelected) {
+                incorrect++;
+            }
+        });
+
+        return Math.max(0, correct - incorrect);
+    }, [submitted, options, selectedOptions]);
+
+    const hasMinSelections = useMemo(() => {
+        const min = selectData?.min_selections || 1;
+        return selectedOptions.size >= min;
+    }, [selectData, selectedOptions]);
+
+    if (!selectData) {
+        return (
+            <div className="p-4 rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-300">
+                Erro: Dados do exercício multiple_select não encontrados.
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <ListChecks className="h-4 w-4 text-sky-400" strokeWidth={1.5} />
+                <span className="text-sm font-medium text-gray-300">
+                    Selecione todas as opções corretas
+                </span>
+                <DifficultyBadge difficulty={data.difficulty} />
+            </div>
+
+            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
+                <MarkdownRenderer content={data.instruction} />
+            </div>
+
+            {/* Opções */}
+            <div className="grid gap-2 sm:grid-cols-2">
+                {options.map((option: MultipleSelectOption) => {
+                    const isSelected = selectedOptions.has(option.id);
+                    const isCorrect = submitted && option.correct;
+                    const isWrong = submitted && isSelected && !option.correct;
+                    const isMissed = submitted && option.correct && !isSelected;
+
+                    return (
+                        <button
+                            key={option.id}
+                            onClick={() => handleToggleOption(option.id)}
+                            disabled={submitted}
+                            className={cn(
+                                "flex items-start gap-3 p-4 rounded-lg border text-left transition-all",
+                                submitted && isCorrect && isSelected && "border-emerald-500/30 bg-emerald-500/10",
+                                submitted && isWrong && "border-rose-500/30 bg-rose-500/10",
+                                submitted && isMissed && "border-amber-500/30 bg-amber-500/5",
+                                !submitted && isSelected && "border-sky-500 bg-sky-500/10",
+                                !submitted && !isSelected && "border-gray-800 bg-gray-900/50 hover:border-gray-700"
+                            )}
+                        >
+                            <div className={cn(
+                                "flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors mt-0.5",
+                                submitted && isCorrect && "border-emerald-500 bg-emerald-500",
+                                submitted && isWrong && "border-rose-500 bg-rose-500",
+                                submitted && isMissed && "border-amber-500",
+                                !submitted && isSelected && "border-sky-500 bg-sky-500",
+                                !submitted && !isSelected && "border-gray-600"
+                            )}>
+                                {(isSelected || (submitted && isCorrect)) && (
+                                    <CheckCircle className="h-3 w-3 text-white" strokeWidth={2} />
+                                )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                                <p className={cn(
+                                    "text-sm",
+                                    submitted && isCorrect && "text-emerald-300",
+                                    submitted && isWrong && "text-rose-300",
+                                    submitted && isMissed && "text-amber-300",
+                                    !submitted && "text-gray-200"
+                                )}>
+                                    {option.text}
+                                </p>
+
+                                {submitted && option.explanation && (
+                                    <p className="text-xs text-gray-500 mt-1 italic">
+                                        {option.explanation}
+                                    </p>
+                                )}
+                            </div>
+
+                            {submitted && isCorrect && isSelected && (
+                                <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" strokeWidth={1.5} />
+                            )}
+                            {submitted && isWrong && (
+                                <XCircle className="h-4 w-4 text-rose-400 shrink-0" strokeWidth={1.5} />
+                            )}
+                            {submitted && isMissed && (
+                                <span className="text-xs text-amber-400 shrink-0">Faltou</span>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {!submitted ? (
+                <button
+                    onClick={handleSubmit}
+                    disabled={!hasMinSelections}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
+                    Verificar Respostas
+                </button>
+            ) : (
+                <div className="space-y-3">
+                    <FeedbackMessage score={correctCount} total={correctOptions.length} />
+
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            onClick={handleRetry}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-gray-300 text-sm font-medium hover:bg-gray-700 transition-colors"
+                        >
+                            <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
+                            Tentar novamente
+                        </button>
+                        <button
+                            onClick={() => setShowExplanation(!showExplanation)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500/10 text-sky-400 text-sm font-medium hover:bg-sky-500/20 transition-colors"
+                        >
+                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                            {showExplanation ? 'Ocultar explicação' : 'Ver explicação'}
+                        </button>
+                    </div>
+
+                    {showExplanation && (
+                        <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-4">
+                            <MarkdownRenderer content={data.answer_explanation} />
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CODE COMPLETION EXERCISE (NOVO!)
+// ═══════════════════════════════════════════════════════════════
+
+function CodeCompletionExercise({ data }: { data: InteractiveExerciseData }) {
+    const codeData = data.code_completion_data;
+    const blanks = codeData?.blanks || [];
+
+    const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
+    const [submitted, setSubmitted] = useState<boolean>(false);
+    const [showExplanation, setShowExplanation] = useState<boolean>(false);
+
+    const handleAnswerChange = useCallback((blankId: string, value: string): void => {
+        if (submitted) return;
+        setUserAnswers((prev) => ({ ...prev, [blankId]: value }));
+    }, [submitted]);
+
+    const handleSubmit = useCallback((): void => {
+        setSubmitted(true);
+    }, []);
+
+    const handleRetry = useCallback((): void => {
+        setUserAnswers({});
+        setSubmitted(false);
+        setShowExplanation(false);
+    }, []);
+
+    const checkAnswer = useCallback((blankId: string): boolean => {
+        const blank = blanks.find((b) => b.id === blankId);
+        if (!blank) return false;
+
+        const userAnswer = userAnswers[blankId]?.trim() || '';
+        const correctAnswer = blank.correct_answer.trim();
+
+        // Code completion é case-sensitive por padrão
+        return userAnswer === correctAnswer;
+    }, [blanks, userAnswers]);
+
+    const allAnswered = blanks.every((blank) =>
+        userAnswers[blank.id]?.trim().length > 0
+    );
+
+    const correctCount = useMemo(() => {
+        if (!submitted) return 0;
+        return blanks.filter((blank) => checkAnswer(blank.id)).length;
+    }, [submitted, blanks, checkAnswer]);
+
+    const renderedCode = useMemo(() => {
+        if (!codeData?.code_template) return null;
+
+        const template = codeData.code_template;
+        const lines = template.split('\n');
+
+        return lines.map((line, lineIndex) => {
+            const parts: React.ReactNode[] = [];
+            let lastIndex = 0;
+            let blankIndex = 0;
+
+            const regex = /\{(\d+)\}|_{3,}/g;
+            let match;
+
+            while ((match = regex.exec(line)) !== null) {
+                // Texto antes da lacuna
+                if (match.index > lastIndex) {
+                    parts.push(
+                        <span key={`${lineIndex}-text-${lastIndex}`} className="text-gray-300">
+                            {line.slice(lastIndex, match.index)}
+                        </span>
+                    );
+                }
+
+                // Determina qual blank usar
+                let currentBlankIndex: number;
+                if (match[1]) {
+                    currentBlankIndex = parseInt(match[1]) - 1;
+                } else {
+                    currentBlankIndex = blankIndex;
+                    blankIndex++;
+                }
+
+                const blank = blanks[currentBlankIndex];
+
+                if (blank) {
+                    const userAnswer = userAnswers[blank.id] || '';
+                    const isCorrect = submitted && checkAnswer(blank.id);
+                    const isWrong = submitted && !checkAnswer(blank.id) && userAnswer.length > 0;
+                    const hasAlternatives = blank.alternatives && blank.alternatives.length > 0;
+
+                    parts.push(
+                        <span key={blank.id} className="inline-flex items-center gap-1 mx-1">
+                            {hasAlternatives ? (
+                                <select
+                                    value={userAnswer}
+                                    onChange={(e) => handleAnswerChange(blank.id, e.target.value)}
+                                    disabled={submitted}
+                                    className={cn(
+                                        "px-2 py-0.5 rounded border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500/50",
+                                        submitted && isCorrect && "bg-emerald-500/30 border-emerald-500/50 text-emerald-300",
+                                        submitted && isWrong && "bg-rose-500/30 border-rose-500/50 text-rose-300",
+                                        !submitted && "bg-gray-800 border-gray-600 text-sky-300"
+                                    )}
+                                >
+                                    <option value="">___</option>
+                                    {blank.alternatives!.map((alt, i) => (
+                                        <option key={i} value={alt}>{alt}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={userAnswer}
+                                    onChange={(e) => handleAnswerChange(blank.id, e.target.value)}
+                                    disabled={submitted}
+                                    placeholder={blank.hint || "___"}
+                                    size={Math.max(blank.correct_answer.length, 5)}
+                                    className={cn(
+                                        "px-2 py-0.5 rounded border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-center",
+                                        submitted && isCorrect && "bg-emerald-500/30 border-emerald-500/50 text-emerald-300",
+                                        submitted && isWrong && "bg-rose-500/30 border-rose-500/50 text-rose-300",
+                                        !submitted && "bg-gray-800 border-gray-600 text-sky-300 placeholder:text-gray-600"
+                                    )}
+                                />
+                            )}
+
+                            {submitted && isCorrect && (
+                                <CheckCircle className="h-3.5 w-3.5 text-emerald-400" strokeWidth={2} />
+                            )}
+                            {submitted && isWrong && (
+                                <span className="flex items-center gap-0.5">
+                                    <XCircle className="h-3.5 w-3.5 text-rose-400" strokeWidth={2} />
+                                    <span className="text-xs text-emerald-400 font-mono">({blank.correct_answer})</span>
+                                </span>
+                            )}
+                        </span>
+                    );
+                }
+
+                lastIndex = match.index + match[0].length;
+            }
+
+            // Texto restante na linha
+            if (lastIndex < line.length) {
+                parts.push(
+                    <span key={`${lineIndex}-text-${lastIndex}`} className="text-gray-300">
+                        {line.slice(lastIndex)}
+                    </span>
+                );
+            }
+
+            return (
+                <div key={lineIndex} className="flex items-center min-h-[1.75rem]">
+                    <span className="w-8 text-right pr-3 text-gray-600 text-xs select-none">
+                        {lineIndex + 1}
+                    </span>
+                    <span className="flex-1 whitespace-pre">
+                        {parts.length > 0 ? parts : <span>&nbsp;</span>}
+                    </span>
+                </div>
+            );
+        });
+    }, [codeData, blanks, userAnswers, submitted, checkAnswer, handleAnswerChange]);
+
+    if (!codeData) {
+        return (
+            <div className="p-4 rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-300">
+                Erro: Dados do exercício code_completion não encontrados.
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <Code2 className="h-4 w-4 text-sky-400" strokeWidth={1.5} />
+                <span className="text-sm font-medium text-gray-300">Complete o código</span>
+                <DifficultyBadge difficulty={data.difficulty} />
+                <span className="px-2 py-0.5 rounded text-xs bg-violet-500/10 text-violet-400 font-mono">
+                    {codeData.language}
+                </span>
+            </div>
+
+            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
+                <MarkdownRenderer content={data.instruction} />
+            </div>
+
+            {/* Bloco de código */}
+            <div className="rounded-lg border border-gray-700 bg-gray-950 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800">
+                    <span className="text-xs text-gray-500 font-mono">{codeData.language}</span>
+                    <span className="text-xs text-gray-600">
+                        {blanks.length} {blanks.length === 1 ? 'lacuna' : 'lacunas'}
+                    </span>
+                </div>
+                <div className="p-4 font-mono text-sm overflow-x-auto">
+                    {renderedCode}
+                </div>
+            </div>
+
+            {!submitted ? (
+                <button
+                    onClick={handleSubmit}
+                    disabled={!allAnswered}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
+                    Verificar Código
+                </button>
+            ) : (
+                <div className="space-y-3">
+                    <FeedbackMessage score={correctCount} total={blanks.length} />
+
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            onClick={handleRetry}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-gray-300 text-sm font-medium hover:bg-gray-700 transition-colors"
+                        >
+                            <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
+                            Tentar novamente
+                        </button>
+                        <button
+                            onClick={() => setShowExplanation(!showExplanation)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500/10 text-sky-400 text-sm font-medium hover:bg-sky-500/20 transition-colors"
+                        >
+                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                            {showExplanation ? 'Ocultar explicação' : 'Ver explicação'}
+                        </button>
+                    </div>
+
+                    {showExplanation && (
+                        <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-4">
+                            <MarkdownRenderer content={data.answer_explanation} />
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MATCHING EXERCISE
+// ═══════════════════════════════════════════════════════════════
+
+function MatchingExercise({ data }: { data: InteractiveExerciseData }) {
+    const matchingData = data.matching_data;
+    const pairs = matchingData?.pairs || [];
+
+    const [userMatches, setUserMatches] = useState<Record<string, string>>({});
+    const [submitted, setSubmitted] = useState<boolean>(false);
+    const [showExplanation, setShowExplanation] = useState<boolean>(false);
+
+    const shuffledRightItems = useMemo(() => {
+        return [...pairs].sort(() => Math.random() - 0.5);
+    }, [pairs]);
+
+    const handleMatch = useCallback((pairId: string, selectedRight: string): void => {
+        if (submitted) return;
+        setUserMatches((prev) => ({ ...prev, [pairId]: selectedRight }));
+    }, [submitted]);
+
+    const handleSubmit = useCallback((): void => {
+        setSubmitted(true);
+    }, []);
+
+    const handleRetry = useCallback((): void => {
+        setUserMatches({});
+        setSubmitted(false);
+        setShowExplanation(false);
+    }, []);
+
+    const checkMatch = useCallback((pairId: string): boolean => {
+        const pair = pairs.find((p) => p.id === pairId);
+        if (!pair) return false;
+        return userMatches[pairId] === pair.right;
+    }, [pairs, userMatches]);
+
+    const allAnswered = pairs.every((pair) =>
+        userMatches[pair.id]?.length > 0
+    );
+
+    const correctCount = useMemo(() => {
+        if (!submitted) return 0;
+        return pairs.filter((pair) => checkMatch(pair.id)).length;
+    }, [submitted, pairs, checkMatch]);
+
+    if (!matchingData) {
+        return (
+            <div className="p-4 rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-300">
+                Erro: Dados do exercício matching não encontrados.
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-sky-400" strokeWidth={1.5} />
+                <span className="text-sm font-medium text-gray-300">Conecte os itens correspondentes</span>
+                <DifficultyBadge difficulty={data.difficulty} />
+            </div>
+
+            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
+                <MarkdownRenderer content={data.instruction} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="text-center text-sm font-medium text-gray-400">
+                    {matchingData.left_column_title || 'Termo'}
+                </div>
+                <div className="text-center text-sm font-medium text-gray-400">
+                    {matchingData.right_column_title || 'Correspondência'}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                {pairs.map((pair: MatchingPair) => {
+                    const userMatch = userMatches[pair.id] || '';
+                    const isCorrect = submitted && checkMatch(pair.id);
+                    const isWrong = submitted && !checkMatch(pair.id) && userMatch.length > 0;
+
+                    return (
+                        <div
+                            key={pair.id}
+                            className={cn(
+                                "grid grid-cols-2 gap-4 p-3 rounded-lg border transition-all",
+                                submitted && isCorrect && "border-emerald-500/30 bg-emerald-500/5",
+                                submitted && isWrong && "border-rose-500/30 bg-rose-500/5",
+                                !submitted && "border-gray-800 bg-gray-900/50"
+                            )}
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-200 font-medium">
+                                    {pair.left}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <select
+                                    value={userMatch}
+                                    onChange={(e) => handleMatch(pair.id, e.target.value)}
+                                    disabled={submitted}
+                                    className={cn(
+                                        "flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50",
+                                        submitted && isCorrect && "bg-emerald-500/20 border-emerald-500/30 text-emerald-300",
+                                        submitted && isWrong && "bg-rose-500/20 border-rose-500/30 text-rose-300",
+                                        !submitted && "bg-gray-800 border-gray-700 text-white"
+                                    )}
+                                >
+                                    <option value="">Selecione...</option>
+                                    {shuffledRightItems.map((item) => (
+                                        <option key={item.id} value={item.right}>
+                                            {item.right}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {submitted && isCorrect && (
+                                    <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" strokeWidth={1.5} />
+                                )}
+                                {submitted && isWrong && (
+                                    <XCircle className="h-5 w-5 text-rose-400 shrink-0" strokeWidth={1.5} />
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {submitted && correctCount < pairs.length && (
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+                    <p className="text-sm font-medium text-amber-300 mb-2">Respostas corretas:</p>
+                    <ul className="space-y-1">
+                        {pairs.filter((pair) => !checkMatch(pair.id)).map((pair) => (
+                            <li key={pair.id} className="text-sm text-gray-400">
+                                <span className="text-gray-200">{pair.left}</span>
+                                {' → '}
+                                <span className="text-emerald-400">{pair.right}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {!submitted ? (
+                <button
+                    onClick={handleSubmit}
+                    disabled={!allAnswered}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
+                    Verificar Resposta
+                </button>
+            ) : (
+                <div className="space-y-3">
+                    <FeedbackMessage score={correctCount} total={pairs.length} />
+
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            onClick={handleRetry}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-gray-300 text-sm font-medium hover:bg-gray-700 transition-colors"
+                        >
+                            <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
+                            Tentar novamente
+                        </button>
+                        <button
+                            onClick={() => setShowExplanation(!showExplanation)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500/10 text-sky-400 text-sm font-medium hover:bg-sky-500/20 transition-colors"
+                        >
+                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                            {showExplanation ? 'Ocultar explicação' : 'Ver explicação'}
+                        </button>
+                    </div>
+
+                    {showExplanation && (
+                        <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-4">
+                            <MarkdownRenderer content={data.answer_explanation} />
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILL BLANK EXERCISE
+// ═══════════════════════════════════════════════════════════════
+
+function FillBlankExercise({ data }: { data: InteractiveExerciseData }) {
+    const fillData = data.fill_blank_data;
+    const blanks = fillData?.blanks || [];
+
+    const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
+    const [submitted, setSubmitted] = useState<boolean>(false);
+    const [showExplanation, setShowExplanation] = useState<boolean>(false);
+
+    const handleAnswerChange = useCallback((blankId: string, value: string): void => {
+        if (submitted) return;
+        setUserAnswers((prev) => ({ ...prev, [blankId]: value }));
+    }, [submitted]);
+
+    const handleSubmit = useCallback((): void => {
+        setSubmitted(true);
+    }, []);
+
+    const handleRetry = useCallback((): void => {
+        setUserAnswers({});
+        setSubmitted(false);
+        setShowExplanation(false);
+    }, []);
+
+    const checkAnswer = useCallback((blankId: string): boolean => {
+        const blank = blanks.find((b) => b.id === blankId);
+        if (!blank) return false;
+
+        const userAnswer = userAnswers[blankId]?.trim() || '';
+        const correctAnswer = blank.correct_answer.trim();
+
+        if (blank.case_sensitive) {
+            return userAnswer === correctAnswer;
+        }
+        return userAnswer.toLowerCase() === correctAnswer.toLowerCase();
+    }, [blanks, userAnswers]);
+
+    const allAnswered = blanks.every((blank) =>
+        userAnswers[blank.id]?.trim().length > 0
+    );
+
+    const correctCount = useMemo(() => {
+        if (!submitted) return 0;
+        return blanks.filter((blank) => checkAnswer(blank.id)).length;
+    }, [submitted, blanks, checkAnswer]);
+
+    const renderedText = useMemo(() => {
+        if (!fillData?.text_with_blanks) return null;
+
+        const text = fillData.text_with_blanks;
+        const parts: React.ReactNode[] = [];
+        let lastIndex = 0;
+        let blankIndex = 0;
+
+        const regex = /\{(\d+)\}|_{3,}/g;
+        let match;
+
+        while ((match = regex.exec(text)) !== null) {
+            if (match.index > lastIndex) {
+                parts.push(
+                    <span key={`text-${lastIndex}`}>
+                        {text.slice(lastIndex, match.index)}
+                    </span>
+                );
+            }
+
+            let currentBlankIndex: number;
+            if (match[1]) {
+                currentBlankIndex = parseInt(match[1]) - 1;
+            } else {
+                currentBlankIndex = blankIndex;
+                blankIndex++;
+            }
+
+            const blank = blanks[currentBlankIndex];
+
+            if (blank) {
+                const userAnswer = userAnswers[blank.id] || '';
+                const isCorrect = submitted && checkAnswer(blank.id);
+                const isWrong = submitted && !checkAnswer(blank.id) && userAnswer.length > 0;
+                const hasAlternatives = blank.alternatives && blank.alternatives.length > 0;
+
+                parts.push(
+                    <span key={blank.id} className="inline-flex items-center gap-1 mx-1">
+                        {hasAlternatives ? (
+                            <select
+                                value={userAnswer}
+                                onChange={(e) => handleAnswerChange(blank.id, e.target.value)}
+                                disabled={submitted}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-lg border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/50 min-w-[120px]",
+                                    submitted && isCorrect && "bg-emerald-500/20 border-emerald-500/30 text-emerald-300",
+                                    submitted && isWrong && "bg-rose-500/20 border-rose-500/30 text-rose-300",
+                                    !submitted && "bg-gray-800 border-gray-700 text-white"
+                                )}
+                            >
+                                <option value="">Selecione...</option>
+                                {blank.alternatives!.map((alt, i) => (
+                                    <option key={i} value={alt}>{alt}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <input
+                                type="text"
+                                value={userAnswer}
+                                onChange={(e) => handleAnswerChange(blank.id, e.target.value)}
+                                disabled={submitted}
+                                placeholder={blank.hint || "Digite aqui..."}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-lg border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/50 min-w-[100px] max-w-[200px]",
+                                    submitted && isCorrect && "bg-emerald-500/20 border-emerald-500/30 text-emerald-300",
+                                    submitted && isWrong && "bg-rose-500/20 border-rose-500/30 text-rose-300",
+                                    !submitted && "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                                )}
+                            />
+                        )}
+
+                        {submitted && isCorrect && (
+                            <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" strokeWidth={1.5} />
+                        )}
+                        {submitted && isWrong && (
+                            <span className="flex items-center gap-1 shrink-0">
+                                <XCircle className="h-4 w-4 text-rose-400" strokeWidth={1.5} />
+                                <span className="text-xs text-emerald-400">({blank.correct_answer})</span>
+                            </span>
+                        )}
+                    </span>
+                );
+            }
+
+            lastIndex = match.index + match[0].length;
+        }
+
+        if (lastIndex < text.length) {
+            parts.push(
+                <span key={`text-${lastIndex}`}>
+                    {text.slice(lastIndex)}
+                </span>
+            );
+        }
+
+        return parts;
+    }, [fillData, blanks, userAnswers, submitted, checkAnswer, handleAnswerChange]);
+
+    if (!fillData) {
+        return (
+            <div className="p-4 rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-300">
+                Erro: Dados do exercício fill_blank não encontrados.
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <PenLine className="h-4 w-4 text-sky-400" strokeWidth={1.5} />
+                <span className="text-sm font-medium text-gray-300">Preencha as lacunas</span>
+                <DifficultyBadge difficulty={data.difficulty} />
+            </div>
+
+            <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
+                <MarkdownRenderer content={data.instruction} />
+            </div>
+
+            <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-6">
+                <p className="text-gray-200 leading-loose text-lg">
+                    {renderedText}
+                </p>
+            </div>
+
+            {!submitted ? (
+                <button
+                    onClick={handleSubmit}
+                    disabled={!allAnswered}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
+                    Verificar Resposta
+                </button>
+            ) : (
+                <div className="space-y-3">
+                    <FeedbackMessage score={correctCount} total={blanks.length} />
+
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            onClick={handleRetry}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-gray-300 text-sm font-medium hover:bg-gray-700 transition-colors"
+                        >
+                            <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
+                            Tentar novamente
+                        </button>
+                        <button
+                            onClick={() => setShowExplanation(!showExplanation)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500/10 text-sky-400 text-sm font-medium hover:bg-sky-500/20 transition-colors"
+                        >
+                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                            {showExplanation ? 'Ocultar explicação' : 'Ver explicação'}
+                        </button>
+                    </div>
+
+                    {showExplanation && (
+                        <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-4">
+                            <MarkdownRenderer content={data.answer_explanation} />
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ORDERING EXERCISE
+// ═══════════════════════════════════════════════════════════════
 
 function OrderingExercise({ data }: { data: InteractiveExerciseData }) {
     const items = data.ordering_items || [];
@@ -178,8 +1288,8 @@ function OrderingExercise({ data }: { data: InteractiveExerciseData }) {
                                 <div className="flex items-center gap-1.5 shrink-0">
                                     <XCircle className="h-5 w-5 text-rose-400" strokeWidth={1.5} />
                                     <span className="text-xs text-gray-500">
-                    Correto: {item.correct_position}
-                  </span>
+                                        Correto: {item.correct_position}
+                                    </span>
                                 </div>
                             )}
                         </div>
@@ -227,6 +1337,10 @@ function OrderingExercise({ data }: { data: InteractiveExerciseData }) {
         </div>
     );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// TRUE/FALSE EXERCISE
+// ═══════════════════════════════════════════════════════════════
 
 function TrueFalseExercise({ data }: { data: InteractiveExerciseData }) {
     const statements = data.true_false_statements || [];
@@ -377,6 +1491,10 @@ function TrueFalseExercise({ data }: { data: InteractiveExerciseData }) {
         </div>
     );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// OPEN EXERCISE
+// ═══════════════════════════════════════════════════════════════
 
 function OpenExercise({ data }: { data: InteractiveExerciseData }) {
     const [showExplanation, setShowExplanation] = useState<boolean>(false);

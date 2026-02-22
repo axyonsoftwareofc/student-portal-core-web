@@ -22,7 +22,18 @@ export interface ImportBlock {
 }
 
 export type ExerciseDifficulty = 'easy' | 'medium' | 'hard';
-export type ExerciseType = 'ordering' | 'true_false' | 'fill_blank' | 'code' | 'text' | 'open';
+
+export type ExerciseType =
+    | 'ordering'
+    | 'true_false'
+    | 'fill_blank'
+    | 'matching'
+    | 'multiple_select'
+    | 'code_completion'
+    | 'drag_drop'
+    | 'code'
+    | 'text'
+    | 'open';
 
 export interface OrderingItem {
     id: string;
@@ -37,13 +48,44 @@ export interface TrueFalseStatement {
     explanation: string;
 }
 
+export interface FillBlankItem {
+    id: string;
+    correct_answer: string;
+    alternatives?: string[];
+    hint?: string;
+    case_sensitive?: boolean;
+}
+
 export interface FillBlankData {
     text_with_blanks: string;
-    blanks: {
-        id: string;
-        correct_answer: string;
-        alternatives?: string[];
-    }[];
+    blanks: FillBlankItem[];
+}
+
+// NOVO: Matching
+export interface MatchingPair {
+    id: string;
+    left: string;
+    right: string;
+}
+
+export interface MatchingData {
+    left_column_title?: string;
+    right_column_title?: string;
+    pairs: MatchingPair[];
+}
+
+// NOVO: Multiple Select
+export interface MultipleSelectOption {
+    id: string;
+    text: string;
+    correct: boolean;
+    explanation?: string;
+}
+
+export interface MultipleSelectData {
+    options: MultipleSelectOption[];
+    min_selections?: number;
+    max_selections?: number;
 }
 
 export interface ImportExerciseContent {
@@ -57,6 +99,10 @@ export interface ImportExerciseContent {
     ordering_items?: OrderingItem[];
     true_false_statements?: TrueFalseStatement[];
     fill_blank_data?: FillBlankData;
+    matching_data?: MatchingData;
+    multiple_select_data?: MultipleSelectData;
+    code_completion_data?: CodeCompletionData;
+    drag_drop_data?: DragDropData;
 }
 
 export interface ImportQuizQuestion {
@@ -94,7 +140,6 @@ export type ImportContent =
     | ImportExerciseContent
     | ImportQuizContent;
 
-// ✅ ESTA É A INTERFACE QUE ESTAVA FALTANDO EXPORTAR
 export interface ImportPayload {
     module: ImportModule;
     lesson: ImportLesson;
@@ -149,4 +194,40 @@ export interface InteractiveExerciseData {
     ordering_items?: OrderingItem[];
     true_false_statements?: TrueFalseStatement[];
     fill_blank_data?: FillBlankData;
+    matching_data?: MatchingData;
+    multiple_select_data?: MultipleSelectData;
+    code_completion_data?: CodeCompletionData;
+    drag_drop_data?: DragDropData;
+}
+
+// Code Completion (fill blank para código)
+export interface CodeCompletionBlank {
+    id: string;
+    correct_answer: string;
+    alternatives?: string[];
+    hint?: string;
+}
+
+export interface CodeCompletionData {
+    language: string;                    // "java", "python", etc.
+    code_template: string;              // Código com {1}, {2} ou _____ para lacunas
+    blanks: CodeCompletionBlank[];
+}
+
+// Drag and Drop
+export interface DragDropItem {
+    id: string;
+    content: string;
+}
+
+export interface DragDropZone {
+    id: string;
+    label: string;
+    correct_item_id: string;
+}
+
+export interface DragDropData {
+    items: DragDropItem[];              // Itens que podem ser arrastados
+    zones: DragDropZone[];              // Zonas onde soltar
+    instruction_per_zone?: boolean;     // Se true, mostra label da zona
 }

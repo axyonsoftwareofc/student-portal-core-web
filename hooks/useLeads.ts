@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showSuccessToast, showErrorToast, showWarningToast } from '@/lib/toast';
 import { Lead, CreateLeadDTO, UpdateLeadDTO, UseLeadsReturn } from '@/lib/types/leads';
 
 export function useLeads(): UseLeadsReturn {
@@ -31,6 +32,7 @@ export function useLeads(): UseLeadsReturn {
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar leads';
             setError(errorMessage);
+            showErrorToast('Erro ao carregar leads', 'Verifique sua conexão');
             console.error('useLeads - fetchLeads error:', err);
         } finally {
             setIsLoading(false);
@@ -60,10 +62,13 @@ export function useLeads(): UseLeadsReturn {
 
                 const createdLead = data as Lead;
                 setLeads((previousLeads: Lead[]) => [createdLead, ...previousLeads]);
+
+                showSuccessToast('Lead cadastrado!', leadData.name);
                 return createdLead;
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Erro ao criar lead';
                 setError(errorMessage);
+                showErrorToast('Erro ao cadastrar lead', errorMessage);
                 throw err;
             }
         },
@@ -87,9 +92,12 @@ export function useLeads(): UseLeadsReturn {
                         lead.id === leadId ? { ...lead, ...leadData } : lead
                     )
                 );
+
+                showSuccessToast('Lead atualizado!');
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar lead';
                 setError(errorMessage);
+                showErrorToast('Erro ao atualizar lead', errorMessage);
                 throw err;
             }
         },
@@ -120,9 +128,12 @@ export function useLeads(): UseLeadsReturn {
                             : lead
                     )
                 );
+
+                showSuccessToast('Lead marcado como contatado! 📞');
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Erro ao marcar como contatado';
                 setError(errorMessage);
+                showErrorToast('Erro ao atualizar status', errorMessage);
                 throw err;
             }
         },
@@ -153,9 +164,12 @@ export function useLeads(): UseLeadsReturn {
                             : lead
                     )
                 );
+
+                showSuccessToast('Lead convertido em aluno! 🎉', 'Parabéns pela nova matrícula!');
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Erro ao converter lead';
                 setError(errorMessage);
+                showErrorToast('Erro ao converter lead', errorMessage);
                 throw err;
             }
         },
@@ -179,9 +193,12 @@ export function useLeads(): UseLeadsReturn {
                         lead.id === leadId ? { ...lead, status: 'declined' as const } : lead
                     )
                 );
+
+                showWarningToast('Lead declinado', 'O lead foi marcado como não interessado');
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Erro ao declinar lead';
                 setError(errorMessage);
+                showErrorToast('Erro ao declinar lead', errorMessage);
                 throw err;
             }
         },
@@ -203,9 +220,12 @@ export function useLeads(): UseLeadsReturn {
                 setLeads((previousLeads: Lead[]) =>
                     previousLeads.filter((lead: Lead) => lead.id !== leadId)
                 );
+
+                showSuccessToast('Lead excluído', 'Registro removido com sucesso');
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Erro ao deletar lead';
                 setError(errorMessage);
+                showErrorToast('Erro ao excluir lead', errorMessage);
                 throw err;
             }
         },

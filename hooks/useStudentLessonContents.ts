@@ -3,40 +3,55 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showErrorToast } from '@/lib/toast';
 import type { LessonContent, LessonContentWithProgress, ContentProgress } from '@/lib/types/lesson-contents';
 
-interface ModuleWithCourse {
+interface LessonFromDB {
     id: string;
-    course_id: string;
-    name: string;
-    description?: string | null;
-    order_index: number;
-    status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-    created_at: string;
-    updated_at: string;
-    course: { id: string; name: string };
-}
-
-interface LessonBasicInfo {
-    id: string;
-    module_id: string;
     title: string;
     description: string | null;
-    order_index: number;
+    duration: string | null;
     status: string;
-    total_contents: number;
+    module_id: string;
+}
+
+interface ModuleFromDB {
+    id: string;
+    name: string;
+    course_id: string;
+    course: {
+        id: string;
+        name: string;
+    };
+}
+
+export interface StudentLesson {
+    id: string;
+    title: string;
+    description: string | null;
+    duration: string | null;
+}
+
+export interface StudentModule {
+    id: string;
+    name: string;
+    course_id: string;
+    course: {
+        id: string;
+        name: string;
+    };
 }
 
 interface UseStudentLessonContentsReturn {
-    lesson: LessonBasicInfo | null;
-    module: ModuleWithCourse | null;
     contents: LessonContentWithProgress[];
+    lesson: StudentLesson | null;
+    module: StudentModule | null;
+    isLoading: boolean;
+    error: string | null;
     completedCount: number;
     totalCount: number;
     progressPercentage: number;
     isLessonCompleted: boolean;
-    isLoading: boolean;
-    error: string | null;
     refetch: () => Promise<void>;
 }
 
@@ -44,20 +59,20 @@ export function useStudentLessonContents(
     lessonId: string | null,
     studentId: string | null
 ): UseStudentLessonContentsReturn {
-    const [lesson, setLesson] = useState<LessonBasicInfo | null>(null);
-    const [module, setModule] = useState<ModuleWithCourse | null>(null);
     const [contents, setContents] = useState<LessonContentWithProgress[]>([]);
+    const [lesson, setLesson] = useState<StudentLesson | null>(null);
+    const [module, setModule] = useState<StudentModule | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
-    const fetchData = useCallback(async (): Promise<void> => {
+    const fetchContents = useCallback(async (): Promise<void> => {
         if (!lessonId || !studentId) {
+            setContents([]);
             setLesson(null);
             setModule(null);
-            setContents([]);
             setIsLoading(false);
             return;
         }
@@ -66,40 +81,50 @@ export function useStudentLessonContents(
             setIsLoading(true);
             setError(null);
 
-            // 1. Buscar aula com módulo e curso
+            // 1. Buscar informações da aula
             const { data: lessonData, error: lessonError } = await supabase
                 .from('lessons')
-                .select(`
-                    id,
-                    module_id,
-                    title,
-                    description,
-                    order_index,
-                    status,
-                    total_contents,
-                    module:modules (
-                        *,
-                        course:courses (id, name)
-                    )
-                `)
+                .select('id, title, description, duration, status, module_id')
                 .eq('id', lessonId)
                 .single();
 
             if (lessonError) throw lessonError;
 
+            const typedLesson = lessonData as LessonFromDB;
+
             setLesson({
-                id: lessonData.id,
-                module_id: lessonData.module_id,
-                title: lessonData.title,
-                description: lessonData.description,
-                order_index: lessonData.order_index,
-                status: lessonData.status,
-                total_contents: lessonData.total_contents,
+                id: typedLesson.id,
+                title: typedLesson.title,
+                description: typedLesson.description,
+                duration: typedLesson.duration,
             });
 
-            setModule(lessonData.module as ModuleWithCourse);
+            // 2. Buscar módulo com curso
+            const { data: moduleData, error: moduleError } = await supabase
+                .from('modules')
+                .select(`
+          id,
+          name,
+          course_id,
+          course:courses (
+            id,
+            name
+          )
+        `)
+                .eq('id', typedLesson.module_id)
+                .single();
 
-            // 2. Buscar conteúdos da aula
+            if (moduleError) throw moduleError;
+
+            const typedModule = moduleData as unknown as ModuleFromDB;
+            setModule({
+                id: typedModule.id,
+                name: typedModule.name,
+                course_id: typedModule.course_id,
+                course: typedModule.course,
+            });
+
+            // 3. Buscar conteúdos da aula
             const { data: contentsData, error: contentsError } = await supabase
                 .from('lesson_contents')
                 .select('*')
@@ -113,8 +138,10 @@ export function useStudentLessonContents(
                 return;
             }
 
-            // 3. Buscar progresso do aluno para esses conteúdos
-            const contentIds = contentsData.map((c: LessonContent) => c.id);
+            const typedContents = contentsData as LessonContent[];
+
+            // 4. Buscar progresso do aluno
+            const contentIds = typedContents.map((c: LessonContent) => c.id);
 
             const { data: progressData } = await supabase
                 .from('content_progress')
@@ -122,48 +149,54 @@ export function useStudentLessonContents(
                 .eq('student_id', studentId)
                 .in('content_id', contentIds);
 
-            // 4. Combinar conteúdos com progresso
-            const contentsWithProgress: LessonContentWithProgress[] = contentsData.map(
-                (content: LessonContent) => {
-                    const progress = (progressData as ContentProgress[] | null)?.find(
-                        (p: ContentProgress) => p.content_id === content.id
-                    );
-                    return {
-                        ...content,
-                        progress: progress || undefined,
-                        is_completed: progress?.completed || false,
-                    };
-                }
-            );
+            const progressMap = new Map<string, ContentProgress>();
+            (progressData || []).forEach((p: ContentProgress) => {
+                progressMap.set(p.content_id, p);
+            });
+
+            // 5. Mesclar conteúdos com progresso
+            const contentsWithProgress: LessonContentWithProgress[] = typedContents.map((content: LessonContent) => {
+                const progress = progressMap.get(content.id);
+                return {
+                    ...content,
+                    is_completed: progress?.completed || false,
+                    progress: progress || undefined,
+                };
+            });
 
             setContents(contentsWithProgress);
         } catch (err) {
             console.error('[useStudentLessonContents] Erro:', err);
-            setError('Erro ao carregar aula');
+            const message = 'Erro ao carregar conteúdos';
+            setError(message);
+            showErrorToast('Erro ao carregar aula', 'Verifique sua conexão');
         } finally {
             setIsLoading(false);
         }
     }, [lessonId, studentId, supabase]);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        fetchContents();
+    }, [fetchContents]);
 
-    const completedCount = contents.filter((c) => c.is_completed).length;
+    // Calcular estatísticas de progresso
+    const completedCount = contents.filter((c: LessonContentWithProgress) => c.is_completed).length;
     const totalCount = contents.length;
-    const progressPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    const progressPercentage = totalCount > 0
+        ? Math.round((completedCount / totalCount) * 100)
+        : 0;
     const isLessonCompleted = totalCount > 0 && completedCount === totalCount;
 
     return {
+        contents,
         lesson,
         module,
-        contents,
+        isLoading,
+        error,
         completedCount,
         totalCount,
         progressPercentage,
         isLessonCompleted,
-        isLoading,
-        error,
-        refetch: fetchData,
+        refetch: fetchContents,
     };
 }

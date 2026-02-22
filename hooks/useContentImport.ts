@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { parseImportJson, validateImportPayload } from '@/utils/validateImportJson';
+import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '@/lib/toast';
 import type {
     ImportPayload,
     ImportContent,
@@ -296,6 +297,7 @@ export function useContentImport(): UseContentImportReturn {
 
             if (parseError || !parsedPayload) {
                 setParseErrors(parseError || 'JSON inválido');
+                showErrorToast('JSON inválido', parseError || 'Verifique a sintaxe do JSON');
                 setIsValidating(false);
                 return;
             }
@@ -304,6 +306,10 @@ export function useContentImport(): UseContentImportReturn {
 
             if (!validationResult.valid) {
                 setValidationErrors(validationResult.errors);
+                showWarningToast(
+                    `${validationResult.errors.length} problema(s) encontrado(s)`,
+                    'Corrija os erros e tente novamente'
+                );
                 setIsValidating(false);
                 return;
             }
@@ -313,9 +319,17 @@ export function useContentImport(): UseContentImportReturn {
             setPayload(parsedPayload);
             setSummary(fullSummary);
             setStep('preview');
+
+            const totalContents = fullSummary.counts.video + fullSummary.counts.article + fullSummary.counts.exercise + fullSummary.counts.quiz;
+            showSuccessToast(
+                'JSON validado com sucesso!',
+                `${totalContents} conteúdo(s) prontos para importar`
+            );
         } catch (err) {
             console.error('[useContentImport] Erro na validação:', err);
-            setParseErrors(err instanceof Error ? err.message : 'Erro desconhecido na validação');
+            const message = err instanceof Error ? err.message : 'Erro desconhecido na validação';
+            setParseErrors(message);
+            showErrorToast('Erro na validação', message);
         } finally {
             setIsValidating(false);
         }
@@ -326,6 +340,8 @@ export function useContentImport(): UseContentImportReturn {
 
         setIsImporting(true);
         setStep('importing');
+
+        showInfoToast('Importando conteúdo...', 'Aguarde enquanto processamos');
 
         const result: ImportResult = {
             success: false,
@@ -351,10 +367,21 @@ export function useContentImport(): UseContentImportReturn {
 
             result.success = true;
             setStep('success');
+
+            const details = [
+                moduleCreated ? '📁 Módulo criado' : null,
+                lessonCreated ? '📄 Aula criada' : null,
+                `📝 ${contentsCreated} conteúdo(s) importado(s)`,
+            ].filter(Boolean).join(' • ');
+
+            showSuccessToast('Importação concluída! 🎉', details);
         } catch (err) {
             console.error('[useContentImport] Erro na importação:', err);
-            result.errors.push(err instanceof Error ? err.message : 'Erro desconhecido');
+            const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+            result.errors.push(errorMessage);
             setStep('error');
+
+            showErrorToast('Erro na importação', errorMessage);
         } finally {
             setImportResult(result);
             setIsImporting(false);
@@ -369,6 +396,7 @@ export function useContentImport(): UseContentImportReturn {
         setSummary(null);
         setPayload(null);
         setImportResult(null);
+        showInfoToast('Formulário limpo', 'Pronto para nova importação');
     }, []);
 
     const goBackToInput = useCallback((): void => {

@@ -3,6 +3,7 @@
 
 import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import type { LessonProgress } from '@/lib/types/database';
 
 interface MarkCompleteParams {
@@ -23,7 +24,6 @@ export function useStudentProgress() {
     const [error, setError] = useState<string | null>(null);
     const supabaseRef = useRef(createClient());
 
-    // Marcar aula como concluída
     const markAsComplete = async ({ lessonId, studentId }: MarkCompleteParams): Promise<{ success: boolean; data?: LessonProgress }> => {
         try {
             setIsLoading(true);
@@ -45,17 +45,18 @@ export function useStudentProgress() {
 
             if (upsertError) throw upsertError;
 
+            showSuccessToast('Aula concluída! ✅');
             return { success: true, data };
         } catch (err) {
             console.error('Erro ao marcar como concluída:', err);
             setError('Erro ao salvar progresso');
+            showErrorToast('Erro ao salvar progresso', 'Tente novamente');
             return { success: false };
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Desmarcar aula como concluída
     const markAsIncomplete = async ({ lessonId, studentId }: MarkCompleteParams): Promise<{ success: boolean }> => {
         try {
             setIsLoading(true);
@@ -73,17 +74,18 @@ export function useStudentProgress() {
 
             if (updateError) throw updateError;
 
+            showSuccessToast('Aula desmarcada', 'Você pode refazer quando quiser');
             return { success: true };
         } catch (err) {
             console.error('Erro ao desmarcar:', err);
             setError('Erro ao salvar progresso');
+            showErrorToast('Erro ao atualizar progresso', 'Tente novamente');
             return { success: false };
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Salvar resultado do quiz
     const saveQuizResult = async ({ lessonId, studentId, score, total, answers }: SaveQuizParams): Promise<{ success: boolean; data?: LessonProgress }> => {
         try {
             setIsLoading(true);
@@ -109,17 +111,25 @@ export function useStudentProgress() {
 
             if (upsertError) throw upsertError;
 
+            const percentage = Math.round((score / total) * 100);
+            const emoji = percentage >= 70 ? '🎉' : percentage >= 50 ? '👍' : '📚';
+
+            showSuccessToast(
+                `Quiz finalizado! ${emoji}`,
+                `Você acertou ${score} de ${total} (${percentage}%)`
+            );
+
             return { success: true, data };
         } catch (err) {
             console.error('Erro ao salvar quiz:', err);
             setError('Erro ao salvar resultado do quiz');
+            showErrorToast('Erro ao salvar quiz', 'Seu resultado pode não ter sido salvo');
             return { success: false };
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Buscar progresso de uma aula específica
     const getProgress = async (lessonId: string, studentId: string): Promise<LessonProgress | null> => {
         try {
             const supabase = supabaseRef.current;
@@ -132,7 +142,6 @@ export function useStudentProgress() {
                 .single();
 
             if (error && error.code !== 'PGRST116') {
-                // PGRST116 = no rows found (ok, não tem progresso ainda)
                 throw error;
             }
 

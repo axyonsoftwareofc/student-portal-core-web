@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 
-// Tipos
 export type PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 export type PaymentMethod = 'PIX' | 'CASH' | 'TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'OTHER';
 
@@ -66,7 +66,6 @@ export function usePayments(studentId?: string) {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
-    // Buscar pagamentos
     const fetchPayments = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -92,7 +91,6 @@ export function usePayments(studentId?: string) {
 
             if (fetchError) throw fetchError;
 
-            // Atualizar status de pagamentos atrasados automaticamente
             const today = new Date().toISOString().split('T')[0];
             const updatedPayments = (data || []).map((payment: PaymentWithStudent) => {
                 if (payment.status === 'PENDING' && payment.due_date < today) {
@@ -103,7 +101,6 @@ export function usePayments(studentId?: string) {
 
             setPayments(updatedPayments);
 
-            // Calcular estatísticas
             const newStats: PaymentStats = {
                 total_pending: 0,
                 total_paid: 0,
@@ -132,16 +129,16 @@ export function usePayments(studentId?: string) {
             });
 
             setStats(newStats);
-
         } catch (err) {
             console.error('Erro ao buscar pagamentos:', err);
-            setError('Erro ao carregar pagamentos');
+            const message = 'Erro ao carregar pagamentos';
+            setError(message);
+            showErrorToast('Erro ao carregar pagamentos', 'Verifique sua conexão');
         } finally {
             setIsLoading(false);
         }
     }, [supabase, studentId]);
 
-    // Criar pagamento
     const createPayment = async (formData: PaymentFormData): Promise<boolean> => {
         try {
             const { error: insertError } = await supabase
@@ -160,15 +157,17 @@ export function usePayments(studentId?: string) {
             if (insertError) throw insertError;
 
             await fetchPayments();
+
+            showSuccessToast('Pagamento criado!', formData.description);
             return true;
         } catch (err) {
             console.error('Erro ao criar pagamento:', err);
             setError('Erro ao criar pagamento');
+            showErrorToast('Erro ao criar pagamento', 'Tente novamente');
             return false;
         }
     };
 
-    // Atualizar pagamento
     const updatePayment = async (id: string, formData: Partial<PaymentFormData>): Promise<boolean> => {
         try {
             const updateData: Record<string, unknown> = {};
@@ -190,15 +189,17 @@ export function usePayments(studentId?: string) {
             if (updateError) throw updateError;
 
             await fetchPayments();
+
+            showSuccessToast('Pagamento atualizado!');
             return true;
         } catch (err) {
             console.error('Erro ao atualizar pagamento:', err);
             setError('Erro ao atualizar pagamento');
+            showErrorToast('Erro ao atualizar pagamento', 'Tente novamente');
             return false;
         }
     };
 
-    // Excluir pagamento
     const deletePayment = async (id: string): Promise<boolean> => {
         try {
             const { error: deleteError } = await supabase
@@ -209,30 +210,42 @@ export function usePayments(studentId?: string) {
             if (deleteError) throw deleteError;
 
             await fetchPayments();
+
+            showSuccessToast('Pagamento excluído', 'Registro removido com sucesso');
             return true;
         } catch (err) {
             console.error('Erro ao excluir pagamento:', err);
             setError('Erro ao excluir pagamento');
+            showErrorToast('Erro ao excluir pagamento', 'Tente novamente');
             return false;
         }
     };
 
-    // Marcar como pago (ação rápida)
     const markAsPaid = async (id: string, paymentMethod?: PaymentMethod): Promise<boolean> => {
         const today = new Date().toISOString().split('T')[0];
-        return updatePayment(id, {
+        const result = await updatePayment(id, {
             status: 'PAID',
             paid_date: today,
             payment_method: paymentMethod || 'PIX',
         });
+
+        if (result) {
+            showSuccessToast('Pagamento confirmado! 💰', `Método: ${paymentMethod || 'PIX'}`);
+        }
+
+        return result;
     };
 
-    // Cancelar pagamento
     const cancelPayment = async (id: string): Promise<boolean> => {
-        return updatePayment(id, { status: 'CANCELLED' });
+        const result = await updatePayment(id, { status: 'CANCELLED' });
+
+        if (result) {
+            showSuccessToast('Pagamento cancelado');
+        }
+
+        return result;
     };
 
-    // Carregar ao montar
     useEffect(() => {
         fetchPayments();
     }, [fetchPayments]);

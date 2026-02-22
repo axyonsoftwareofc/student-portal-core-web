@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import type { ExerciseSubmission, SubmitExerciseDTO } from '@/lib/types/exercise-submissions';
 
 interface UseStudentExerciseReturn {
@@ -51,7 +52,9 @@ export function useStudentExercise(
             setSubmission(data as ExerciseSubmission | null);
         } catch (err) {
             console.error('[useStudentExercise] Erro ao buscar submissão:', err);
-            setError('Erro ao carregar resposta');
+            const message = 'Erro ao carregar resposta';
+            setError(message);
+            showErrorToast('Erro ao carregar exercício', 'Verifique sua conexão');
         } finally {
             setIsLoading(false);
         }
@@ -61,6 +64,7 @@ export function useStudentExercise(
         data: Omit<SubmitExerciseDTO, 'content_id' | 'student_id'>
     ): Promise<{ success: boolean; error?: string }> => {
         if (!contentId || !studentId) {
+            showErrorToast('Erro ao enviar', 'Dados inválidos');
             return { success: false, error: 'Dados inválidos' };
         }
 
@@ -79,15 +83,15 @@ export function useStudentExercise(
             };
 
             if (submission) {
-                // Atualizar existente
                 const { error: updateError } = await supabase
                     .from('exercise_submissions')
                     .update(submissionData)
                     .eq('id', submission.id);
 
                 if (updateError) throw updateError;
+
+                showSuccessToast('Resposta atualizada! 📝', 'Aguardando correção do professor');
             } else {
-                // Criar nova
                 const { error: insertError } = await supabase
                     .from('exercise_submissions')
                     .insert({
@@ -97,12 +101,15 @@ export function useStudentExercise(
                     });
 
                 if (insertError) throw insertError;
+
+                showSuccessToast('Exercício enviado! 🎉', 'Aguardando correção do professor');
             }
 
             await fetchSubmission();
             return { success: true };
         } catch (err) {
             console.error('[useStudentExercise] Erro ao enviar resposta:', err);
+            showErrorToast('Erro ao enviar resposta', 'Tente novamente');
             return { success: false, error: 'Erro ao enviar resposta' };
         } finally {
             setIsSaving(false);

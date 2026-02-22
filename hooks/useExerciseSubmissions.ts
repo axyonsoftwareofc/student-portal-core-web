@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import type {
     ExerciseSubmission,
     ExerciseSubmissionWithDetails,
@@ -27,17 +28,17 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
             let query = supabase
                 .from('exercise_submissions')
                 .select(`
-                    *,
-                    student:users!exercise_submissions_student_id_fkey (
-                        id, name, email
-                    ),
-                    reviewer:users!exercise_submissions_reviewed_by_fkey (
-                        id, name
-                    ),
-                    content:lesson_contents!exercise_submissions_content_id_fkey (
-                        id, title, lesson_id
-                    )
-                `)
+          *,
+          student:users!exercise_submissions_student_id_fkey (
+            id, name, email
+          ),
+          reviewer:users!exercise_submissions_reviewed_by_fkey (
+            id, name
+          ),
+          content:lesson_contents!exercise_submissions_content_id_fkey (
+            id, title, lesson_id
+          )
+        `)
                 .order('created_at', { ascending: false });
 
             if (filterStatus && filterStatus !== 'all') {
@@ -48,19 +49,18 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
 
             if (fetchError) throw fetchError;
 
-            // Buscar informações da aula para cada conteúdo
             const submissionsWithLessons = await Promise.all(
                 (data || []).map(async (submission: ExerciseSubmissionWithDetails) => {
                     if (submission.content?.lesson_id) {
                         const { data: lessonData } = await supabase
                             .from('lessons')
                             .select(`
-                                id, title,
-                                module:modules (
-                                    id, name,
-                                    course:courses (id, name)
-                                )
-                            `)
+                id, title,
+                module:modules (
+                  id, name,
+                  course:courses (id, name)
+                )
+              `)
                             .eq('id', submission.content.lesson_id)
                             .single();
 
@@ -76,6 +76,7 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
         } catch (err) {
             console.error('[useExerciseSubmissions] Erro ao buscar submissões:', err);
             setError('Erro ao carregar submissões');
+            showErrorToast('Erro ao carregar exercícios', 'Verifique sua conexão');
         } finally {
             setIsLoading(false);
         }
@@ -93,7 +94,6 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
                 .single();
 
             if (existing) {
-                // Atualizar submissão existente
                 const { error: updateError } = await supabase
                     .from('exercise_submissions')
                     .update({
@@ -108,8 +108,9 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
                     .eq('id', existing.id);
 
                 if (updateError) throw updateError;
+
+                showSuccessToast('Resposta atualizada!', 'Aguardando correção do professor');
             } else {
-                // Criar nova submissão
                 const { error: insertError } = await supabase
                     .from('exercise_submissions')
                     .insert({
@@ -124,12 +125,15 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
                     });
 
                 if (insertError) throw insertError;
+
+                showSuccessToast('Exercício enviado! 📝', 'Aguardando correção do professor');
             }
 
             await fetchSubmissions();
             return { success: true };
         } catch (err) {
             console.error('[useExerciseSubmissions] Erro ao enviar exercício:', err);
+            showErrorToast('Erro ao enviar resposta', 'Tente novamente');
             return { success: false, error: 'Erro ao enviar resposta' };
         }
     }, [supabase, fetchSubmissions]);
@@ -141,7 +145,7 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
         try {
             const updateData: Record<string, unknown> = {
                 updated_at: new Date().toISOString(),
-                status: 'pending', // Volta para pendente quando aluno edita
+                status: 'pending',
             };
 
             if (data.answer_text !== undefined) updateData.answer_text = data.answer_text || null;
@@ -158,9 +162,12 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
             if (updateError) throw updateError;
 
             await fetchSubmissions();
+
+            showSuccessToast('Resposta atualizada!');
             return { success: true };
         } catch (err) {
             console.error('[useExerciseSubmissions] Erro ao atualizar submissão:', err);
+            showErrorToast('Erro ao atualizar resposta', 'Tente novamente');
             return { success: false, error: 'Erro ao atualizar resposta' };
         }
     }, [supabase, fetchSubmissions]);
@@ -185,9 +192,21 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
             if (updateError) throw updateError;
 
             await fetchSubmissions();
+
+            const statusLabel = {
+                pending: 'Pendente',
+                approved: 'Aprovado ✅',
+                needs_revision: 'Revisão solicitada 📝',
+                reviewed: 'Corrigido',
+            }[data.status] || 'Atualizado';
+
+            const gradeText = data.grade !== undefined && data.grade !== null ? ` • Nota: ${data.grade}` : '';
+
+            showSuccessToast(`Exercício ${statusLabel}`, `Correção salva${gradeText}`);
             return { success: true };
         } catch (err) {
             console.error('[useExerciseSubmissions] Erro ao corrigir exercício:', err);
+            showErrorToast('Erro ao salvar correção', 'Tente novamente');
             return { success: false, error: 'Erro ao salvar correção' };
         }
     }, [supabase, fetchSubmissions]);

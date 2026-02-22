@@ -3,6 +3,7 @@
 
 import { useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import type { ContentProgress } from '@/lib/types/lesson-contents';
 
 interface MarkCompleteParams {
@@ -57,9 +58,11 @@ export function useContentProgress() {
                 if (error) throw error;
             }
 
+            showSuccessToast('Conteúdo concluído! ✅');
             return { success: true };
         } catch (err) {
             console.error('[useContentProgress] Erro ao marcar como completo:', err);
+            showErrorToast('Erro ao salvar progresso', 'Tente novamente');
             return { success: false, error: 'Erro ao salvar progresso' };
         }
     }, [supabase]);
@@ -104,9 +107,18 @@ export function useContentProgress() {
                 if (error) throw error;
             }
 
+            const percentage = Math.round((params.score / params.total) * 100);
+            const emoji = percentage >= 70 ? '🎉' : percentage >= 50 ? '👍' : '📚';
+
+            showSuccessToast(
+                `Quiz finalizado! ${emoji}`,
+                `${params.score}/${params.total} (${percentage}%)`
+            );
+
             return { success: true };
         } catch (err) {
             console.error('[useContentProgress] Erro ao salvar quiz:', err);
+            showErrorToast('Erro ao salvar quiz', 'Tente novamente');
             return { success: false, error: 'Erro ao salvar resultado do quiz' };
         }
     }, [supabase]);

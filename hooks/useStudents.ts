@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showSuccessToast, showErrorToast, showWarningToast } from '@/lib/toast';
 import type { User, UserFormData } from '@/lib/types/database';
 
 export type Student = User;
@@ -38,7 +39,9 @@ export function useStudents() {
             setStudents((data as Student[]) || []);
         } catch (err) {
             console.error('[useStudents] Erro ao buscar alunos:', err);
-            setError('Erro ao carregar alunos. Tente novamente.');
+            const message = 'Erro ao carregar alunos. Tente novamente.';
+            setError(message);
+            showErrorToast('Erro ao carregar alunos', 'Verifique sua conexão e tente novamente');
         } finally {
             setIsLoading(false);
         }
@@ -55,6 +58,7 @@ export function useStudents() {
                 .maybeSingle();
 
             if (existing) {
+                showWarningToast('E-mail já cadastrado', 'Este aluno já existe no sistema');
                 return { success: false, error: 'Este e-mail já está cadastrado' };
             }
 
@@ -79,6 +83,7 @@ export function useStudents() {
 
             if (insertError) {
                 console.error('[useStudents] Erro ao inserir:', insertError);
+                showErrorToast('Erro ao cadastrar aluno', insertError.message);
                 return { success: false, error: 'Erro ao cadastrar aluno' };
             }
 
@@ -87,9 +92,11 @@ export function useStudents() {
 
             await fetchStudents();
 
+            showSuccessToast('Aluno cadastrado!', `Convite gerado para ${data.name}`);
             return { success: true, inviteLink };
         } catch (err) {
             console.error('[useStudents] Erro ao criar aluno:', err);
+            showErrorToast('Erro inesperado', 'Não foi possível cadastrar o aluno');
             return { success: false, error: 'Erro inesperado ao criar aluno' };
         }
     }, [supabase, fetchStudents]);
@@ -117,14 +124,16 @@ export function useStudents() {
             const inviteLink = `${baseUrl}/convite/${inviteToken}`;
 
             await fetchStudents();
+
+            showSuccessToast('Convite reenviado!', 'Um novo link de convite foi gerado');
             return { success: true, inviteLink };
         } catch (err) {
             console.error('[useStudents] Erro ao reenviar convite:', err);
+            showErrorToast('Erro ao reenviar convite', 'Tente novamente em instantes');
             return { success: false, error: 'Erro ao reenviar convite' };
         }
     }, [supabase, fetchStudents]);
 
-    // Função para atualizar email via API
     const updateStudentEmail = useCallback(async (
         userId: string,
         newEmail: string
@@ -133,6 +142,7 @@ export function useStudents() {
             const { data: { session } } = await supabase.auth.getSession();
 
             if (!session?.access_token) {
+                showErrorToast('Sessão expirada', 'Faça login novamente para continuar');
                 return { success: false, error: 'Sessão expirada. Faça login novamente.' };
             }
 
@@ -148,24 +158,24 @@ export function useStudents() {
             const result = await response.json();
 
             if (!response.ok) {
+                showErrorToast('Erro ao atualizar e-mail', result.error || 'Tente novamente');
                 return { success: false, error: result.error || 'Erro ao atualizar email' };
             }
 
             return { success: true };
         } catch (err) {
             console.error('[useStudents] Erro ao atualizar email:', err);
+            showErrorToast('Erro de conexão', 'Não foi possível atualizar o e-mail');
             return { success: false, error: 'Erro de conexão ao atualizar email' };
         }
     }, [supabase]);
 
-    // Atualizar aluno (com suporte a email)
     const updateStudent = useCallback(async (
         id: string,
         data: Partial<StudentFormData>,
         currentEmail?: string
     ): Promise<{ success: boolean; error?: string }> => {
         try {
-            // Se o email mudou, usar a API especial
             if (data.email && currentEmail && data.email.toLowerCase().trim() !== currentEmail.toLowerCase().trim()) {
                 const emailResult = await updateStudentEmail(id, data.email);
                 if (!emailResult.success) {
@@ -173,7 +183,6 @@ export function useStudents() {
                 }
             }
 
-            // Atualizar outros campos
             const updateData: Record<string, unknown> = {
                 updated_at: new Date().toISOString(),
             };
@@ -191,14 +200,16 @@ export function useStudents() {
             }
 
             await fetchStudents();
+
+            showSuccessToast('Aluno atualizado!', `Dados de ${data.name || 'aluno'} salvos`);
             return { success: true };
         } catch (err) {
             console.error('[useStudents] Erro ao atualizar aluno:', err);
+            showErrorToast('Erro ao atualizar', 'Não foi possível salvar as alterações');
             return { success: false, error: 'Erro ao atualizar aluno' };
         }
     }, [supabase, fetchStudents, updateStudentEmail]);
 
-    // Suspender aluno (em vez de excluir)
     const suspendStudent = useCallback(async (
         id: string
     ): Promise<{ success: boolean; error?: string }> => {
@@ -214,14 +225,16 @@ export function useStudents() {
             if (updateError) throw updateError;
 
             await fetchStudents();
+
+            showWarningToast('Aluno suspenso', 'O acesso do aluno foi desativado');
             return { success: true };
         } catch (err) {
             console.error('[useStudents] Erro ao suspender aluno:', err);
+            showErrorToast('Erro ao suspender', 'Não foi possível suspender o aluno');
             return { success: false, error: 'Erro ao suspender aluno' };
         }
     }, [supabase, fetchStudents]);
 
-    // Reativar aluno
     const reactivateStudent = useCallback(async (
         id: string
     ): Promise<{ success: boolean; error?: string }> => {
@@ -237,43 +250,25 @@ export function useStudents() {
             if (updateError) throw updateError;
 
             await fetchStudents();
+
+            showSuccessToast('Aluno reativado!', 'O acesso foi restaurado com sucesso');
             return { success: true };
         } catch (err) {
             console.error('[useStudents] Erro ao reativar aluno:', err);
+            showErrorToast('Erro ao reativar', 'Não foi possível reativar o aluno');
             return { success: false, error: 'Erro ao reativar aluno' };
         }
     }, [supabase, fetchStudents]);
 
-    // Excluir aluno permanentemente (com dados relacionados)
     const deleteStudent = useCallback(async (
         id: string
     ): Promise<{ success: boolean; error?: string }> => {
         try {
-            // 1. Excluir progresso de aulas
-            await supabase
-                .from('lesson_progress')
-                .delete()
-                .eq('student_id', id);
+            await supabase.from('lesson_progress').delete().eq('student_id', id);
+            await supabase.from('enrollments').delete().eq('student_id', id);
+            await supabase.from('payments').delete().eq('student_id', id);
+            await supabase.from('task_submissions').delete().eq('student_id', id);
 
-            // 2. Excluir matrículas
-            await supabase
-                .from('enrollments')
-                .delete()
-                .eq('student_id', id);
-
-            // 3. Excluir pagamentos
-            await supabase
-                .from('payments')
-                .delete()
-                .eq('student_id', id);
-
-            // 4. Excluir submissões de tarefas
-            await supabase
-                .from('task_submissions')
-                .delete()
-                .eq('student_id', id);
-
-            // 5. Finalmente, excluir o usuário
             const { error: deleteError } = await supabase
                 .from('users')
                 .delete()
@@ -282,9 +277,12 @@ export function useStudents() {
             if (deleteError) throw deleteError;
 
             await fetchStudents();
+
+            showSuccessToast('Aluno excluído', 'Todos os dados foram removidos permanentemente');
             return { success: true };
         } catch (err) {
             console.error('[useStudents] Erro ao excluir aluno:', err);
+            showErrorToast('Erro ao excluir', 'Não foi possível remover o aluno');
             return { success: false, error: 'Erro ao excluir aluno' };
         }
     }, [supabase, fetchStudents]);

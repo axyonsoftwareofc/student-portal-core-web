@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { showErrorToast } from '@/lib/toast';
 import { StudentNote, UseLessonNoteReturn } from '@/lib/types/notes';
 
 const AUTO_SAVE_DELAY_MS = 1500;
@@ -101,6 +102,7 @@ export function useLessonNote({
                 }
             } catch (err) {
                 console.error('useLessonNote - save error:', err);
+                showErrorToast('Erro ao salvar anotação', 'Suas alterações podem não ter sido salvas');
             } finally {
                 setIsSaving(false);
             }
@@ -154,6 +156,7 @@ export function useLessonNote({
             setLastSavedAt(null);
         } catch (err) {
             console.error('useLessonNote - delete error:', err);
+            showErrorToast('Erro ao excluir anotação', 'Tente novamente');
             throw err;
         }
     }, [supabase, note]);

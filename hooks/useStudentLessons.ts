@@ -3,9 +3,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { StudentLesson, Module, Lesson, LessonProgress } from '@/lib/types/database';
+import { showErrorToast } from '@/lib/toast';
 
-// Tipo para o retorno da query com JOIN (sem extends)
 interface ModuleWithCourse {
     id: string;
     course_id: string;
@@ -18,14 +17,51 @@ interface ModuleWithCourse {
     course: { id: string; name: string };
 }
 
-export function useStudentLessons(moduleId: string | null, studentId: string | null) {
-    const [lessons, setLessons] = useState<StudentLesson[]>([]);
-    const [module, setModule] = useState<ModuleWithCourse | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const supabaseRef = useRef(createClient());
+interface LessonFromDB {
+    id: string;
+    module_id: string;
+    title: string;
+    description: string | null;
+    order_index: number;
+    status: string;
+    total_contents: number;
+    created_at: string;
+}
 
-    const fetchLessons = useCallback(async () => {
+interface ContentFromDB {
+    id: string;
+    lesson_id: string;
+}
+
+interface ProgressFromDB {
+    content_id: string;
+    completed: boolean;
+}
+
+export interface StudentLessonSummary {
+    id: string;
+    module_id: string;
+    title: string;
+    description: string | null;
+    order_index: number;
+    status: string;
+    total_contents: number;
+    created_at: string;
+    completed_contents: number;
+    is_completed: boolean;
+    progress_percentage: number;
+}
+
+export function useStudentLessons(moduleId: string | null, studentId: string | null) {
+    const [lessons, setLessons] = useState<StudentLessonSummary[]>([]);
+    const [module, setModule] = useState<ModuleWithCourse | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const supabaseRef = useRef(createClient());
+    const supabase = supabaseRef.current;
+
+    const fetchLessons = useCallback(async (): Promise<void> => {
         if (!moduleId || !studentId) {
             setLessons([]);
             setModule(null);
@@ -36,25 +72,22 @@ export function useStudentLessons(moduleId: string | null, studentId: string | n
         try {
             setIsLoading(true);
             setError(null);
-            const supabase = supabaseRef.current;
 
-            // 1. Buscar módulo com curso
             const { data: moduleData, error: moduleError } = await supabase
                 .from('modules')
                 .select(`
-                    *,
-                    course:courses(id, name)
-                `)
+          *,
+          course:courses(id, name)
+        `)
                 .eq('id', moduleId)
                 .single();
 
             if (moduleError) throw moduleError;
             setModule(moduleData as ModuleWithCourse);
 
-            // 2. Buscar aulas do módulo
             const { data: lessonsData, error: lessonsError } = await supabase
                 .from('lessons')
-                .select('*')
+                .select('id, module_id, title, description, order_index, status, total_contents, created_at')
                 .eq('module_id', moduleId)
                 .eq('status', 'PUBLISHED')
                 .order('order_index', { ascending: true });
@@ -66,35 +99,64 @@ export function useStudentLessons(moduleId: string | null, studentId: string | n
                 return;
             }
 
-            // 3. Buscar progresso do aluno para essas aulas
-            const lessonIds = (lessonsData as Lesson[]).map((l: Lesson) => l.id);
+            const typedLessonsData = lessonsData as LessonFromDB[];
+            const lessonIds = typedLessonsData.map((l: LessonFromDB) => l.id);
 
-            const { data: progressData } = await supabase
-                .from('lesson_progress')
-                .select('*')
-                .eq('student_id', studentId)
+            const { data: contentsData } = await supabase
+                .from('lesson_contents')
+                .select('id, lesson_id')
                 .in('lesson_id', lessonIds);
 
-            // 4. Combinar aulas com progresso
-            const lessonsWithProgress: StudentLesson[] = (lessonsData as Lesson[]).map((lesson: Lesson) => {
-                const progress = (progressData as LessonProgress[] | null)?.find(
-                    (p: LessonProgress) => p.lesson_id === lesson.id
-                ) || null;
+            const typedContentsData = (contentsData as ContentFromDB[]) || [];
+            const contentIds = typedContentsData.map((c: ContentFromDB) => c.id);
+
+            let typedProgressData: ProgressFromDB[] = [];
+
+            if (contentIds.length > 0) {
+                const { data: progressData } = await supabase
+                    .from('content_progress')
+                    .select('content_id, completed')
+                    .eq('student_id', studentId)
+                    .eq('completed', true)
+                    .in('content_id', contentIds);
+
+                typedProgressData = (progressData as ProgressFromDB[]) || [];
+            }
+
+            const completedContentIds = new Set(
+                typedProgressData.map((p: ProgressFromDB) => p.content_id)
+            );
+
+            const lessonsWithProgress: StudentLessonSummary[] = typedLessonsData.map((lesson: LessonFromDB) => {
+                const lessonContents = typedContentsData.filter(
+                    (c: ContentFromDB) => c.lesson_id === lesson.id
+                );
+                const completedCount = lessonContents.filter(
+                    (c: ContentFromDB) => completedContentIds.has(c.id)
+                ).length;
+                const totalCount = lessonContents.length;
+                const progressPercentage = totalCount > 0
+                    ? Math.round((completedCount / totalCount) * 100)
+                    : 0;
+
                 return {
                     ...lesson,
-                    progress,
-                    is_completed: progress?.completed || false,
+                    completed_contents: completedCount,
+                    is_completed: totalCount > 0 && completedCount === totalCount,
+                    progress_percentage: progressPercentage,
                 };
             });
 
             setLessons(lessonsWithProgress);
         } catch (err) {
-            console.error('Erro ao buscar aulas:', err);
-            setError('Erro ao carregar aulas');
+            console.error('[useStudentLessons] Erro:', err);
+            const message = 'Erro ao carregar aulas';
+            setError(message);
+            showErrorToast('Erro ao carregar aulas', 'Verifique sua conexão');
         } finally {
             setIsLoading(false);
         }
-    }, [moduleId, studentId]);
+    }, [moduleId, studentId, supabase]);
 
     useEffect(() => {
         fetchLessons();

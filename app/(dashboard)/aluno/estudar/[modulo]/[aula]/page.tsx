@@ -36,6 +36,8 @@ import { useContentProgress } from '@/hooks/useContentProgress';
 import { useLessonNote } from '@/hooks/useLessonNote';
 import { NoteSidePanel } from '@/components/student/notes/NoteSidePanel';
 import { MarkdownRenderer } from '@/components/common/markdown-renderer';
+import { useGamification } from '@/hooks/useGamification';
+import type { XpActionType } from '@/lib/types/gamification';
 import type { LessonContentWithProgress, LessonContentType, QuizQuestion } from '@/lib/types/lesson-contents';
 
 const typeConfig: Record<LessonContentType, { icon: typeof Video; color: string; label: string }> = {
@@ -70,6 +72,7 @@ export default function AulaPage() {
     const [activeContentIndex, setActiveContentIndex] = useState<number>(0);
     const [isNotesOpen, setIsNotesOpen] = useState<boolean>(false);
     const [isSavingProgress, setIsSavingProgress] = useState<boolean>(false);
+    const { addXp, checkAndAwardModuleCompletion } = useGamification(user?.id || null);
 
     const {
         note,
@@ -109,7 +112,16 @@ export default function AulaPage() {
         setIsSavingProgress(false);
 
         if (result.success) {
+            // 🆕 Adicionar XP por conteúdo completado
+            await addXp('content_complete', activeContent.id, activeContent.title);
+
             await refetch();
+
+            // 🆕 Verificar se completou o módulo
+            if (moduloId) {
+                await checkAndAwardModuleCompletion(moduloId, user.id);
+            }
+
             if (activeContentIndex < contents.length - 1) {
                 setActiveContentIndex(activeContentIndex + 1);
             }
@@ -134,7 +146,19 @@ export default function AulaPage() {
         setIsSavingProgress(false);
 
         if (result.success) {
+            // 🆕 Adicionar XP por quiz
+            if (score === total) {
+                await addXp('quiz_perfect', activeContent.id, `Quiz perfeito: ${activeContent.title}`);
+            } else {
+                await addXp('quiz_complete', activeContent.id, activeContent.title);
+            }
+
             await refetch();
+
+            // 🆕 Verificar se completou o módulo
+            if (moduloId) {
+                await checkAndAwardModuleCompletion(moduloId, user.id);
+            }
         }
     };
 
@@ -416,10 +440,10 @@ interface ContentViewerProps {
     onComplete: () => Promise<void>;
     onQuizComplete: (score: number, total: number, answers: Record<string, string>) => Promise<void>;
     isSaving: boolean;
+    addXp?: (action: XpActionType, referenceId?: string, description?: string) => Promise<number>;
 }
 
-function ContentViewer({ content, onComplete, onQuizComplete, isSaving }: ContentViewerProps) {
-    const config = typeConfig[content.type];
+function ContentViewer({ content, onComplete, onQuizComplete, isSaving, addXp }: ContentViewerProps) {    const config = typeConfig[content.type];
     const Icon = config.icon;
 
     return (
@@ -460,7 +484,12 @@ function ContentViewer({ content, onComplete, onQuizComplete, isSaving }: Conten
                 <ArticleContentView content={content} onComplete={onComplete} isSaving={isSaving} />
             )}
             {content.type === 'EXERCISE' && (
-                <ExerciseContentView content={content} onComplete={onComplete} isSaving={isSaving} />
+                <ExerciseContentView
+                    content={content}
+                    onComplete={onComplete}
+                    isSaving={isSaving}
+                    addXp={addXp}
+                />
             )}
             {content.type === 'QUIZ' && (
                 <QuizContentView content={content} onComplete={onQuizComplete} isSaving={isSaving} />
@@ -566,15 +595,15 @@ function ArticleContentView({
     );
 }
 
-function ExerciseContentView({
-                                 content,
-                                 onComplete,
-                                 isSaving,
-                             }: {
+// Interface atualizada
+interface ExerciseContentViewProps {
     content: LessonContentWithProgress;
     onComplete: () => Promise<void>;
     isSaving: boolean;
-}) {
+    addXp?: (action: XpActionType, referenceId?: string, description?: string) => Promise<number>;
+}
+
+function ExerciseContentView({ content, onComplete, isSaving, addXp }: ExerciseContentViewProps) {
     const { user } = useAuth();
     const { submission, isLoading: isLoadingSubmission, isSaving: isSavingSubmission, submitAnswer } = useStudentExercise(
         content.id,

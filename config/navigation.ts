@@ -4,7 +4,6 @@ import {
     Users,
     UserPlus,
     GraduationCap,
-    Layers,
     Play,
     ClipboardCheck,
     CreditCard,
@@ -15,6 +14,7 @@ import {
     User,
     StickyNote,
     Upload,
+    Map,
     type LucideIcon,
 } from "lucide-react";
 
@@ -51,10 +51,10 @@ export const adminNavItems: NavItem[] = [
         description: "Gerenciar cursos",
     },
     {
-        icon: Layers,
-        label: "Módulos",
-        href: "/admin/modulos",
-        description: "Gerenciar módulos",
+        icon: Map,
+        label: "Jornada",
+        href: "/aluno/journey",
+        description: "Sua evolução e progresso",
     },
     {
         icon: Play,
@@ -114,10 +114,10 @@ export const studentNavItems: NavItem[] = [
         description: "Suas anotações de aula",
     },
     {
-        icon: Layers,
-        label: "Módulos",
-        href: "/aluno/modulos",
-        description: "Ver módulos do curso",
+        icon: Map,
+        label: "Jornada",
+        href: "/aluno/journey",
+        description: "Sua evolução e progresso",
     },
     {
         icon: BarChart,

@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
+import { getLevelFromXp, XP_VALUES, calculateStreakBonus } from '@/lib/data/gamification';
 import type {
     ExerciseSubmission,
     ExerciseSubmissionWithDetails,
@@ -19,6 +20,99 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
 
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
+
+    // 🆕 Função auxiliar para dar XP ao aluno quando exercício é corrigido
+    const awardXpToStudent = useCallback(async (
+        studentId: string,
+        grade: number | null | undefined,
+        contentId: string
+    ): Promise<void> => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+
+            // Buscar dados atuais de gamificação do aluno
+            let { data: gamification } = await supabase
+                .from('student_gamification')
+                .select('*')
+                .eq('student_id', studentId)
+                .single();
+
+            // Se não existe, criar
+            if (!gamification) {
+                const { data: newGamification } = await supabase
+                    .from('student_gamification')
+                    .insert({ student_id: studentId })
+                    .select()
+                    .single();
+                gamification = newGamification;
+            }
+
+            if (!gamification) return;
+
+            // Calcular XP baseado na nota
+            let xpToAdd = XP_VALUES.exercise_approved; // 50 XP base
+            let actionType = 'exercise_approved';
+            let description = 'Exercício aprovado';
+
+            if (grade !== null && grade !== undefined && grade === 10) {
+                xpToAdd = XP_VALUES.exercise_perfect; // 100 XP para nota 10
+                actionType = 'exercise_perfect';
+                description = 'Nota 10 no exercício! ⭐';
+            }
+
+            // Calcular streak bonus se for primeira atividade do dia
+            let streakBonus = 0;
+            let newStreak = gamification.current_streak;
+
+            if (gamification.last_activity_date !== today) {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+                if (gamification.last_activity_date === yesterdayStr) {
+                    newStreak = gamification.current_streak + 1;
+                } else {
+                    newStreak = 1;
+                }
+
+                if (newStreak > 1) {
+                    streakBonus = calculateStreakBonus(newStreak);
+                }
+
+                xpToAdd += XP_VALUES.first_of_day;
+            }
+
+            const totalXp = xpToAdd + streakBonus;
+            const newXp = gamification.xp + totalXp;
+            const newLevel = getLevelFromXp(newXp);
+
+            // Atualizar gamificação
+            await supabase
+                .from('student_gamification')
+                .update({
+                    xp: newXp,
+                    level: newLevel.level,
+                    current_streak: newStreak,
+                    longest_streak: Math.max(gamification.longest_streak, newStreak),
+                    last_activity_date: today,
+                    total_activities: gamification.total_activities + 1,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('student_id', studentId);
+
+            // Registrar no histórico
+            await supabase.from('xp_history').insert({
+                student_id: studentId,
+                xp_amount: totalXp,
+                action_type: actionType,
+                reference_id: contentId,
+                description,
+            });
+
+        } catch (err) {
+            console.error('[useExerciseSubmissions] Erro ao dar XP ao aluno:', err);
+        }
+    }, [supabase]);
 
     const fetchSubmissions = useCallback(async (): Promise<void> => {
         try {
@@ -177,6 +271,13 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
         data: ReviewExerciseDTO
     ): Promise<{ success: boolean; error?: string }> => {
         try {
+            // 🆕 Buscar o student_id e content_id antes de atualizar
+            const { data: submissionData } = await supabase
+                .from('exercise_submissions')
+                .select('student_id, content_id, status')
+                .eq('id', id)
+                .single();
+
             const { error: updateError } = await supabase
                 .from('exercise_submissions')
                 .update({
@@ -190,6 +291,19 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
                 .eq('id', id);
 
             if (updateError) throw updateError;
+
+            // 🆕 Se foi aprovado ou corrigido (e não era antes), dar XP ao aluno
+            if (
+                submissionData &&
+                (data.status === 'approved' || data.status === 'reviewed') &&
+                submissionData.status === 'pending'
+            ) {
+                await awardXpToStudent(
+                    submissionData.student_id,
+                    data.grade,
+                    submissionData.content_id
+                );
+            }
 
             await fetchSubmissions();
 
@@ -209,7 +323,7 @@ export function useExerciseSubmissions(filterStatus?: string): UseExerciseSubmis
             showErrorToast('Erro ao salvar correção', 'Tente novamente');
             return { success: false, error: 'Erro ao salvar correção' };
         }
-    }, [supabase, fetchSubmissions]);
+    }, [supabase, fetchSubmissions, awardXpToStudent]);
 
     const getSubmissionByContent = useCallback(async (
         contentId: string,

@@ -5,6 +5,7 @@ import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import type { LessonProgress } from '@/lib/types/database';
+import { useGamification } from '@/hooks/useGamification';
 
 interface MarkCompleteParams {
     lessonId: string;

@@ -435,9 +435,28 @@ function validateExerciseContent(content: ImportExerciseContent, index: number, 
         errors.push({ field: `contents[${index}].difficulty`, message: `Exercício "${content.title}": dificuldade deve ser easy, medium ou hard` });
     }
 
-    const validTypes = ['ordering', 'true_false', 'fill_blank', 'matching', 'multiple_select', 'code_completion', 'drag_drop', 'code', 'text', 'open'];
+    // 🆕 ATUALIZADO: Agora com 12 tipos!
+    const validTypes = [
+        'ordering',
+        'true_false',
+        'fill_blank',
+        'matching',
+        'multiple_select',
+        'code_completion',
+        'drag_drop',
+        'debugging',
+        'code_output',
+        'categorize',
+        'code',
+        'text',
+        'open'
+    ];
+
     if (!content.exercise_type || !validTypes.includes(content.exercise_type)) {
-        errors.push({ field: `contents[${index}].exercise_type`, message: `Exercício "${content.title}": exercise_type deve ser ${validTypes.join(', ')}` });
+        errors.push({
+            field: `contents[${index}].exercise_type`,
+            message: `Exercício "${content.title}": exercise_type deve ser ${validTypes.join(', ')}`
+        });
     }
 
     if (content.exercise_type === 'ordering' && (!content.ordering_items || content.ordering_items.length < 2)) {
@@ -466,6 +485,18 @@ function validateExerciseContent(content: ImportExerciseContent, index: number, 
 
     if (content.exercise_type === 'drag_drop') {
         validateDragDropContent(content, index, errors);
+    }
+
+    if (content.exercise_type === 'debugging') {
+        validateDebuggingContent(content, index, errors);
+    }
+
+    if (content.exercise_type === 'code_output') {
+        validateCodeOutputContent(content, index, errors);
+    }
+
+    if (content.exercise_type === 'categorize') {
+        validateCategorizeContent(content, index, errors);
     }
 }
 
@@ -595,4 +626,264 @@ export function validateImportPayload(payload: ImportPayload): ValidationResult 
 
     const summary = buildSummary(payload);
     return { valid: true, errors: [], summary };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VALIDAÇÃO - DEBUGGING (NOVO v18)
+// ═══════════════════════════════════════════════════════════════
+
+function validateDebuggingContent(content: ImportExerciseContent, index: number, errors: ValidationError[]): void {
+    if (!content.debugging_data) {
+        errors.push({
+            field: `contents[${index}].debugging_data`,
+            message: `Exercício "${content.title}": debugging precisa de debugging_data`
+        });
+        return;
+    }
+
+    const debugData = content.debugging_data;
+
+    if (!debugData.language?.trim()) {
+        errors.push({
+            field: `contents[${index}].debugging_data.language`,
+            message: `Exercício "${content.title}": language é obrigatório`
+        });
+    }
+
+    if (!debugData.buggy_code?.trim()) {
+        errors.push({
+            field: `contents[${index}].debugging_data.buggy_code`,
+            message: `Exercício "${content.title}": buggy_code é obrigatório`
+        });
+    }
+
+    if (!debugData.bugs || !Array.isArray(debugData.bugs) || debugData.bugs.length < 1) {
+        errors.push({
+            field: `contents[${index}].debugging_data.bugs`,
+            message: `Exercício "${content.title}": deve ter pelo menos 1 bug`
+        });
+        return;
+    }
+
+    const bugIds = new Set<string>();
+    debugData.bugs.forEach((bug, bugIndex) => {
+        if (!bug.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].debugging_data.bugs[${bugIndex}].id`,
+                message: `Exercício "${content.title}", bug ${bugIndex + 1}: id é obrigatório`
+            });
+        } else {
+            if (bugIds.has(bug.id)) {
+                errors.push({
+                    field: `contents[${index}].debugging_data.bugs[${bugIndex}].id`,
+                    message: `Exercício "${content.title}", bug ${bugIndex + 1}: id "${bug.id}" duplicado`
+                });
+            }
+            bugIds.add(bug.id);
+        }
+
+        if (typeof bug.line !== 'number' || bug.line < 1) {
+            errors.push({
+                field: `contents[${index}].debugging_data.bugs[${bugIndex}].line`,
+                message: `Exercício "${content.title}", bug ${bugIndex + 1}: line deve ser um número >= 1`
+            });
+        }
+
+        if (!bug.description?.trim()) {
+            errors.push({
+                field: `contents[${index}].debugging_data.bugs[${bugIndex}].description`,
+                message: `Exercício "${content.title}", bug ${bugIndex + 1}: description é obrigatório`
+            });
+        }
+
+        if (!bug.incorrect_code?.trim()) {
+            errors.push({
+                field: `contents[${index}].debugging_data.bugs[${bugIndex}].incorrect_code`,
+                message: `Exercício "${content.title}", bug ${bugIndex + 1}: incorrect_code é obrigatório`
+            });
+        }
+
+        if (!bug.correct_code?.trim()) {
+            errors.push({
+                field: `contents[${index}].debugging_data.bugs[${bugIndex}].correct_code`,
+                message: `Exercício "${content.title}", bug ${bugIndex + 1}: correct_code é obrigatório`
+            });
+        }
+    });
+
+    if (!debugData.correct_full_code?.trim()) {
+        errors.push({
+            field: `contents[${index}].debugging_data.correct_full_code`,
+            message: `Exercício "${content.title}": correct_full_code é obrigatório`
+        });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VALIDAÇÃO - CODE OUTPUT (NOVO v18)
+// ═══════════════════════════════════════════════════════════════
+
+function validateCodeOutputContent(content: ImportExerciseContent, index: number, errors: ValidationError[]): void {
+    if (!content.code_output_data) {
+        errors.push({
+            field: `contents[${index}].code_output_data`,
+            message: `Exercício "${content.title}": code_output precisa de code_output_data`
+        });
+        return;
+    }
+
+    const outputData = content.code_output_data;
+
+    if (!outputData.language?.trim()) {
+        errors.push({
+            field: `contents[${index}].code_output_data.language`,
+            message: `Exercício "${content.title}": language é obrigatório`
+        });
+    }
+
+    if (!outputData.code?.trim()) {
+        errors.push({
+            field: `contents[${index}].code_output_data.code`,
+            message: `Exercício "${content.title}": code é obrigatório`
+        });
+    }
+
+    if (!outputData.options || !Array.isArray(outputData.options) || outputData.options.length < 2) {
+        errors.push({
+            field: `contents[${index}].code_output_data.options`,
+            message: `Exercício "${content.title}": deve ter pelo menos 2 opções de saída`
+        });
+        return;
+    }
+
+    const optionIds = new Set<string>();
+    outputData.options.forEach((option, optIndex) => {
+        if (!option.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].code_output_data.options[${optIndex}].id`,
+                message: `Exercício "${content.title}", opção ${optIndex + 1}: id é obrigatório`
+            });
+        } else {
+            if (optionIds.has(option.id)) {
+                errors.push({
+                    field: `contents[${index}].code_output_data.options[${optIndex}].id`,
+                    message: `Exercício "${content.title}", opção ${optIndex + 1}: id "${option.id}" duplicado`
+                });
+            }
+            optionIds.add(option.id);
+        }
+
+        if (!option.text) {
+            errors.push({
+                field: `contents[${index}].code_output_data.options[${optIndex}].text`,
+                message: `Exercício "${content.title}", opção ${optIndex + 1}: text é obrigatório`
+            });
+        }
+    });
+
+    if (!outputData.correct?.trim()) {
+        errors.push({
+            field: `contents[${index}].code_output_data.correct`,
+            message: `Exercício "${content.title}": correct (ID da opção correta) é obrigatório`
+        });
+    } else if (!optionIds.has(outputData.correct)) {
+        errors.push({
+            field: `contents[${index}].code_output_data.correct`,
+            message: `Exercício "${content.title}": correct "${outputData.correct}" não existe nas opções`
+        });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VALIDAÇÃO - CATEGORIZE (NOVO v18)
+// ═══════════════════════════════════════════════════════════════
+
+function validateCategorizeContent(content: ImportExerciseContent, index: number, errors: ValidationError[]): void {
+    if (!content.categorize_data) {
+        errors.push({
+            field: `contents[${index}].categorize_data`,
+            message: `Exercício "${content.title}": categorize precisa de categorize_data`
+        });
+        return;
+    }
+
+    const catData = content.categorize_data;
+
+    if (!catData.categories || !Array.isArray(catData.categories) || catData.categories.length < 2) {
+        errors.push({
+            field: `contents[${index}].categorize_data.categories`,
+            message: `Exercício "${content.title}": deve ter pelo menos 2 categorias`
+        });
+        return;
+    }
+
+    const categoryIds = new Set<string>();
+    catData.categories.forEach((category, catIndex) => {
+        if (!category.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].categorize_data.categories[${catIndex}].id`,
+                message: `Exercício "${content.title}", categoria ${catIndex + 1}: id é obrigatório`
+            });
+        } else {
+            if (categoryIds.has(category.id)) {
+                errors.push({
+                    field: `contents[${index}].categorize_data.categories[${catIndex}].id`,
+                    message: `Exercício "${content.title}", categoria ${catIndex + 1}: id "${category.id}" duplicado`
+                });
+            }
+            categoryIds.add(category.id);
+        }
+
+        if (!category.name?.trim()) {
+            errors.push({
+                field: `contents[${index}].categorize_data.categories[${catIndex}].name`,
+                message: `Exercício "${content.title}", categoria ${catIndex + 1}: name é obrigatório`
+            });
+        }
+    });
+
+    if (!catData.items || !Array.isArray(catData.items) || catData.items.length < 2) {
+        errors.push({
+            field: `contents[${index}].categorize_data.items`,
+            message: `Exercício "${content.title}": deve ter pelo menos 2 itens para classificar`
+        });
+        return;
+    }
+
+    const itemIds = new Set<string>();
+    catData.items.forEach((item, itemIndex) => {
+        if (!item.id?.trim()) {
+            errors.push({
+                field: `contents[${index}].categorize_data.items[${itemIndex}].id`,
+                message: `Exercício "${content.title}", item ${itemIndex + 1}: id é obrigatório`
+            });
+        } else {
+            if (itemIds.has(item.id)) {
+                errors.push({
+                    field: `contents[${index}].categorize_data.items[${itemIndex}].id`,
+                    message: `Exercício "${content.title}", item ${itemIndex + 1}: id "${item.id}" duplicado`
+                });
+            }
+            itemIds.add(item.id);
+        }
+
+        if (!item.text?.trim()) {
+            errors.push({
+                field: `contents[${index}].categorize_data.items[${itemIndex}].text`,
+                message: `Exercício "${content.title}", item ${itemIndex + 1}: text é obrigatório`
+            });
+        }
+
+        if (!item.correct_category?.trim()) {
+            errors.push({
+                field: `contents[${index}].categorize_data.items[${itemIndex}].correct_category`,
+                message: `Exercício "${content.title}", item ${itemIndex + 1}: correct_category é obrigatório`
+            });
+        } else if (!categoryIds.has(item.correct_category)) {
+            errors.push({
+                field: `contents[${index}].categorize_data.items[${itemIndex}].correct_category`,
+                message: `Exercício "${content.title}", item ${itemIndex + 1}: correct_category "${item.correct_category}" não existe`
+            });
+        }
+    });
 }

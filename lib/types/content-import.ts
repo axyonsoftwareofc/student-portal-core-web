@@ -31,6 +31,9 @@ export type ExerciseType =
     | 'multiple_select'
     | 'code_completion'
     | 'drag_drop'
+    | 'debugging'
+    | 'code_output'
+    | 'categorize'
     | 'code'
     | 'text'
     | 'open';
@@ -103,6 +106,9 @@ export interface ImportExerciseContent {
     multiple_select_data?: MultipleSelectData;
     code_completion_data?: CodeCompletionData;
     drag_drop_data?: DragDropData;
+    debugging_data?: DebuggingData;
+    code_output_data?: CodeOutputData;
+    categorize_data?: CategorizeData;
 }
 
 export interface ImportQuizQuestion {
@@ -198,6 +204,9 @@ export interface InteractiveExerciseData {
     multiple_select_data?: MultipleSelectData;
     code_completion_data?: CodeCompletionData;
     drag_drop_data?: DragDropData;
+    debugging_data?: DebuggingData;
+    code_output_data?: CodeOutputData;
+    categorize_data?: CategorizeData;
 }
 
 // Code Completion (fill blank para código)
@@ -230,4 +239,53 @@ export interface DragDropData {
     items: DragDropItem[];              // Itens que podem ser arrastados
     zones: DragDropZone[];              // Zonas onde soltar
     instruction_per_zone?: boolean;     // Se true, mostra label da zona
+}
+
+// debugging - Encontrar erro no código
+export interface DebuggingBug {
+    id: string;
+    line: number;
+    description: string;
+    hint?: string;
+    incorrect_code: string;
+    correct_code: string;
+}
+
+export interface DebuggingData {
+    language: string;
+    buggy_code: string;
+    bugs: DebuggingBug[];
+    correct_full_code: string;
+}
+
+// code_output - Qual a saída do código?
+interface CodeOutputOption {
+    id: string;
+    text: string;
+}
+
+export interface CodeOutputData {
+    language: string;
+    code: string;
+    options: CodeOutputOption[];
+    correct: string;
+    explanation_per_option?: Record<string, string>;
+}
+
+// categorize - Classificar em grupos
+export interface CategorizeCategory {
+    id: string;
+    name: string;
+    color?: string;
+}
+
+export interface CategorizeItem {
+    id: string;
+    text: string;
+    correct_category: string;
+}
+
+export interface CategorizeData {
+    categories: CategorizeCategory[];
+    items: CategorizeItem[];
 }

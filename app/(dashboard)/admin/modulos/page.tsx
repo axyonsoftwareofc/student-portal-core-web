@@ -22,6 +22,7 @@ import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import ModuleForm from '@/components/admin/ModuleForm';
 import Link from 'next/link';
+import DeleteModuleModal from '@/components/admin/DeleteModuleModal';
 
 const statusConfig: Record<ModuleStatus, { label: string; color: string; icon: typeof CheckCircle }> = {
     PUBLISHED: { label: 'Publicado', color: 'emerald', icon: CheckCircle },
@@ -380,18 +381,15 @@ export default function ModulosPage() {
             </Modal>
 
             {/* Delete Confirmation */}
-            <ConfirmDialog
+            <DeleteModuleModal
                 isOpen={isDeleteDialogOpen}
                 onClose={() => {
                     setIsDeleteDialogOpen(false);
                     setSelectedModule(null);
                 }}
                 onConfirm={handleDelete}
-                title="Excluir Módulo"
-                message={`Tem certeza que deseja excluir o módulo "${selectedModule?.name}"? Esta ação não pode ser desfeita.`}
-                confirmText="Excluir"
+                module={selectedModule}
                 isLoading={isSubmitting}
-                variant="danger"
             />
         </div>
     );

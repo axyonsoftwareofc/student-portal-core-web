@@ -25,6 +25,7 @@ import type { CourseFormData, CourseStatus } from '@/lib/types/database';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import CourseForm from '@/components/admin/CourseForm';
+import DeleteCourseModal from '@/components/admin/DeleteCourseModal';
 
 const statusConfig: Record<CourseStatus, { label: string; color: string; icon: typeof CheckCircle }> = {
     DRAFT: { label: 'Rascunho', color: 'gray', icon: FileEdit },
@@ -376,18 +377,15 @@ export default function CursosPage() {
             </Modal>
 
             {/* Delete Confirmation */}
-            <ConfirmDialog
+            <DeleteCourseModal
                 isOpen={isDeleteDialogOpen}
                 onClose={() => {
                     setIsDeleteDialogOpen(false);
                     setSelectedCourse(null);
                 }}
                 onConfirm={handleDelete}
-                title="Excluir Curso"
-                message={`Tem certeza que deseja excluir o curso "${selectedCourse?.name}"? Todos os módulos associados também serão excluídos. Esta ação não pode ser desfeita.`}
-                confirmText="Excluir"
+                course={selectedCourse}
                 isLoading={isSubmitting}
-                variant="danger"
             />
         </div>
     );

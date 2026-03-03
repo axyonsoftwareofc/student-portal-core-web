@@ -127,20 +127,41 @@ export function useModules(courseId?: string) {
         id: string
     ): Promise<{ success: boolean; error?: string }> => {
         try {
-            const { error: deleteError } = await supabase
-                .from('modules')
-                .delete()
-                .eq('id', id);
+            const { data: { session } } = await supabase.auth.getSession();
 
-            if (deleteError) throw deleteError;
+            if (!session?.access_token) {
+                showErrorToast('Sessão expirada', 'Faça login novamente');
+                return { success: false, error: 'Sessão expirada' };
+            }
+
+            const response = await fetch('/api/admin/delete-module', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ moduleId: id }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                showErrorToast('Erro ao excluir', result.error || 'Tente novamente');
+                return { success: false, error: result.error };
+            }
 
             await fetchModules();
 
-            showSuccessToast('Módulo excluído', 'Registro removido com sucesso');
+            const deletedInfo = result.deleted;
+            const details = deletedInfo
+                ? `${deletedInfo.lessons} aulas e ${deletedInfo.contents} blocos removidos`
+                : 'Módulo removido com sucesso';
+
+            showSuccessToast('Módulo excluído!', details);
             return { success: true };
         } catch (err) {
             console.error('[useModules] Erro ao excluir módulo:', err);
-            showErrorToast('Erro ao excluir módulo', 'Verifique se não há aulas vinculadas');
+            showErrorToast('Erro ao excluir', 'Não foi possível remover o módulo');
             return { success: false, error: 'Erro ao excluir módulo' };
         }
     }, [supabase, fetchModules]);

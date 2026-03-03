@@ -104,20 +104,41 @@ export function useCourses() {
         id: string
     ): Promise<{ success: boolean; error?: string }> => {
         try {
-            const { error: deleteError } = await supabase
-                .from('courses')
-                .delete()
-                .eq('id', id);
+            const { data: { session } } = await supabase.auth.getSession();
 
-            if (deleteError) throw deleteError;
+            if (!session?.access_token) {
+                showErrorToast('Sessão expirada', 'Faça login novamente');
+                return { success: false, error: 'Sessão expirada' };
+            }
+
+            const response = await fetch('/api/admin/delete-course', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ courseId: id }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                showErrorToast('Erro ao excluir', result.error || 'Tente novamente');
+                return { success: false, error: result.error };
+            }
 
             await fetchCourses();
 
-            showSuccessToast('Curso excluído', 'Registro removido com sucesso');
+            const deletedInfo = result.deleted;
+            const details = deletedInfo
+                ? `${deletedInfo.modules} módulos e ${deletedInfo.lessons} aulas removidos`
+                : 'Curso removido com sucesso';
+
+            showSuccessToast('Curso excluído!', details);
             return { success: true };
         } catch (err) {
             console.error('[useCourses] Erro ao excluir curso:', err);
-            showErrorToast('Erro ao excluir curso', 'Verifique se não há módulos vinculados');
+            showErrorToast('Erro ao excluir', 'Não foi possível remover o curso');
             return { success: false, error: 'Erro ao excluir curso' };
         }
     }, [supabase, fetchCourses]);

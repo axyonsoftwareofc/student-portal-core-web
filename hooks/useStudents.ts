@@ -264,17 +264,28 @@ export function useStudents() {
         id: string
     ): Promise<{ success: boolean; error?: string }> => {
         try {
-            await supabase.from('lesson_progress').delete().eq('student_id', id);
-            await supabase.from('enrollments').delete().eq('student_id', id);
-            await supabase.from('payments').delete().eq('student_id', id);
-            await supabase.from('task_submissions').delete().eq('student_id', id);
+            const { data: { session } } = await supabase.auth.getSession();
 
-            const { error: deleteError } = await supabase
-                .from('users')
-                .delete()
-                .eq('id', id);
+            if (!session?.access_token) {
+                showErrorToast('Sessão expirada', 'Faça login novamente');
+                return { success: false, error: 'Sessão expirada' };
+            }
 
-            if (deleteError) throw deleteError;
+            const response = await fetch('/api/admin/delete-student', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ studentId: id }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                showErrorToast('Erro ao excluir', result.error || 'Tente novamente');
+                return { success: false, error: result.error };
+            }
 
             await fetchStudents();
 

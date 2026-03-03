@@ -1,4 +1,3 @@
-// components/admin/ModuleForm.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,6 +7,7 @@ import type { Module, ModuleFormData, ModuleStatus, Course } from '@/lib/types/d
 interface ModuleFormProps {
     module?: Module | null;
     courses: Course[];
+    defaultCourseId?: string; // ← NOVA PROP
     onSubmit: (data: ModuleFormData) => Promise<{ success: boolean; error?: string }>;
     onCancel: () => void;
     isLoading?: boolean;
@@ -22,6 +22,7 @@ const statusOptions: { value: ModuleStatus; label: string }[] = [
 export default function ModuleForm({
                                        module,
                                        courses,
+                                       defaultCourseId, // ← NOVA PROP
                                        onSubmit,
                                        onCancel,
                                        isLoading
@@ -36,16 +37,20 @@ export default function ModuleForm({
 
     useEffect(() => {
         if (module) {
+            // Editando módulo existente
             setFormData({
                 course_id: module.course_id,
                 name: module.name,
                 description: module.description || '',
                 status: module.status,
             });
-        } else if (courses.length > 0) {
-            setFormData(prev => ({ ...prev, course_id: courses[0].id }));
+        } else {
+            // Criando novo módulo
+            // Prioridade: defaultCourseId > primeiro curso da lista
+            const initialCourseId = defaultCourseId || (courses.length > 0 ? courses[0].id : '');
+            setFormData(prev => ({ ...prev, course_id: initialCourseId }));
         }
-    }, [module, courses]);
+    }, [module, courses, defaultCourseId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

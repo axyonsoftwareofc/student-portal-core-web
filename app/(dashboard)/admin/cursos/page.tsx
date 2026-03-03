@@ -1,7 +1,7 @@
-// app/(dashboard)/admin/cursos/page.tsx
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
     GraduationCap,
     Plus,
@@ -23,7 +23,6 @@ import { useCourses, type Course } from '@/hooks/useCourses';
 import { useModules } from '@/hooks/useModules';
 import type { CourseFormData, CourseStatus } from '@/lib/types/database';
 import Modal from '@/components/ui/Modal';
-import ConfirmDialog from '@/components/ui/confirm-dialog';
 import CourseForm from '@/components/admin/CourseForm';
 import DeleteCourseModal from '@/components/admin/DeleteCourseModal';
 
@@ -311,7 +310,15 @@ export default function CursosPage() {
                                     </div>
                                 </div>
 
+                                {/* AÇÕES ATUALIZADAS */}
                                 <div className="flex gap-3 flex-shrink-0">
+                                    <Link
+                                        href={`/admin/modulos?curso=${course.id}`}
+                                        className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                                    >
+                                        <Layers className="h-4 w-4" strokeWidth={1.5} />
+                                        Módulos ({getModuleCount(course.id)})
+                                    </Link>
                                     <button
                                         onClick={() => openEditModal(course)}
                                         className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"

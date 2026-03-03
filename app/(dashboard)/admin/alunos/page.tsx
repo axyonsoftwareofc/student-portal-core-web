@@ -25,6 +25,7 @@ import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import StudentForm from '@/components/admin/StudentForm';
 import EnrollmentManager from '@/components/admin/EnrollmentManager';
+import DeleteStudentModal from '@/components/admin/DeleteStudentModal';
 
 interface PrefilledStudentData {
     name: string;
@@ -658,19 +659,16 @@ export default function AlunosPage() {
                 variant="warning"
             />
 
-            {/* Delete Confirmation */}
-            <ConfirmDialog
+            {/* Delete Student Modal */}
+            <DeleteStudentModal
                 isOpen={isDeleteDialogOpen}
                 onClose={() => {
                     setIsDeleteDialogOpen(false);
                     setSelectedStudent(null);
                 }}
                 onConfirm={handleDelete}
-                title="Excluir Aluno Permanentemente"
-                message={`Tem certeza que deseja EXCLUIR PERMANENTEMENTE o aluno "${selectedStudent?.name}"? Todo o histórico, progresso e pagamentos serão removidos. Esta ação NÃO pode ser desfeita!`}
-                confirmText="Excluir Permanentemente"
+                student={selectedStudent}
                 isLoading={isSubmitting}
-                variant="danger"
             />
 
             {/* Enrollment Manager Modal */}

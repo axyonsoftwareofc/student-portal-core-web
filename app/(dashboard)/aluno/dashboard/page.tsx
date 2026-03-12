@@ -12,17 +12,29 @@ import {
     PlayCircle,
     ClipboardCheck,
     Star,
-    AlertCircle,
     RotateCcw,
     Clock,
+    Route,
+    Sprout,
+    Briefcase,
+    Target,
+    Rocket,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useStudentCourses } from '@/hooks/useStudentCourses';
+import { useStudentTracks } from '@/hooks/useStudentTracks';
 import { useStudentSubmissions } from '@/hooks/useStudentSubmissions';
+import type { StudentTrack } from '@/lib/types/database';
+
+const trackIcons: Record<string, typeof Sprout> = {
+    Sprout: Sprout,
+    Briefcase: Briefcase,
+    Target: Target,
+    Rocket: Rocket,
+};
 
 export default function AlunoDashboardPage() {
     const { user } = useAuth();
-    const { courses, isLoading } = useStudentCourses(user?.id || null);
+    const { tracks, isLoading } = useStudentTracks(user?.id || null);
     const {
         recentlyReviewed,
         pendingCount,
@@ -30,9 +42,9 @@ export default function AlunoDashboardPage() {
     } = useStudentSubmissions(user?.id || null);
 
     // Calcular estatísticas gerais
-    const totalModules = courses.reduce((acc, c) => acc + (c.modules_count || 0), 0);
-    const totalLessons = courses.reduce((acc, c) => acc + (c.lessons_count || 0), 0);
-    const completedLessons = courses.reduce((acc, c) => acc + (c.completed_lessons || 0), 0);
+    const totalPhases = tracks.reduce((acc, t) => acc + (t.phases_count || 0), 0);
+    const totalLessons = tracks.reduce((acc, t) => acc + (t.lessons_count || 0), 0);
+    const completedLessons = tracks.reduce((acc, t) => acc + (t.completed_lessons || 0), 0);
     const overallProgress = totalLessons > 0
         ? Math.round((completedLessons / totalLessons) * 100)
         : 0;
@@ -178,18 +190,18 @@ export default function AlunoDashboardPage() {
                             <Layers className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
                         </div>
                     </div>
-                    <p className="text-2xl font-bold text-white">{totalModules}</p>
-                    <p className="text-xs text-gray-500">Módulos</p>
+                    <p className="text-2xl font-bold text-white">{totalPhases}</p>
+                    <p className="text-xs text-gray-500">Fases</p>
                 </div>
 
                 <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10">
-                            <BookOpen className="h-5 w-5 text-violet-400" strokeWidth={1.5} />
+                            <Route className="h-5 w-5 text-violet-400" strokeWidth={1.5} />
                         </div>
                     </div>
-                    <p className="text-2xl font-bold text-white">{courses.length}</p>
-                    <p className="text-xs text-gray-500">Cursos Ativos</p>
+                    <p className="text-2xl font-bold text-white">{tracks.length}</p>
+                    <p className="text-xs text-gray-500">Trilhas Ativas</p>
                 </div>
             </div>
 
@@ -212,55 +224,28 @@ export default function AlunoDashboardPage() {
                 </p>
             </div>
 
-            {/* Courses */}
+            {/* Trilhas */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-white">Meus Cursos</h2>
+                    <h2 className="text-lg font-semibold text-white">Minhas Trilhas</h2>
                     <Link
                         href="/aluno/estudar"
                         className="text-sm text-sky-400 hover:text-sky-300 flex items-center gap-1"
                     >
-                        Ver todos
+                        Ver todas
                         <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                     </Link>
                 </div>
 
-                {courses.length === 0 ? (
+                {tracks.length === 0 ? (
                     <div className="text-center py-12 rounded-lg border border-gray-800/50 bg-gray-900/30">
-                        <BookOpen className="h-12 w-12 text-gray-600 mx-auto mb-3" strokeWidth={1.5} />
-                        <p className="text-gray-400">Você ainda não está matriculado em nenhum curso</p>
+                        <Route className="h-12 w-12 text-gray-600 mx-auto mb-3" strokeWidth={1.5} />
+                        <p className="text-gray-400">Você ainda não está matriculado em nenhuma trilha</p>
                     </div>
                 ) : (
                     <div className="grid gap-4 sm:grid-cols-2">
-                        {courses.slice(0, 2).map((course) => (
-                            <Link
-                                key={course.id}
-                                href="/aluno/estudar"
-                                className="group rounded-lg border border-gray-800/50 bg-gray-900/30 p-5 transition-all hover:bg-gray-900/50 hover:border-gray-700"
-                            >
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10">
-                                        <BookOpen className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
-                                    </div>
-                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                        course.progress_percentage === 100
-                                            ? 'bg-emerald-500/10 text-emerald-400'
-                                            : 'bg-sky-500/10 text-sky-400'
-                                    }`}>
-                                        {course.progress_percentage}%
-                                    </span>
-                                </div>
-                                <h3 className="font-medium text-white mb-1">{course.name}</h3>
-                                <p className="text-xs text-gray-500 mb-3">
-                                    {course.modules_count} módulos • {course.lessons_count} aulas
-                                </p>
-                                <div className="h-1.5 overflow-hidden rounded-full bg-gray-800">
-                                    <div
-                                        className="h-full bg-sky-500 transition-all"
-                                        style={{ width: `${course.progress_percentage}%` }}
-                                    />
-                                </div>
-                            </Link>
+                        {tracks.slice(0, 2).map((track) => (
+                            <TrackCard key={track.id} track={track} />
                         ))}
                     </div>
                 )}
@@ -278,5 +263,50 @@ export default function AlunoDashboardPage() {
                 </Link>
             </div>
         </div>
+    );
+}
+
+function TrackCard({ track }: { track: StudentTrack }) {
+    const IconComponent = trackIcons[track.icon] || Route;
+
+    return (
+        <Link
+            href={`/aluno/estudar?trilha=${track.id}`}
+            className="group rounded-lg border border-gray-800/50 bg-gray-900/30 p-5 transition-all hover:bg-gray-900/50 hover:border-gray-700"
+            style={{ borderLeftColor: track.color, borderLeftWidth: '3px' }}
+        >
+            <div className="flex items-start justify-between mb-3">
+                <div
+                    className="flex h-10 w-10 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `${track.color}20` }}
+                >
+                    <IconComponent
+                        className="h-5 w-5"
+                        style={{ color: track.color }}
+                        strokeWidth={1.5}
+                    />
+                </div>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                    track.progress_percentage === 100
+                        ? 'bg-emerald-500/10 text-emerald-400'
+                        : 'bg-sky-500/10 text-sky-400'
+                }`}>
+                    {track.progress_percentage}%
+                </span>
+            </div>
+            <h3 className="font-medium text-white mb-1">{track.name}</h3>
+            <p className="text-xs text-gray-500 mb-3">
+                {track.phases_count} fases • {track.lessons_count} aulas
+            </p>
+            <div className="h-1.5 overflow-hidden rounded-full bg-gray-800">
+                <div
+                    className="h-full transition-all"
+                    style={{
+                        width: `${track.progress_percentage}%`,
+                        backgroundColor: track.color,
+                    }}
+                />
+            </div>
+        </Link>
     );
 }

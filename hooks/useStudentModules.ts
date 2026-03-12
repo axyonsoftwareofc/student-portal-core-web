@@ -3,19 +3,27 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { StudentModule, Course, Module } from '@/lib/types/database';
+import { showErrorToast } from '@/lib/toast';
+import type { StudentModule, Phase, Module, Track } from '@/lib/types/database';
 
-export function useStudentModules(courseId: string | null, studentId: string | null) {
+// 🆕 v20.0 - Agora busca por phase_id
+interface PhaseWithTrack extends Phase {
+    track: Track;
+}
+
+export function useStudentModules(phaseId: string | null, studentId: string | null) {
     const [modules, setModules] = useState<StudentModule[]>([]);
-    const [course, setCourse] = useState<Course | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [phase, setPhase] = useState<PhaseWithTrack | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const supabaseRef = useRef(createClient());
 
-    const fetchModules = useCallback(async () => {
-        if (!courseId || !studentId) {
+    const supabaseRef = useRef(createClient());
+    const supabase = supabaseRef.current;
+
+    const fetchModules = useCallback(async (): Promise<void> => {
+        if (!phaseId || !studentId) {
             setModules([]);
-            setCourse(null);
+            setPhase(null);
             setIsLoading(false);
             return;
         }
@@ -23,23 +31,25 @@ export function useStudentModules(courseId: string | null, studentId: string | n
         try {
             setIsLoading(true);
             setError(null);
-            const supabase = supabaseRef.current;
 
-            // 1. Buscar curso
-            const { data: courseData, error: courseError } = await supabase
-                .from('courses')
-                .select('*')
-                .eq('id', courseId)
+            // 1. Buscar fase com trilha
+            const { data: phaseData, error: phaseError } = await supabase
+                .from('phases')
+                .select(`
+                    *,
+                    track:tracks(*)
+                `)
+                .eq('id', phaseId)
                 .single();
 
-            if (courseError) throw courseError;
-            setCourse(courseData as Course);
+            if (phaseError) throw phaseError;
+            setPhase(phaseData as PhaseWithTrack);
 
-            // 2. Buscar módulos do curso
+            // 2. Buscar módulos da fase
             const { data: modulesData, error: modulesError } = await supabase
                 .from('modules')
                 .select('*')
-                .eq('course_id', courseId)
+                .eq('phase_id', phaseId)
                 .eq('status', 'PUBLISHED')
                 .order('order_index', { ascending: true });
 
@@ -51,8 +61,10 @@ export function useStudentModules(courseId: string | null, studentId: string | n
             }
 
             // 3. Para cada módulo, buscar estatísticas
+            let previousModuleCompleted = true; // Primeiro módulo sempre desbloqueado
+
             const modulesWithStats: StudentModule[] = await Promise.all(
-                (modulesData as Module[]).map(async (module: Module) => {
+                (modulesData as Module[]).map(async (module: Module, index: number) => {
                     // Buscar aulas do módulo
                     const { data: lessons } = await supabase
                         .from('lessons')
@@ -66,37 +78,74 @@ export function useStudentModules(courseId: string | null, studentId: string | n
                     if (lessonsCount > 0) {
                         const lessonIds = lessons?.map((l: { id: string }) => l.id) || [];
 
-                        const { data: progress } = await supabase
-                            .from('lesson_progress')
-                            .select('id')
-                            .eq('student_id', studentId)
-                            .in('lesson_id', lessonIds)
-                            .eq('completed', true);
+                        // Buscar conteúdos das aulas
+                        const { data: contents } = await supabase
+                            .from('lesson_contents')
+                            .select('id, lesson_id')
+                            .in('lesson_id', lessonIds);
 
-                        completedLessons = progress?.length || 0;
+                        const contentIds = contents?.map((c: { id: string }) => c.id) || [];
+
+                        if (contentIds.length > 0) {
+                            // Buscar progresso dos conteúdos
+                            const { data: progress } = await supabase
+                                .from('content_progress')
+                                .select('content_id')
+                                .eq('student_id', studentId)
+                                .eq('completed', true)
+                                .in('content_id', contentIds);
+
+                            const completedContentIds = new Set(
+                                progress?.map((p: { content_id: string }) => p.content_id) || []
+                            );
+
+                            // Verificar quais aulas estão completas (todos os conteúdos completados)
+                            for (const lessonId of lessonIds) {
+                                const lessonContents = contents?.filter(
+                                    (c: { id: string; lesson_id: string }) => c.lesson_id === lessonId
+                                ) || [];
+
+                                if (lessonContents.length > 0) {
+                                    const allCompleted = lessonContents.every(
+                                        (c: { id: string }) => completedContentIds.has(c.id)
+                                    );
+                                    if (allCompleted) completedLessons++;
+                                }
+                            }
+                        }
                     }
 
                     const progressPercentage = lessonsCount > 0
                         ? Math.round((completedLessons / lessonsCount) * 100)
                         : 0;
 
+                    const isCompleted = lessonsCount > 0 && completedLessons === lessonsCount;
+
+                    // 🆕 Progressão linear: só desbloqueia se o anterior estiver completo
+                    const isLocked = index > 0 && !previousModuleCompleted;
+
+                    // Atualizar para próxima iteração
+                    previousModuleCompleted = isCompleted;
+
                     return {
                         ...module,
                         lessons_count: lessonsCount,
                         completed_lessons: completedLessons,
                         progress_percentage: progressPercentage,
+                        is_locked: isLocked,
                     };
                 })
             );
 
             setModules(modulesWithStats);
         } catch (err) {
-            console.error('Erro ao buscar módulos:', err);
+            console.error('[useStudentModules] Erro ao buscar módulos:', err);
             setError('Erro ao carregar módulos');
+            showErrorToast('Erro ao carregar módulos', 'Verifique sua conexão');
         } finally {
             setIsLoading(false);
         }
-    }, [courseId, studentId]);
+    }, [phaseId, studentId, supabase]);
 
     useEffect(() => {
         fetchModules();
@@ -104,7 +153,7 @@ export function useStudentModules(courseId: string | null, studentId: string | n
 
     return {
         modules,
-        course,
+        phase,
         isLoading,
         error,
         refetch: fetchModules,

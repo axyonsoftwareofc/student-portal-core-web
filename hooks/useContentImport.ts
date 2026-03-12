@@ -49,9 +49,28 @@ export function useContentImport(): UseContentImportReturn {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
+    // 🆕 v20.0 - Buscar phase_id pelo número da fase
+    const findPhaseId = useCallback(async (
+        phaseNumber: number
+    ): Promise<string> => {
+        const { data: phase, error } = await supabase
+            .from('phases')
+            .select('id, name')
+            .eq('number', phaseNumber)
+            .single();
+
+        if (error || !phase) {
+            throw new Error(`Fase ${phaseNumber} não encontrada. Verifique se as fases foram criadas corretamente.`);
+        }
+
+        return phase.id;
+    }, [supabase]);
+
+    // 🆕 v20.0 - Atualizado para usar phase_id
     const findOrCreateModule = useCallback(async (
         importPayload: ImportPayload
     ): Promise<{ moduleId: string; created: boolean }> => {
+        // Buscar módulo existente pelo nome
         const { data: existingModules } = await supabase
             .from('modules')
             .select('id, name')
@@ -65,30 +84,30 @@ export function useContentImport(): UseContentImportReturn {
             throw new Error(`Módulo "${importPayload.module.name}" não encontrado e create_if_not_exists é false`);
         }
 
-        const { data: courses } = await supabase
-            .from('courses')
-            .select('id')
-            .limit(1)
-            .single();
-
-        if (!courses) {
-            throw new Error('Nenhum curso encontrado. Crie um curso antes de importar.');
+        // 🆕 v20.0 - Buscar phase_id usando o número da fase
+        const phaseNumber = importPayload.module.phase;
+        if (!phaseNumber) {
+            throw new Error('Número da fase (phase) não informado no JSON. Exemplo: "phase": 2');
         }
 
+        const phaseId = await findPhaseId(phaseNumber);
+
+        // Buscar último order_index da fase
         const { data: lastModule } = await supabase
             .from('modules')
             .select('order_index')
-            .eq('course_id', courses.id)
+            .eq('phase_id', phaseId)
             .order('order_index', { ascending: false })
             .limit(1)
             .single();
 
         const nextOrder = importPayload.module.order ?? ((lastModule?.order_index || 0) + 1);
 
+        // 🆕 v20.0 - Criar módulo com phase_id
         const { data: newModule, error: createError } = await supabase
             .from('modules')
             .insert([{
-                course_id: courses.id,
+                phase_id: phaseId,
                 name: importPayload.module.name.trim(),
                 description: importPayload.module.description?.trim() || null,
                 order_index: nextOrder,
@@ -102,7 +121,7 @@ export function useContentImport(): UseContentImportReturn {
         }
 
         return { moduleId: newModule.id, created: true };
-    }, [supabase]);
+    }, [supabase, findPhaseId]);
 
     const findOrCreateLesson = useCallback(async (
         importPayload: ImportPayload,

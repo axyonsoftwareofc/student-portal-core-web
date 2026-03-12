@@ -1,25 +1,24 @@
-// app/(dashboard)/aluno/perfil/page.tsx
 'use client';
 
 import {
     User,
     Mail,
     Calendar,
-    BookOpen,
+    Route,
     CheckCircle,
     BarChart3,
     Loader2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useStudentCourses } from '@/hooks/useStudentCourses';
+import { useStudentTracks } from '@/hooks/useStudentTracks';
 
 export default function PerfilPage() {
     const { user } = useAuth();
-    const { courses, isLoading } = useStudentCourses(user?.id || null);
+    const { tracks, isLoading } = useStudentTracks(user?.id || null);
 
     // Calcular estatísticas
-    const totalLessons = courses.reduce((acc, c) => acc + (c.lessons_count || 0), 0);
-    const completedLessons = courses.reduce((acc, c) => acc + (c.completed_lessons || 0), 0);
+    const totalLessons = tracks.reduce((acc, t) => acc + (t.lessons_count || 0), 0);
+    const completedLessons = tracks.reduce((acc, t) => acc + (t.completed_lessons || 0), 0);
     const overallProgress = totalLessons > 0
         ? Math.round((completedLessons / totalLessons) * 100)
         : 0;
@@ -86,9 +85,9 @@ export default function PerfilPage() {
             {/* Stats */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 text-center">
-                    <BookOpen className="h-6 w-6 text-sky-400 mx-auto mb-2" strokeWidth={1.5} />
-                    <p className="text-2xl font-bold text-white">{courses.length}</p>
-                    <p className="text-xs text-gray-500">Cursos</p>
+                    <Route className="h-6 w-6 text-sky-400 mx-auto mb-2" strokeWidth={1.5} />
+                    <p className="text-2xl font-bold text-white">{tracks.length}</p>
+                    <p className="text-xs text-gray-500">Trilhas</p>
                 </div>
 
                 <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 text-center">
@@ -110,31 +109,31 @@ export default function PerfilPage() {
                 </div>
             </div>
 
-            {/* Courses enrolled */}
+            {/* Tracks enrolled */}
             <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Cursos Matriculados</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">Trilhas Matriculadas</h3>
 
-                {courses.length === 0 ? (
-                    <p className="text-sm text-gray-500">Nenhum curso matriculado</p>
+                {tracks.length === 0 ? (
+                    <p className="text-sm text-gray-500">Nenhuma trilha matriculada</p>
                 ) : (
                     <div className="space-y-3">
-                        {courses.map((course) => (
+                        {tracks.map((track) => (
                             <div
-                                key={course.id}
+                                key={track.id}
                                 className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30"
                             >
                                 <div>
-                                    <p className="font-medium text-gray-200">{course.name}</p>
+                                    <p className="font-medium text-gray-200">{track.name}</p>
                                     <p className="text-xs text-gray-500">
-                                        {course.completed_lessons}/{course.lessons_count} aulas concluídas
+                                        {track.completed_lessons}/{track.lessons_count} aulas concluídas
                                     </p>
                                 </div>
                                 <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-                                    course.progress_percentage === 100
+                                    track.progress_percentage === 100
                                         ? 'bg-emerald-500/10 text-emerald-400'
                                         : 'bg-sky-500/10 text-sky-400'
                                 }`}>
-                                    {course.progress_percentage}%
+                                    {track.progress_percentage}%
                                 </span>
                             </div>
                         ))}

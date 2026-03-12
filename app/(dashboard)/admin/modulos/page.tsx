@@ -1,7 +1,9 @@
+// app/(dashboard)/admin/modulos/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import {
     Layers,
     Plus,
@@ -9,20 +11,21 @@ import {
     CheckCircle,
     FileEdit,
     Archive,
-    BookOpen,
     Pencil,
     Trash2,
     Loader2,
     AlertTriangle,
     ArrowLeft,
-    X
+    X,
+    Route,
+    GraduationCap,
 } from 'lucide-react';
-import { useModules, type ModuleWithCourse } from '@/hooks/useModules';
-import { useCourses } from '@/hooks/useCourses';
+import { useModules, type ModuleWithPhase } from '@/hooks/useModules';
+import { usePhases } from '@/hooks/usePhases';
+import { useTracks } from '@/hooks/useTracks';
 import type { ModuleFormData, ModuleStatus } from '@/lib/types/database';
 import Modal from '@/components/ui/Modal';
 import ModuleForm from '@/components/admin/ModuleForm';
-import Link from 'next/link';
 import DeleteModuleModal from '@/components/admin/DeleteModuleModal';
 
 const statusConfig: Record<ModuleStatus, { label: string; color: string; icon: typeof CheckCircle }> = {
@@ -33,31 +36,40 @@ const statusConfig: Record<ModuleStatus, { label: string; color: string; icon: t
 
 export default function ModulosPage() {
     const searchParams = useSearchParams();
+    const faseIdFromUrl = searchParams.get('fase');
+    const trilhaIdFromUrl = searchParams.get('trilha');
 
     const { modules, isLoading, error, createModule, updateModule, deleteModule } = useModules();
-    const { courses, isLoading: isLoadingCourses } = useCourses();
+    const { phases, isLoading: isLoadingPhases } = usePhases();
+    const { tracks } = useTracks();
 
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState<string>('');
     const [filterStatus, setFilterStatus] = useState<'all' | ModuleStatus>('all');
-    const [filterCourse, setFilterCourse] = useState<string>('all');
+    const [filterPhase, setFilterPhase] = useState<string>('all');
+    const [filterTrack, setFilterTrack] = useState<string>('all');
 
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [selectedModule, setSelectedModule] = useState<ModuleWithCourse | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+    const [selectedModule, setSelectedModule] = useState<ModuleWithPhase | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    // Ler parâmetro da URL para filtrar por curso
+    // Aplicar filtros da URL
     useEffect(() => {
-        const cursoParam = searchParams.get('curso');
-        if (cursoParam) {
-            setFilterCourse(cursoParam);
+        if (faseIdFromUrl) {
+            setFilterPhase(faseIdFromUrl);
         }
-    }, [searchParams]);
+        if (trilhaIdFromUrl) {
+            setFilterTrack(trilhaIdFromUrl);
+        }
+    }, [faseIdFromUrl, trilhaIdFromUrl]);
 
-    // Obter nome do curso filtrado
-    const filteredCourseName = filterCourse !== 'all'
-        ? courses.find(c => c.id === filterCourse)?.name
+    // Obter nomes para breadcrumb
+    const filteredPhaseName = filterPhase !== 'all'
+        ? phases.find(p => p.id === filterPhase)?.name
+        : null;
+    const filteredTrackName = filterTrack !== 'all'
+        ? tracks.find(t => t.id === filterTrack)?.name
         : null;
 
     // Filtrar módulos
@@ -66,23 +78,20 @@ export default function ModulosPage() {
             module.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             module.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || module.status === filterStatus;
-        const matchesCourse = filterCourse === 'all' || module.course_id === filterCourse;
-        return matchesSearch && matchesStatus && matchesCourse;
+        const matchesPhase = filterPhase === 'all' || module.phase_id === filterPhase;
+        const matchesTrack = filterTrack === 'all' || module.phase?.track?.id === filterTrack;
+        return matchesSearch && matchesStatus && matchesPhase && matchesTrack;
     });
 
-    // Estatísticas (considerando filtro de curso)
-    const statsModules = filterCourse !== 'all'
-        ? modules.filter(m => m.course_id === filterCourse)
-        : modules;
-
+    // Estatísticas
     const stats = {
-        published: statsModules.filter(m => m.status === 'PUBLISHED').length,
-        draft: statsModules.filter(m => m.status === 'DRAFT').length,
-        total: statsModules.length,
+        published: filteredModules.filter(m => m.status === 'PUBLISHED').length,
+        draft: filteredModules.filter(m => m.status === 'DRAFT').length,
+        total: filteredModules.length,
     };
 
     // Handlers
-    const handleCreate = async (data: ModuleFormData) => {
+    const handleCreate = async (data: ModuleFormData): Promise<{ success: boolean; error?: string }> => {
         setIsSubmitting(true);
         const result = await createModule(data);
         setIsSubmitting(false);
@@ -93,7 +102,7 @@ export default function ModulosPage() {
         return result;
     };
 
-    const handleEdit = async (data: ModuleFormData) => {
+    const handleEdit = async (data: ModuleFormData): Promise<{ success: boolean; error?: string }> => {
         if (!selectedModule) return { success: false, error: 'Módulo não selecionado' };
 
         setIsSubmitting(true);
@@ -107,7 +116,7 @@ export default function ModulosPage() {
         return result;
     };
 
-    const handleDelete = async () => {
+    const handleDelete = async (): Promise<void> => {
         if (!selectedModule) return;
 
         setIsSubmitting(true);
@@ -120,19 +129,19 @@ export default function ModulosPage() {
         }
     };
 
-    const openEditModal = (module: ModuleWithCourse) => {
+    const openEditModal = (module: ModuleWithPhase): void => {
         setSelectedModule(module);
         setIsEditModalOpen(true);
     };
 
-    const openDeleteDialog = (module: ModuleWithCourse) => {
+    const openDeleteDialog = (module: ModuleWithPhase): void => {
         setSelectedModule(module);
         setIsDeleteDialogOpen(true);
     };
 
-    const clearCourseFilter = () => {
-        setFilterCourse('all');
-        // Limpar URL sem recarregar
+    const clearFilters = (): void => {
+        setFilterPhase('all');
+        setFilterTrack('all');
         window.history.replaceState({}, '', '/admin/modulos');
     };
 
@@ -140,14 +149,14 @@ export default function ModulosPage() {
         const config = statusConfig[status];
         const Icon = config.icon;
 
-        const colorClasses = {
+        const colorClasses: Record<string, string> = {
             emerald: 'bg-emerald-500/10 text-emerald-400',
             amber: 'bg-amber-500/10 text-amber-400',
             gray: 'bg-gray-500/10 text-gray-400',
-        }[config.color];
+        };
 
         return (
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${colorClasses}`}>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${colorClasses[config.color]}`}>
                 <Icon className="h-3 w-3" strokeWidth={1.5} />
                 {config.label}
             </span>
@@ -156,22 +165,22 @@ export default function ModulosPage() {
 
     return (
         <div className="space-y-4 sm:space-y-6">
-            {/* Breadcrumb quando filtrado por curso */}
-            {filteredCourseName && (
+            {/* Breadcrumb quando filtrado */}
+            {(filteredPhaseName || filteredTrackName) && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-sky-950/20 border border-sky-500/20">
                     <Link
-                        href="/admin/cursos"
+                        href={filteredPhaseName ? "/admin/fases" : "/admin/trilhas"}
                         className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
                     >
                         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
-                        Voltar para Cursos
+                        Voltar para {filteredPhaseName ? "Fases" : "Trilhas"}
                     </Link>
                     <span className="text-gray-600">|</span>
                     <span className="text-sm text-gray-300">
-                        Filtrando módulos de: <strong className="text-white">{filteredCourseName}</strong>
+                        Filtrando: <strong className="text-white">{filteredPhaseName || filteredTrackName}</strong>
                     </span>
                     <button
-                        onClick={clearCourseFilter}
+                        onClick={clearFilters}
                         className="ml-auto inline-flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
                     >
                         <X className="h-3 w-3" strokeWidth={1.5} />
@@ -184,20 +193,20 @@ export default function ModulosPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10">
-                        <Layers className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
+                        <GraduationCap className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
                     </div>
                     <div>
                         <h1 className="font-nacelle text-2xl sm:text-3xl font-semibold text-white">
-                            {filteredCourseName ? `Módulos: ${filteredCourseName}` : 'Gestão de Módulos'}
+                            Gestão de Módulos
                         </h1>
                         <p className="text-sm text-gray-500">
-                            {stats.total} módulos {filteredCourseName ? 'neste curso' : 'criados'}
+                            {stats.total} módulos {filteredPhaseName ? 'nesta fase' : filteredTrackName ? 'nesta trilha' : 'criados'}
                         </p>
                     </div>
                 </div>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    disabled={courses.length === 0}
+                    disabled={phases.length === 0}
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Plus className="h-4 w-4" strokeWidth={1.5} />
@@ -205,12 +214,12 @@ export default function ModulosPage() {
                 </button>
             </div>
 
-            {/* Aviso se não tem cursos */}
-            {!isLoadingCourses && courses.length === 0 && (
+            {/* Aviso se não tem fases */}
+            {!isLoadingPhases && phases.length === 0 && (
                 <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-950/30 border border-amber-500/20 text-amber-300">
                     <AlertTriangle className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
                     <span className="text-sm">
-                        Você precisa criar um curso antes de adicionar módulos.
+                        Nenhuma fase encontrada. Verifique se as trilhas e fases foram criadas corretamente.
                     </span>
                 </div>
             )}
@@ -229,22 +238,35 @@ export default function ModulosPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" strokeWidth={1.5} />
                     <input
                         type="text"
-                        placeholder="Buscar por título ou descrição..."
+                        placeholder="Buscar por nome ou descrição..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none transition-colors"
                     />
                 </div>
-                {/* Só mostra filtro de curso se não veio da URL */}
-                {!filteredCourseName && (
+                {!filteredTrackName && (
                     <select
-                        value={filterCourse}
-                        onChange={(e) => setFilterCourse(e.target.value)}
+                        value={filterTrack}
+                        onChange={(e) => setFilterTrack(e.target.value)}
                         className="w-full sm:w-auto rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 text-sm text-white focus:border-sky-500/50 focus:outline-none transition-colors"
                     >
-                        <option value="all">Todos os cursos</option>
-                        {courses.map(course => (
-                            <option key={course.id} value={course.id}>{course.name}</option>
+                        <option value="all">Todas as trilhas</option>
+                        {tracks.map(track => (
+                            <option key={track.id} value={track.id}>{track.name}</option>
+                        ))}
+                    </select>
+                )}
+                {!filteredPhaseName && (
+                    <select
+                        value={filterPhase}
+                        onChange={(e) => setFilterPhase(e.target.value)}
+                        className="w-full sm:w-auto rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 text-sm text-white focus:border-sky-500/50 focus:outline-none transition-colors"
+                    >
+                        <option value="all">Todas as fases</option>
+                        {phases.map(phase => (
+                            <option key={phase.id} value={phase.id}>
+                                Fase {phase.number}: {phase.name}
+                            </option>
                         ))}
                     </select>
                 )}
@@ -305,35 +327,15 @@ export default function ModulosPage() {
             )}
 
             {/* Empty State */}
-            {!isLoading && modules.length === 0 && courses.length > 0 && (
+            {!isLoading && modules.length === 0 && phases.length > 0 && (
                 <div className="text-center py-12 rounded-lg border border-gray-800/50 bg-gray-900/30">
                     <div className="flex justify-center mb-4">
                         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-800/50">
-                            <Layers className="h-8 w-8 text-gray-500" strokeWidth={1.5} />
+                            <GraduationCap className="h-8 w-8 text-gray-500" strokeWidth={1.5} />
                         </div>
                     </div>
                     <h3 className="text-lg font-semibold text-white mb-2">Nenhum módulo criado</h3>
                     <p className="text-gray-400 mb-4">Comece adicionando seu primeiro módulo</p>
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 transition-colors"
-                    >
-                        <Plus className="h-4 w-4" strokeWidth={1.5} />
-                        Criar Módulo
-                    </button>
-                </div>
-            )}
-
-            {/* Empty state para filtro de curso */}
-            {!isLoading && filteredCourseName && filteredModules.length === 0 && modules.length > 0 && (
-                <div className="text-center py-12 rounded-lg border border-gray-800/50 bg-gray-900/30">
-                    <div className="flex justify-center mb-4">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-800/50">
-                            <Layers className="h-8 w-8 text-gray-500" strokeWidth={1.5} />
-                        </div>
-                    </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Nenhum módulo neste curso</h3>
-                    <p className="text-gray-400 mb-4">O curso "{filteredCourseName}" ainda não possui módulos</p>
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
                         className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 transition-colors"
@@ -375,9 +377,19 @@ export default function ModulosPage() {
                                 )}
 
                                 <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                    <span
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                                        style={{
+                                            backgroundColor: `${module.phase?.track?.color || '#3b82f6'}20`,
+                                            color: module.phase?.track?.color || '#3b82f6',
+                                        }}
+                                    >
+                                        <Route className="h-3 w-3" strokeWidth={1.5} />
+                                        {module.phase?.track?.name}
+                                    </span>
                                     <span className="inline-flex items-center gap-1">
-                                        <BookOpen className="h-3.5 w-3.5" strokeWidth={1.5} />
-                                        {module.course?.name || 'Curso não encontrado'}
+                                        <Layers className="h-3.5 w-3.5" strokeWidth={1.5} />
+                                        Fase {module.phase?.number}: {module.phase?.name}
                                     </span>
                                 </div>
                             </div>
@@ -409,7 +421,7 @@ export default function ModulosPage() {
             )}
 
             {/* No Results */}
-            {!isLoading && modules.length > 0 && filteredModules.length === 0 && !filteredCourseName && (
+            {!isLoading && modules.length > 0 && filteredModules.length === 0 && (
                 <div className="text-center py-12">
                     <Search className="h-8 w-8 text-gray-500 mx-auto mb-3" strokeWidth={1.5} />
                     <p className="text-gray-400">Nenhum módulo encontrado com os filtros aplicados</p>
@@ -424,8 +436,8 @@ export default function ModulosPage() {
                 size="md"
             >
                 <ModuleForm
-                    courses={courses}
-                    defaultCourseId={filterCourse !== 'all' ? filterCourse : undefined}
+                    phases={phases}
+                    defaultPhaseId={filterPhase !== 'all' ? filterPhase : undefined}
                     onSubmit={handleCreate}
                     onCancel={() => setIsCreateModalOpen(false)}
                     isLoading={isSubmitting}
@@ -444,7 +456,7 @@ export default function ModulosPage() {
             >
                 <ModuleForm
                     module={selectedModule}
-                    courses={courses}
+                    phases={phases}
                     onSubmit={handleEdit}
                     onCancel={() => {
                         setIsEditModalOpen(false);

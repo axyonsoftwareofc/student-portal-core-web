@@ -1,4 +1,3 @@
-// app/(dashboard)/admin/aulas/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -21,10 +20,11 @@ import {
     Layers,
     GraduationCap,
     Package,
+    Route,
 } from 'lucide-react';
 import { useAllLessons, type LessonWithDetails, type LessonFormData } from '@/hooks/useAllLessons';
 import { useModules } from '@/hooks/useModules';
-import { useCourses } from '@/hooks/useCourses';
+import { usePhases } from '@/hooks/usePhases';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import LessonBasicForm from '@/components/admin/lessons/LessonBasicForm';
@@ -42,12 +42,12 @@ const statusConfig: Record<LessonStatus, { label: string; icon: typeof CheckCirc
 export default function AulasPage() {
     const { lessons, isLoading, error, createLesson, updateLesson, deleteLesson } = useAllLessons();
     const { modules } = useModules();
-    const { courses } = useCourses();
+    const { phases } = usePhases();
 
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [filterStatus, setFilterStatus] = useState<'all' | LessonStatus>('all');
     const [filterModule, setFilterModule] = useState<string>('all');
-    const [filterCourse, setFilterCourse] = useState<string>('all');
+    const [filterPhase, setFilterPhase] = useState<string>('all');
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
     const [isEditorModalOpen, setIsEditorModalOpen] = useState<boolean>(false);
@@ -56,9 +56,9 @@ export default function AulasPage() {
     const [selectedLesson, setSelectedLesson] = useState<LessonWithDetails | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    const filteredModulesForSelect = filterCourse === 'all'
+    const filteredModulesForSelect = filterPhase === 'all'
         ? modules
-        : modules.filter((m) => m.course_id === filterCourse);
+        : modules.filter((m) => m.phase_id === filterPhase);
 
     const filteredLessons = lessons.filter((lesson: LessonWithDetails) => {
         const matchesSearch =
@@ -66,8 +66,8 @@ export default function AulasPage() {
             lesson.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || lesson.status === filterStatus;
         const matchesModule = filterModule === 'all' || lesson.module_id === filterModule;
-        const matchesCourse = filterCourse === 'all' || lesson.module?.course_id === filterCourse;
-        return matchesSearch && matchesStatus && matchesModule && matchesCourse;
+        const matchesPhase = filterPhase === 'all' || lesson.module?.phase_id === filterPhase;
+        return matchesSearch && matchesStatus && matchesModule && matchesPhase;
     });
 
     const stats = {
@@ -288,16 +288,16 @@ export default function AulasPage() {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                     <select
-                        value={filterCourse}
+                        value={filterPhase}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                            setFilterCourse(e.target.value);
+                            setFilterPhase(e.target.value);
                             setFilterModule('all');
                         }}
                         className="w-full sm:w-auto rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 text-sm text-white focus:border-sky-500/50 focus:outline-none transition-colors"
                     >
-                        <option value="all">Todos os cursos</option>
-                        {courses.map((course) => (
-                            <option key={course.id} value={course.id}>{course.name}</option>
+                        <option value="all">Todas as fases</option>
+                        {phases.map((phase) => (
+                            <option key={phase.id} value={phase.id}>{phase.name}</option>
                         ))}
                     </select>
                     <select
@@ -372,8 +372,8 @@ export default function AulasPage() {
 
                                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-500 mb-2">
                                             <span className="inline-flex items-center gap-1">
-                                                <GraduationCap className="h-3.5 w-3.5" strokeWidth={1.5} />
-                                                {lesson.module?.course?.name || 'Curso'}
+                                                <Route className="h-3.5 w-3.5" strokeWidth={1.5} />
+                                                {lesson.module?.phase?.name || 'Fase'}
                                             </span>
                                             <span className="inline-flex items-center gap-1">
                                                 <Layers className="h-3.5 w-3.5" strokeWidth={1.5} />

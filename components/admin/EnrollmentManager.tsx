@@ -2,9 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, GraduationCap, Plus, Trash2, BookOpen, Loader2 } from 'lucide-react';
-import { useEnrollments, EnrollmentWithCourse } from '@/hooks/useEnrollments';
-import { useCourses } from '@/hooks/useCourses';
+import { X, GraduationCap, Plus, Trash2, Route, Loader2 } from 'lucide-react';
+import { useEnrollments, type EnrollmentWithTrack } from '@/hooks/useEnrollments';
+import { useTracks } from '@/hooks/useTracks';
 
 interface EnrollmentManagerProps {
     isOpen: boolean;
@@ -24,35 +24,38 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function EnrollmentManager({ isOpen, onClose, student }: EnrollmentManagerProps) {
-    const [selectedCourseId, setSelectedCourseId] = useState('');
+    const [selectedTrackId, setSelectedTrackId] = useState('');
     const [isEnrolling, setIsEnrolling] = useState(false);
 
     const { enrollments, isLoading, enrollStudent, unenrollStudent, refetch } = useEnrollments(student.id);
-    const { courses } = useCourses();
+    const { tracks } = useTracks();
 
-    // Filtrar cursos disponíveis (que o aluno ainda não está matriculado)
-    const enrolledCourseIds = (enrollments as EnrollmentWithCourse[]).map(e => e.course_id);
-    const availableCourses = courses.filter(
-        c => !enrolledCourseIds.includes(c.id) && c.status === 'ACTIVE'
+    // Filtrar trilhas disponíveis (que o aluno ainda não está matriculado)
+    const enrolledTrackIds = (enrollments as EnrollmentWithTrack[])
+        .filter(e => e.track_id)
+        .map(e => e.track_id);
+
+    const availableTracks = tracks.filter(
+        t => !enrolledTrackIds.includes(t.id) && t.is_active
     );
 
     // Reset ao abrir
     useEffect(() => {
         if (isOpen) {
-            setSelectedCourseId('');
+            setSelectedTrackId('');
             refetch();
         }
     }, [isOpen, refetch]);
 
     const handleEnroll = async () => {
-        if (!selectedCourseId) return;
+        if (!selectedTrackId) return;
 
         setIsEnrolling(true);
-        const success = await enrollStudent(student.id, selectedCourseId);
+        const success = await enrollStudent(student.id, selectedTrackId);
         setIsEnrolling(false);
 
         if (success) {
-            setSelectedCourseId('');
+            setSelectedTrackId('');
         }
     };
 
@@ -98,24 +101,24 @@ export default function EnrollmentManager({ isOpen, onClose, student }: Enrollme
                     {/* Adicionar nova matrícula */}
                     <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg space-y-3">
                         <label className="text-sm font-medium text-gray-300">
-                            Matricular em novo curso
+                            Matricular em nova trilha
                         </label>
                         <div className="flex gap-2">
                             <select
-                                value={selectedCourseId}
-                                onChange={(e) => setSelectedCourseId(e.target.value)}
+                                value={selectedTrackId}
+                                onChange={(e) => setSelectedTrackId(e.target.value)}
                                 className="flex-1 px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500"
                             >
-                                <option value="">Selecione um curso...</option>
-                                {availableCourses.map((course) => (
-                                    <option key={course.id} value={course.id}>
-                                        {course.name}
+                                <option value="">Selecione uma trilha...</option>
+                                {availableTracks.map((track) => (
+                                    <option key={track.id} value={track.id}>
+                                        {track.name}
                                     </option>
                                 ))}
                             </select>
                             <button
                                 onClick={handleEnroll}
-                                disabled={!selectedCourseId || isEnrolling}
+                                disabled={!selectedTrackId || isEnrolling}
                                 className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center gap-2"
                             >
                                 {isEnrolling ? (
@@ -126,9 +129,14 @@ export default function EnrollmentManager({ isOpen, onClose, student }: Enrollme
                                 Matricular
                             </button>
                         </div>
-                        {availableCourses.length === 0 && (
+                        {availableTracks.length === 0 && tracks.length > 0 && (
                             <p className="text-xs text-gray-500">
-                                Não há cursos disponíveis para matrícula.
+                                Aluno já matriculado em todas as trilhas disponíveis.
+                            </p>
+                        )}
+                        {tracks.length === 0 && (
+                            <p className="text-xs text-amber-400">
+                                Nenhuma trilha cadastrada. Crie uma trilha primeiro.
                             </p>
                         )}
                     </div>
@@ -136,7 +144,7 @@ export default function EnrollmentManager({ isOpen, onClose, student }: Enrollme
                     {/* Lista de matrículas */}
                     <div>
                         <h3 className="text-sm font-medium text-gray-300 mb-3">
-                            Cursos matriculados ({enrollments.length})
+                            Trilhas matriculadas ({enrollments.filter(e => (e as EnrollmentWithTrack).track).length})
                         </h3>
 
                         {isLoading ? (
@@ -145,43 +153,45 @@ export default function EnrollmentManager({ isOpen, onClose, student }: Enrollme
                             </div>
                         ) : enrollments.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-gray-700 rounded-lg">
-                                <BookOpen className="h-10 w-10 text-gray-600" strokeWidth={1.5} />
+                                <Route className="h-10 w-10 text-gray-600" strokeWidth={1.5} />
                                 <p className="mt-2 text-gray-400">Nenhuma matrícula encontrada</p>
-                                <p className="text-sm text-gray-500">Matricule o aluno em um curso acima</p>
+                                <p className="text-sm text-gray-500">Matricule o aluno em uma trilha acima</p>
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {(enrollments as EnrollmentWithCourse[]).map((enrollment) => {
-                                    const statusConfig = STATUS_LABELS[enrollment.status] || STATUS_LABELS.ACTIVE;
+                                {(enrollments as EnrollmentWithTrack[])
+                                    .filter(e => e.track) // Só mostrar matrículas com trilha
+                                    .map((enrollment) => {
+                                        const statusConfig = STATUS_LABELS[enrollment.status] || STATUS_LABELS.ACTIVE;
 
-                                    return (
-                                        <div
-                                            key={enrollment.id}
-                                            className="flex items-center justify-between p-4 bg-gray-800/30 border border-gray-800 rounded-lg hover:bg-gray-800/50 transition-colors"
-                                        >
-                                            <div className="flex-1">
-                                                <p className="font-medium text-white">
-                                                    {enrollment.course?.name || 'Curso removido'}
-                                                </p>
-                                                <div className="flex items-center gap-3 mt-1">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${statusConfig.color}`}>
-                            {statusConfig.label}
-                          </span>
-                                                    <span className="text-xs text-gray-500">
-                            Desde {new Date(enrollment.enrollment_date).toLocaleDateString('pt-BR')}
-                          </span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleUnenroll(enrollment.id)}
-                                                className="p-2 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                                                title="Cancelar matrícula"
+                                        return (
+                                            <div
+                                                key={enrollment.id}
+                                                className="flex items-center justify-between p-4 bg-gray-800/30 border border-gray-800 rounded-lg hover:bg-gray-800/50 transition-colors"
                                             >
-                                                <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                                            </button>
-                                        </div>
-                                    );
-                                })}
+                                                <div className="flex-1">
+                                                    <p className="font-medium text-white">
+                                                        {enrollment.track?.name || 'Trilha removida'}
+                                                    </p>
+                                                    <div className="flex items-center gap-3 mt-1">
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${statusConfig.color}`}>
+                                                            {statusConfig.label}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            Desde {new Date(enrollment.enrollment_date).toLocaleDateString('pt-BR')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleUnenroll(enrollment.id)}
+                                                    className="p-2 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                                    title="Cancelar matrícula"
+                                                >
+                                                    <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                             </div>
                         )}
                     </div>

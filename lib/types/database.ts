@@ -7,11 +7,12 @@
 export type UserRole = 'admin' | 'student';
 export type UserStatus = 'pending' | 'active' | 'suspended';
 
-export type CourseStatus = 'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+export type ModuleStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type LessonStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type LessonType = 'VIDEO' | 'ARTICLE' | 'EXERCISE' | 'QUIZ';
 
 export type EnrollmentStatus = 'ACTIVE' | 'COMPLETED' | 'DROPPED' | 'SUSPENDED';
 
-// ✅ ATUALIZADO: Agora em inglês (consistente com o banco)
 export type PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 export type PaymentMethod = 'PIX' | 'CASH' | 'TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'OTHER';
 
@@ -33,7 +34,7 @@ export type TaskStatus = 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED' | 'RETURNED
 export type SubmissionStatus = 'SUBMITTED' | 'GRADED' | 'RETURNED';
 
 // ============================================
-// INTERFACES DAS TABELAS
+// USUÁRIOS
 // ============================================
 
 export interface User {
@@ -50,227 +51,146 @@ export interface User {
     updated_at?: string | null;
 }
 
-export interface Course {
-    id: string;
-    name: string;
-    description?: string | null;
-    start_date?: string | null;
-    end_date?: string | null;
-    status: CourseStatus;
-    created_at: string;
-    updated_at: string;
-}
-
-export interface Enrollment {
-    id: string;
-    student_id: string;
-    course_id: string;
-    enrollment_date: string;
-    status: EnrollmentStatus;
-    grade?: number | null;
-    completed_at?: string | null;
-    created_at: string;
-    updated_at: string;
-    // Relacionamentos (quando usar JOIN)
-    student?: User;
-    course?: Course;
-}
-
-// ============================================
-// PAGAMENTOS
-// ============================================
-
-export interface Payment {
-    id: string;
-    student_id: string;
-    description: string;
-    amount: number;
-    due_date: string;
-    paid_date: string | null;
-    status: PaymentStatus;
-    payment_method: PaymentMethod | null;
-    notes: string | null;
-    created_at: string;
-    updated_at: string;
-}
-
-// Para listagem (com dados do aluno via JOIN)
-export interface PaymentWithStudent extends Omit<Payment, 'student'> {
-    student: {
-        id: string;
-        name: string;
-        email: string;
-    } | null;
-}
-
-// Para formulários
-export interface PaymentFormData {
-    student_id: string;
-    description: string;
-    amount: number;
-    due_date: string;
-    paid_date?: string | null;
-    status?: PaymentStatus;
-    payment_method?: PaymentMethod | null;
-    notes?: string | null;
-}
-
-// Estatísticas
-export interface PaymentStats {
-    total_pending: number;
-    total_paid: number;
-    total_overdue: number;
-    count_pending: number;
-    count_paid: number;
-    count_overdue: number;
-}
-
-export interface Material {
-    id: string;
-    name: string;
-    description: string;
-    category: MaterialCategory;
-    filename: string;
-    file_size?: number | null;
-    content_type?: string | null;
-    user_id: string;
-    course_id?: string | null;
-    lesson_id?: string | null;
-    upload_date: string;
-    downloads: number;
-    created_at: string;
-    updated_at: string;
-    // Relacionamentos
-    uploaded_by?: User;
-    course?: Course;
-}
-
-export interface Task {
-    id: string;
-    title: string;
-    name: string;
-    description: string;
-    deadline: string;
-    status: TaskStatus;
-    course_id: string;
-    created_by?: string | null;
-    created_at: string;
-    updated_at: string;
-    // Relacionamentos
-    course?: Course;
-    creator?: User;
-}
-
-export interface TaskSubmission {
-    id: string;
-    task_id: string;
-    student_id: string;
-    content?: string | null;
-    file_url?: string | null;
-    submitted_at: string;
-    grade?: number | null;
-    feedback?: string | null;
-    graded_by?: string | null;
-    graded_at?: string | null;
-    status: SubmissionStatus;
-    created_at: string;
-    updated_at: string;
-    // Relacionamentos
-    task?: Task;
-    student?: User;
-    grader?: User;
-}
-
-export interface Question {
-    id: string;
-    title: string;
-    content: string;
-    user_id: string;
-    answer_count: number;
-    created_at: string;
-    updated_at: string;
-    // Relacionamentos
-    author?: User;
-    answers?: Answer[];
-}
-
-export interface Answer {
-    id: string;
-    content: string;
-    user_id: string;
-    question_id: string;
-    is_accepted: boolean;
-    created_at: string;
-    updated_at: string;
-    // Relacionamentos
-    author?: User;
-    question?: Question;
-}
-
-// ============================================
-// TIPOS PARA FORMULÁRIOS (sem campos auto-gerados)
-// ============================================
-
 export interface UserFormData {
     name: string;
     email: string;
     phone?: string;
 }
 
-export interface CourseFormData {
+// ============================================
+// 🆕 TRILHAS (v20.0)
+// ============================================
+
+export interface Track {
+    id: string;
     name: string;
+    slug: string;
+    description?: string | null;
+    color: string;
+    icon: string;
+    order_index: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface TrackWithStats extends Track {
+    phases_count: number;
+    modules_count: number;
+    lessons_count: number;
+    total_hours: number;
+}
+
+// 🆕 Para área do aluno
+export interface StudentTrack extends Track {
+    phases_count?: number;
+    modules_count?: number;
+    lessons_count?: number;
+    completed_lessons?: number;
+    progress_percentage?: number;
+    phases?: StudentPhase[];
+}
+
+// ============================================
+// 🆕 FASES (v20.0)
+// ============================================
+
+export interface Phase {
+    id: string;
+    track_id: string;
+    name: string;
+    number: number;
+    description?: string | null;
+    objectives?: string[] | null;
+    estimated_hours?: number | null;
+    order_index: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    // Relacionamentos
+    track?: Track;
+}
+
+export interface PhaseWithStats extends Phase {
+    modules_count: number;
+    lessons_count: number;
+    contents_count: number;
+}
+
+export interface PhaseWithTrack extends Phase {
+    track: Track;
+}
+
+export interface PhaseFormData {
+    track_id: string;
+    name: string;
+    number: number;
     description?: string;
-    start_date?: string;
-    end_date?: string;
-    status?: CourseStatus;
+    objectives?: string[];
+    estimated_hours?: number;
+    order_index?: number;
+    is_active?: boolean;
 }
 
-export interface TaskFormData {
-    title: string;
-    name: string;
-    description: string;
-    deadline: string;
-    course_id: string;
+// 🆕 Para área do aluno
+export interface StudentPhase extends Phase {
+    modules_count?: number;
+    lessons_count?: number;
+    completed_lessons?: number;
+    progress_percentage?: number;
+    is_locked?: boolean; // 🆕 Para progressão linear
+    modules?: StudentModule[];
 }
 
 // ============================================
-// MÓDULOS
+// MÓDULOS (ATUALIZADO v20.0)
 // ============================================
-
-export type ModuleStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 export interface Module {
     id: string;
-    course_id: string;
+    phase_id: string | null;           // 🆕 v20.0 - Referência à fase
+    course_id?: string | null;         // ⚠️ DEPRECATED - manter temporariamente
     name: string;
     description?: string | null;
     order_index: number;
     status: ModuleStatus;
     created_at: string;
     updated_at: string;
-    // Relacionamentos (quando usar JOIN)
-    course?: Course;
+    // Relacionamentos
+    phase?: Phase;
     // Campos calculados
     _count?: {
+        lessons?: number;
         materials?: number;
-        enrollments?: number;
+    };
+}
+
+export interface ModuleWithPhase extends Module {
+    phase: Phase & {
+        track: Track;
     };
 }
 
 export interface ModuleFormData {
-    course_id: string;
+    phase_id: string;                  // 🆕 v20.0 - Obrigatório
     name: string;
     description?: string;
     order_index?: number;
     status?: ModuleStatus;
 }
 
+// 🆕 Para área do aluno
+export interface StudentModule extends Module {
+    lessons_count?: number;
+    completed_lessons?: number;
+    progress_percentage?: number;
+    is_locked?: boolean;              // 🆕 Para progressão linear
+    lessons?: StudentLesson[];
+}
+
 // ============================================
 // AULAS (LESSONS)
 // ============================================
-
-export type LessonType = 'VIDEO' | 'ARTICLE' | 'EXERCISE' | 'QUIZ';
-export type LessonStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 export interface QuizQuestion {
     id: string;
@@ -295,9 +215,10 @@ export interface Lesson {
     order_index: number;
     status: LessonStatus;
     views_count: number;
+    total_contents?: number;
     created_at: string;
     updated_at: string;
-    // Relacionamentos (quando usar JOIN)
+    // Relacionamentos
     module?: Module;
 }
 
@@ -312,6 +233,11 @@ export interface LessonFormData {
     quiz_data?: QuizQuestion[];
     order_index?: number;
     status?: LessonStatus;
+}
+
+export interface StudentLesson extends Lesson {
+    progress?: LessonProgress | null;
+    is_completed?: boolean;
 }
 
 // ============================================
@@ -330,7 +256,6 @@ export interface LessonProgress {
     quiz_completed_at?: string | null;
     created_at: string;
     updated_at: string;
-    // Relacionamentos
     lesson?: Lesson;
     student?: User;
 }
@@ -345,30 +270,170 @@ export interface LessonProgressFormData {
 }
 
 // ============================================
-// TIPOS AUXILIARES PARA ÁREA DO ALUNO
+// 🆕 MATRÍCULAS (ATUALIZADO v20.0)
 // ============================================
 
-// Curso com informações extras para o aluno
-export interface StudentCourse extends Course {
-    enrollment?: Enrollment;
-    modules_count?: number;
-    lessons_count?: number;
-    completed_lessons?: number;
-    progress_percentage?: number;
+export interface Enrollment {
+    id: string;
+    student_id: string;
+    track_id: string;                  // 🆕 v20.0 - Era course_id
+    enrollment_date: string;
+    status: EnrollmentStatus;
+    grade?: number | null;
+    completed_at?: string | null;
+    created_at: string;
+    updated_at: string;
+    // Relacionamentos
+    student?: User;
+    track?: Track;                     // 🆕 v20.0 - Era course
 }
 
-// Módulo com informações extras para o aluno
-export interface StudentModule extends Module {
-    lessons_count?: number;
-    completed_lessons?: number;
-    progress_percentage?: number;
-    lessons?: StudentLesson[];
+// ============================================
+// PAGAMENTOS
+// ============================================
+
+export interface Payment {
+    id: string;
+    student_id: string;
+    description: string;
+    amount: number;
+    due_date: string;
+    paid_date: string | null;
+    status: PaymentStatus;
+    payment_method: PaymentMethod | null;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
 }
 
-// Aula com informações extras para o aluno
-export interface StudentLesson extends Lesson {
-    progress?: LessonProgress | null;
-    is_completed?: boolean;
+export interface PaymentWithStudent extends Omit<Payment, 'student'> {
+    student: {
+        id: string;
+        name: string;
+        email: string;
+    } | null;
+}
+
+export interface PaymentFormData {
+    student_id: string;
+    description: string;
+    amount: number;
+    due_date: string;
+    paid_date?: string | null;
+    status?: PaymentStatus;
+    payment_method?: PaymentMethod | null;
+    notes?: string | null;
+}
+
+export interface PaymentStats {
+    total_pending: number;
+    total_paid: number;
+    total_overdue: number;
+    count_pending: number;
+    count_paid: number;
+    count_overdue: number;
+}
+
+// ============================================
+// MATERIAIS, TAREFAS, Q&A
+// ============================================
+
+export interface Material {
+    id: string;
+    name: string;
+    description: string;
+    category: MaterialCategory;
+    filename: string;
+    file_size?: number | null;
+    content_type?: string | null;
+    user_id: string;
+    lesson_id?: string | null;
+    upload_date: string;
+    downloads: number;
+    created_at: string;
+    updated_at: string;
+    uploaded_by?: User;
+}
+
+export interface Task {
+    id: string;
+    title: string;
+    name: string;
+    description: string;
+    deadline: string;
+    status: TaskStatus;
+    module_id?: string | null;         // 🆕 v20.0 - Era course_id
+    created_by?: string | null;
+    created_at: string;
+    updated_at: string;
+    creator?: User;
+    module?: Module;
+}
+
+export interface TaskFormData {
+    title: string;
+    name: string;
+    description: string;
+    deadline: string;
+    module_id?: string;
+}
+
+export interface TaskSubmission {
+    id: string;
+    task_id: string;
+    student_id: string;
+    content?: string | null;
+    file_url?: string | null;
+    submitted_at: string;
+    grade?: number | null;
+    feedback?: string | null;
+    graded_by?: string | null;
+    graded_at?: string | null;
+    status: SubmissionStatus;
+    created_at: string;
+    updated_at: string;
+    task?: Task;
+    student?: User;
+    grader?: User;
+}
+
+export interface Question {
+    id: string;
+    title: string;
+    content: string;
+    user_id: string;
+    answer_count: number;
+    created_at: string;
+    updated_at: string;
+    author?: User;
+    answers?: Answer[];
+}
+
+export interface Answer {
+    id: string;
+    content: string;
+    user_id: string;
+    question_id: string;
+    is_accepted: boolean;
+    created_at: string;
+    updated_at: string;
+    author?: User;
+    question?: Question;
+}
+
+// ============================================
+// 🆕 ANOTAÇÕES DO ALUNO (ATUALIZADO v20.0)
+// ============================================
+
+export interface StudentNote {
+    id: string;
+    student_id: string;
+    lesson_id: string;
+    module_id: string;
+    track_id: string;                  // 🆕 v20.0 - Era course_id
+    content: string;
+    created_at: string;
+    updated_at: string;
 }
 
 // ============================================
@@ -386,10 +451,25 @@ export type Database = {
                 };
                 Update: Partial<Omit<User, 'id'>>;
             };
-            courses: {
-                Row: Course;
-                Insert: Omit<Course, 'id' | 'created_at' | 'updated_at'>;
-                Update: Partial<Omit<Course, 'id'>>;
+            tracks: {
+                Row: Track;
+                Insert: Omit<Track, 'id' | 'created_at' | 'updated_at'>;
+                Update: Partial<Omit<Track, 'id'>>;
+            };
+            phases: {
+                Row: Phase;
+                Insert: Omit<Phase, 'id' | 'created_at' | 'updated_at'>;
+                Update: Partial<Omit<Phase, 'id'>>;
+            };
+            modules: {
+                Row: Module;
+                Insert: Omit<Module, 'id' | 'created_at' | 'updated_at'>;
+                Update: Partial<Omit<Module, 'id'>>;
+            };
+            lessons: {
+                Row: Lesson;
+                Insert: Omit<Lesson, 'id' | 'created_at' | 'updated_at'>;
+                Update: Partial<Omit<Lesson, 'id'>>;
             };
             enrollments: {
                 Row: Enrollment;
@@ -425,6 +505,11 @@ export type Database = {
                 Row: Answer;
                 Insert: Omit<Answer, 'id' | 'created_at' | 'updated_at'>;
                 Update: Partial<Omit<Answer, 'id'>>;
+            };
+            student_notes: {
+                Row: StudentNote;
+                Insert: Omit<StudentNote, 'id' | 'created_at' | 'updated_at'>;
+                Update: Partial<Omit<StudentNote, 'id'>>;
             };
         };
     };

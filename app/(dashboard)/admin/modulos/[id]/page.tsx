@@ -21,13 +21,12 @@ import {
     Eye,
     Loader2,
     AlertTriangle,
-    GraduationCap,
-    MoreVertical
+    Route,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useLessons, type LessonWithModule } from '@/hooks/useLessons';
-import { useCourses } from '@/hooks/useCourses';
-import type { Module, Course, LessonType, LessonStatus, LessonFormData, ModuleFormData } from '@/lib/types/database';
+import { usePhases } from '@/hooks/usePhases';
+import type { Module, Phase, Track, LessonType, LessonStatus, LessonFormData, ModuleFormData } from '@/lib/types/database';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 import LessonForm from '@/components/admin/LessonForm';
@@ -46,8 +45,11 @@ const statusConfig: Record<LessonStatus, { label: string; icon: typeof CheckCirc
     ARCHIVED: { label: 'Arquivado', icon: Archive, color: 'gray' },
 };
 
-interface ModuleWithCourse extends Module {
-    course: Course;
+// 🆕 v20.0 - Módulo com Phase em vez de Course
+interface ModuleWithPhase extends Module {
+    phase: Phase & {
+        track: Track;
+    };
 }
 
 export default function ModuleDetailPage() {
@@ -55,12 +57,12 @@ export default function ModuleDetailPage() {
     const router = useRouter();
     const moduleId = params?.id as string;
 
-    const [module, setModule] = useState<ModuleWithCourse | null>(null);
+    const [module, setModule] = useState<ModuleWithPhase | null>(null);
     const [isLoadingModule, setIsLoadingModule] = useState(true);
     const [moduleError, setModuleError] = useState<string | null>(null);
 
     const { lessons, isLoading: isLoadingLessons, createLesson, updateLesson, deleteLesson } = useLessons(moduleId);
-    const { courses } = useCourses();
+    const { phases } = usePhases(); // 🆕 v20.0
 
     const [isEditModuleModalOpen, setIsEditModuleModalOpen] = useState(false);
     const [isDeleteModuleDialogOpen, setIsDeleteModuleDialogOpen] = useState(false);
@@ -73,7 +75,7 @@ export default function ModuleDetailPage() {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
-    // Buscar módulo
+    // 🆕 v20.0 - Buscar módulo com phase e track
     const fetchModule = useCallback(async () => {
         if (!moduleId) return;
 
@@ -85,7 +87,10 @@ export default function ModuleDetailPage() {
                 .from('modules')
                 .select(`
                     *,
-                    course:courses(*)
+                    phase:phases(
+                        *,
+                        track:tracks(*)
+                    )
                 `)
                 .eq('id', moduleId)
                 .single();
@@ -93,7 +98,7 @@ export default function ModuleDetailPage() {
             if (error) throw error;
             if (!data) throw new Error('Módulo não encontrado');
 
-            setModule(data as ModuleWithCourse);
+            setModule(data as ModuleWithPhase);
         } catch (err) {
             console.error('[ModuleDetail] Erro:', err);
             setModuleError('Módulo não encontrado');
@@ -117,6 +122,7 @@ export default function ModuleDetailPage() {
                 .update({
                     name: data.name,
                     description: data.description || null,
+                    phase_id: data.phase_id, // 🆕 v20.0
                     status: data.status,
                     updated_at: new Date().toISOString(),
                 })
@@ -313,9 +319,24 @@ export default function ModuleDetailPage() {
                                 </h1>
                                 {getModuleStatusBadge(module.status)}
                             </div>
+                            {/* 🆕 v20.0 - Mostrar Trilha e Fase */}
                             <div className="flex items-center gap-2 text-sm text-gray-400">
-                                <GraduationCap className="h-4 w-4" strokeWidth={1.5} />
-                                <span>{module.course?.name || 'Curso não encontrado'}</span>
+                                {module.phase?.track && (
+                                    <>
+                                        <span
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                                            style={{
+                                                backgroundColor: `${module.phase.track.color}20`,
+                                                color: module.phase.track.color,
+                                            }}
+                                        >
+                                            <Route className="h-3 w-3" strokeWidth={1.5} />
+                                            {module.phase.track.name}
+                                        </span>
+                                        <span className="text-gray-600">•</span>
+                                    </>
+                                )}
+                                <span>Fase {module.phase?.number}: {module.phase?.name}</span>
                             </div>
                             {module.description && (
                                 <p className="mt-2 text-sm text-gray-500 max-w-2xl">
@@ -414,7 +435,6 @@ export default function ModuleDetailPage() {
                     <div className="space-y-2">
                         {lessons.map((lesson) => {
                             const TypeIcon = typeConfig[lesson.type].icon;
-                            const typeColor = typeConfig[lesson.type].color;
 
                             return (
                                 <div
@@ -427,8 +447,8 @@ export default function ModuleDetailPage() {
                                     </span>
 
                                     {/* Type Icon */}
-                                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-${typeColor}-500/10 flex-shrink-0`}>
-                                        <TypeIcon className={`h-5 w-5 text-${typeColor}-400`} strokeWidth={1.5} />
+                                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-${typeConfig[lesson.type].color}-500/10 flex-shrink-0`}>
+                                        <TypeIcon className={`h-5 w-5 text-${typeConfig[lesson.type].color}-400`} strokeWidth={1.5} />
                                     </div>
 
                                     {/* Content */}
@@ -486,7 +506,7 @@ export default function ModuleDetailPage() {
                 )}
             </div>
 
-            {/* Edit Module Modal */}
+            {/* Edit Module Modal - 🆕 v20.0 usa phases */}
             <Modal
                 isOpen={isEditModuleModalOpen}
                 onClose={() => setIsEditModuleModalOpen(false)}
@@ -495,7 +515,7 @@ export default function ModuleDetailPage() {
             >
                 <ModuleForm
                     module={module}
-                    courses={courses}
+                    phases={phases}
                     onSubmit={handleUpdateModule}
                     onCancel={() => setIsEditModuleModalOpen(false)}
                     isLoading={isSubmitting}
@@ -522,7 +542,7 @@ export default function ModuleDetailPage() {
                 size="lg"
             >
                 <LessonForm
-                    modules={[module]} // Só mostra o módulo atual
+                    modules={[module]}
                     defaultModuleId={moduleId}
                     onSubmit={handleCreateLesson}
                     onCancel={() => setIsCreateLessonModalOpen(false)}

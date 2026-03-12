@@ -3,23 +3,23 @@
 
 import { Loader2, Map } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useStudentCourses } from '@/hooks/useStudentCourses';
-import { useStudentModules } from '@/hooks/useStudentModules';
+import { useStudentTracks } from '@/hooks/useStudentTracks';
+import { useStudentPhases } from '@/hooks/useStudentPhases';
 import { useGamification } from '@/hooks/useGamification';
 import { JourneyHeader } from '@/components/student/journey/JourneyHeader';
-import { CourseMap } from '@/components/student/journey/CourseMap';
+import { PhaseMap } from '@/components/student/journey/PhaseMap';
 import { StreakCard } from '@/components/student/journey/StreakCard';
 import { XpRecentActivity } from '@/components/student/journey/XpRecentActivity';
 
 export default function JourneyPage() {
     const { user } = useAuth();
-    const { courses, isLoading: loadingCourses } = useStudentCourses(user?.id || null);
+    const { tracks, isLoading: loadingTracks } = useStudentTracks(user?.id || null);
     const { stats, isLoading: loadingGamification } = useGamification(user?.id || null);
 
-    const firstCourseId = courses.length > 0 ? courses[0].id : null;
-    const { modules, isLoading: loadingModules } = useStudentModules(firstCourseId, user?.id || null);
+    const firstTrackId = tracks.length > 0 ? tracks[0].id : null;
+    const { phases, isLoading: loadingPhases } = useStudentPhases(firstTrackId, user?.id || null);
 
-    const isLoading = loadingCourses || loadingModules || loadingGamification;
+    const isLoading = loadingTracks || loadingPhases || loadingGamification;
 
     if (isLoading) {
         return (
@@ -53,16 +53,16 @@ export default function JourneyPage() {
 
             {/* Main Content Grid */}
             <div className="grid gap-6 lg:grid-cols-3">
-                {/* Course Map - 2 columns */}
+                {/* Phase Map - 2 columns */}
                 <div className="lg:col-span-2 space-y-6">
-                    {courses.length > 0 && modules.length > 0 ? (
+                    {tracks.length > 0 && phases.length > 0 ? (
                         <div className="rounded-xl border border-gray-800/50 bg-gray-900/30 p-5">
-                            <CourseMap modules={modules} courseName={courses[0].name} />
+                            <PhaseMap phases={phases} trackName={tracks[0].name} />
                         </div>
                     ) : (
                         <div className="rounded-xl border border-gray-800/50 bg-gray-900/30 p-8 text-center">
                             <Map className="h-12 w-12 text-gray-600 mx-auto mb-3" strokeWidth={1.5} />
-                            <p className="text-gray-400">Nenhum curso encontrado</p>
+                            <p className="text-gray-400">Nenhuma trilha encontrada</p>
                             <p className="text-sm text-gray-500 mt-1">
                                 Entre em contato com o professor para ser matriculado
                             </p>

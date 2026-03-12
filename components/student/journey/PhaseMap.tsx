@@ -1,34 +1,34 @@
-// components/student/journey/CourseMap.tsx
+// components/student/journey/PhaseMap.tsx
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle, Lock, PlayCircle, ChevronRight, Layers } from 'lucide-react';
+import { CheckCircle, Lock, PlayCircle, ChevronRight, Route } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { StudentModule } from '@/lib/types/database';
+import type { StudentPhase } from '@/lib/types/database';
 
-interface CourseMapProps {
-    modules: StudentModule[];
-    courseName: string;
+interface PhaseMapProps {
+    phases: StudentPhase[];
+    trackName: string;
 }
 
-export function CourseMap({ modules, courseName }: CourseMapProps) {
-    const completedModules = modules.filter(m => m.progress_percentage === 100).length;
-    const overallProgress = modules.length > 0
-        ? Math.round(modules.reduce((acc, m) => acc + (m.progress_percentage || 0), 0) / modules.length)
+export function PhaseMap({ phases, trackName }: PhaseMapProps) {
+    const completedPhases = phases.filter(p => p.progress_percentage === 100).length;
+    const overallProgress = phases.length > 0
+        ? Math.round(phases.reduce((acc, p) => acc + (p.progress_percentage || 0), 0) / phases.length)
         : 0;
 
     return (
         <div className="space-y-4">
-            {/* Course Header */}
+            {/* Track Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10">
-                        <Layers className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
+                        <Route className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-white">{courseName}</h3>
+                        <h3 className="font-semibold text-white">{trackName}</h3>
                         <p className="text-xs text-gray-500">
-                            {completedModules}/{modules.length} módulos • {overallProgress}% concluído
+                            {completedPhases}/{phases.length} fases • {overallProgress}% concluído
                         </p>
                     </div>
                 </div>
@@ -52,21 +52,21 @@ export function CourseMap({ modules, courseName }: CourseMapProps) {
                 />
             </div>
 
-            {/* Module Timeline */}
+            {/* Phase Timeline */}
             <div className="relative">
                 {/* Vertical Line */}
                 <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-800" />
 
                 <div className="space-y-3">
-                    {modules.map((module, index) => {
-                        const isCompleted = module.progress_percentage === 100;
-                        const isInProgress = (module.progress_percentage || 0) > 0 && !isCompleted;
-                        const isLocked = index > 0 && modules[index - 1].progress_percentage !== 100 && !isInProgress;
+                    {phases.map((phase, index) => {
+                        const isCompleted = phase.progress_percentage === 100;
+                        const isInProgress = (phase.progress_percentage || 0) > 0 && !isCompleted;
+                        const isLocked = phase.is_locked;
 
                         return (
                             <Link
-                                key={module.id}
-                                href={isLocked ? '#' : `/aluno/estudar/${module.id}`}
+                                key={phase.id}
+                                href={isLocked ? '#' : `/aluno/estudar?phase=${phase.id}`}
                                 className={cn(
                                     'relative flex items-center gap-4 p-4 rounded-lg border transition-all ml-2',
                                     isCompleted && 'border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-950/30',
@@ -74,6 +74,7 @@ export function CourseMap({ modules, courseName }: CourseMapProps) {
                                     isLocked && 'border-gray-800/50 bg-gray-900/30 opacity-50 cursor-not-allowed',
                                     !isCompleted && !isInProgress && !isLocked && 'border-gray-800/50 bg-gray-900/30 hover:bg-gray-900/50'
                                 )}
+                                onClick={(e) => isLocked && e.preventDefault()}
                             >
                                 {/* Node */}
                                 <div className={cn(
@@ -90,7 +91,7 @@ export function CourseMap({ modules, courseName }: CourseMapProps) {
                                     ) : isInProgress ? (
                                         <PlayCircle className="h-5 w-5" strokeWidth={1.5} />
                                     ) : (
-                                        <span className="text-sm font-semibold">{index + 1}</span>
+                                        <span className="text-sm font-semibold">{phase.number || index + 1}</span>
                                     )}
                                 </div>
 
@@ -101,16 +102,21 @@ export function CourseMap({ modules, courseName }: CourseMapProps) {
                                             'font-medium truncate',
                                             isCompleted ? 'text-emerald-300' : isInProgress ? 'text-sky-300' : 'text-gray-300'
                                         )}>
-                                            {module.name}
+                                            {phase.name}
                                         </h4>
                                         {isInProgress && (
                                             <span className="px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 text-[10px] font-medium flex-shrink-0">
-                        Em progresso
-                      </span>
+                                                Em progresso
+                                            </span>
+                                        )}
+                                        {isLocked && (
+                                            <span className="px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-400 text-[10px] font-medium flex-shrink-0">
+                                                Bloqueada
+                                            </span>
                                         )}
                                     </div>
                                     <p className="text-xs text-gray-500 mt-0.5">
-                                        {module.completed_lessons || 0}/{module.lessons_count || 0} aulas • {module.progress_percentage || 0}%
+                                        {phase.completed_lessons || 0}/{phase.lessons_count || 0} aulas • {phase.progress_percentage || 0}%
                                     </p>
                                 </div>
 
@@ -123,7 +129,7 @@ export function CourseMap({ modules, courseName }: CourseMapProps) {
                                                     'h-full transition-all',
                                                     isCompleted ? 'bg-emerald-500' : 'bg-sky-500'
                                                 )}
-                                                style={{ width: `${module.progress_percentage || 0}%` }}
+                                                style={{ width: `${phase.progress_percentage || 0}%` }}
                                             />
                                         </div>
                                     </div>

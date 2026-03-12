@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { showErrorToast } from '@/lib/toast';
 import type { LessonContent, LessonContentWithProgress, ContentProgress } from '@/lib/types/lesson-contents';
+import type { Phase, Track } from '@/lib/types/database';
 
 interface LessonFromDB {
     id: string;
@@ -15,13 +16,13 @@ interface LessonFromDB {
     module_id: string;
 }
 
+// 🆕 v20.0 - Módulo agora referencia Phase
 interface ModuleFromDB {
     id: string;
     name: string;
-    course_id: string;
-    course: {
-        id: string;
-        name: string;
+    phase_id: string;
+    phase: Phase & {
+        track: Track;
     };
 }
 
@@ -32,13 +33,13 @@ export interface StudentLesson {
     duration: string | null;
 }
 
+// 🆕 v20.0 - Atualizado para usar phase em vez de course
 export interface StudentModule {
     id: string;
     name: string;
-    course_id: string;
-    course: {
-        id: string;
-        name: string;
+    phase_id: string;
+    phase: Phase & {
+        track: Track;
     };
 }
 
@@ -99,18 +100,18 @@ export function useStudentLessonContents(
                 duration: typedLesson.duration,
             });
 
-            // 2. Buscar módulo com curso
+            // 🆕 v20.0 - Buscar módulo com phase e track
             const { data: moduleData, error: moduleError } = await supabase
                 .from('modules')
                 .select(`
-          id,
-          name,
-          course_id,
-          course:courses (
-            id,
-            name
-          )
-        `)
+                    id,
+                    name,
+                    phase_id,
+                    phase:phases(
+                        *,
+                        track:tracks(*)
+                    )
+                `)
                 .eq('id', typedLesson.module_id)
                 .single();
 
@@ -120,8 +121,8 @@ export function useStudentLessonContents(
             setModule({
                 id: typedModule.id,
                 name: typedModule.name,
-                course_id: typedModule.course_id,
-                course: typedModule.course,
+                phase_id: typedModule.phase_id,
+                phase: typedModule.phase,
             });
 
             // 3. Buscar conteúdos da aula

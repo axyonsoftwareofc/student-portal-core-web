@@ -13,6 +13,7 @@ import {
     AlertCircle,
     Layers,
     FileText,
+    Route,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentLessons, type StudentLessonSummary } from '@/hooks/useStudentLessons';
@@ -65,22 +66,49 @@ export default function ModuloPage() {
         );
     }
 
+    // 🆕 v20.0 - Construir link de volta baseado na estrutura de trilhas/fases
+    const backLink = module.phase?.track?.id
+        ? `/aluno/estudar?trilha=${module.phase.track.id}&fase=${module.phase_id}`
+        : '/aluno/estudar';
+
+    const backLabel = module.phase?.name
+        ? `Fase ${module.phase.number}: ${module.phase.name}`
+        : 'Voltar';
+
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="space-y-3">
                 <Link
-                    href="/aluno/estudar"
+                    href={backLink}
                     className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors"
                 >
                     <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
-                    {module.course?.name || 'Voltar'}
+                    {backLabel}
                 </Link>
+
                 <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10">
                         <Layers className="h-5 w-5 text-sky-400" strokeWidth={1.5} />
                     </div>
                     <div>
+                        {/* 🆕 v20.0 - Mostrar trilha e fase */}
+                        {module.phase?.track && (
+                            <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                                <span
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                                    style={{
+                                        backgroundColor: `${module.phase.track.color}20`,
+                                        color: module.phase.track.color,
+                                    }}
+                                >
+                                    <Route className="h-3 w-3" strokeWidth={1.5} />
+                                    {module.phase.track.name}
+                                </span>
+                                <span>•</span>
+                                <span>Fase {module.phase.number}</span>
+                            </div>
+                        )}
                         <h1 className="font-nacelle text-xl sm:text-2xl font-semibold text-white">
                             {module.name}
                         </h1>
@@ -194,13 +222,13 @@ function LessonCard({ lesson, index, moduloId }: LessonCardProps) {
 
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="text-xs text-gray-500">
-                Aula {index + 1}
-              </span>
+                            <span className="text-xs text-gray-500">
+                                Aula {index + 1}
+                            </span>
                             {lesson.total_contents > 0 && (
                                 <span className="text-xs text-gray-600">
-                  • {lesson.completed_contents}/{lesson.total_contents} conteúdos
-                </span>
+                                    • {lesson.completed_contents}/{lesson.total_contents} conteúdos
+                                </span>
                             )}
                         </div>
                         <h3 className="font-medium text-gray-200 text-sm sm:text-base">
@@ -224,8 +252,8 @@ function LessonCard({ lesson, index, moduloId }: LessonCardProps) {
                                     />
                                 </div>
                                 <span className="text-xs text-gray-500 flex-shrink-0">
-                  {lesson.progress_percentage}%
-                </span>
+                                    {lesson.progress_percentage}%
+                                </span>
                             </div>
                         )}
                     </div>

@@ -9,7 +9,8 @@ export type EnrollmentStatus = 'ACTIVE' | 'COMPLETED' | 'DROPPED' | 'SUSPENDED';
 export interface Enrollment {
     id: string;
     student_id: string;
-    course_id: string;
+    track_id: string | null;  // 🆕 Novo campo
+    course_id: string | null; // ⚠️ Legado - manter temporariamente
     enrollment_date: string;
     status: EnrollmentStatus;
     grade: number | null;
@@ -18,11 +19,11 @@ export interface Enrollment {
     updated_at: string;
 }
 
-export interface EnrollmentWithCourse extends Enrollment {
-    course: {
+export interface EnrollmentWithTrack extends Enrollment {
+    track: {
         id: string;
         name: string;
-        status: string;
+        is_active: boolean;
     } | null;
 }
 
@@ -34,15 +35,14 @@ export interface EnrollmentWithStudent extends Enrollment {
     } | null;
 }
 
-export function useEnrollments(studentId?: string, courseId?: string) {
-    const [enrollments, setEnrollments] = useState<(EnrollmentWithCourse | EnrollmentWithStudent)[]>([]);
+export function useEnrollments(studentId?: string, trackId?: string) {
+    const [enrollments, setEnrollments] = useState<(EnrollmentWithTrack | EnrollmentWithStudent)[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
-    // Buscar matrículas
     const fetchEnrollments = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -51,34 +51,35 @@ export function useEnrollments(studentId?: string, courseId?: string) {
             let query;
 
             if (studentId) {
-                // Buscar cursos de um aluno específico
+                // Buscar trilhas de um aluno específico
+                // Suporta tanto track_id (novo) quanto course_id (legado)
                 query = supabase
                     .from('enrollments')
                     .select(`
-            *,
-            course:courses(id, name, status)
-          `)
+                        *,
+                        track:tracks(id, name, is_active)
+                    `)
                     .eq('student_id', studentId)
                     .order('enrollment_date', { ascending: false });
-            } else if (courseId) {
-                // Buscar alunos de um curso específico
+            } else if (trackId) {
+                // Buscar alunos de uma trilha específica
                 query = supabase
                     .from('enrollments')
                     .select(`
-            *,
-            student:users(id, name, email)
-          `)
-                    .eq('course_id', courseId)
+                        *,
+                        student:users(id, name, email)
+                    `)
+                    .eq('track_id', trackId)
                     .order('enrollment_date', { ascending: false });
             } else {
                 // Buscar todas as matrículas
                 query = supabase
                     .from('enrollments')
                     .select(`
-            *,
-            course:courses(id, name, status),
-            student:users(id, name, email)
-          `)
+                        *,
+                        track:tracks(id, name, is_active),
+                        student:users(id, name, email)
+                    `)
                     .order('enrollment_date', { ascending: false });
             }
 
@@ -93,39 +94,51 @@ export function useEnrollments(studentId?: string, courseId?: string) {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, studentId, courseId]);
+    }, [supabase, studentId, trackId]);
 
-    // Matricular aluno em curso
-    const enrollStudent = async (studentId: string, courseId: string): Promise<boolean> => {
+    // Matricular aluno em trilha
+    const enrollStudent = async (studentId: string, trackId: string): Promise<boolean> => {
         try {
+            console.log('🔍 Tentando matricular:', { studentId, trackId }); // DEBUG
+
             // Verificar se já existe matrícula
-            const { data: existing } = await supabase
+            const { data: existing, error: checkError } = await supabase
                 .from('enrollments')
                 .select('id')
                 .eq('student_id', studentId)
-                .eq('course_id', courseId)
-                .single();
+                .eq('track_id', trackId)
+                .maybeSingle(); // 🔧 Mudança: usar maybeSingle() em vez de single()
+
+            console.log('🔍 Check existente:', { existing, checkError }); // DEBUG
 
             if (existing) {
-                setError('Aluno já está matriculado neste curso');
+                setError('Aluno já está matriculado nesta trilha');
                 return false;
             }
 
-            const { error: insertError } = await supabase
+            const insertData = {
+                student_id: studentId,
+                track_id: trackId,
+                enrollment_date: new Date().toISOString().split('T')[0],
+                status: 'ACTIVE',
+            };
+
+            console.log('🔍 Dados para inserir:', insertData); // DEBUG
+
+            const { data: inserted, error: insertError } = await supabase
                 .from('enrollments')
-                .insert({
-                    student_id: studentId,
-                    course_id: courseId,
-                    enrollment_date: new Date().toISOString().split('T')[0],
-                    status: 'ACTIVE',
-                });
+                .insert(insertData)
+                .select()
+                .single();
+
+            console.log('🔍 Resultado insert:', { inserted, insertError }); // DEBUG
 
             if (insertError) throw insertError;
 
             await fetchEnrollments();
             return true;
         } catch (err) {
-            console.error('Erro ao matricular aluno:', err);
+            console.error('❌ Erro completo ao matricular:', err); // DEBUG
             setError('Erro ao matricular aluno');
             return false;
         }

@@ -4,44 +4,56 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
-import type { Module, ModuleFormData, Course } from '@/lib/types/database';
+import type { Module, ModuleFormData, Phase, Track } from '@/lib/types/database';
 
 export type { Module, ModuleFormData };
 
-export interface ModuleWithCourse extends Module {
-    course: Course;
+// 🆕 v20.0 - Agora referencia Phase em vez de Course
+export interface ModuleWithPhase extends Module {
+    phase: Phase & {
+        track: Track;
+    };
 }
 
-export function useModules(courseId?: string) {
-    const [modules, setModules] = useState<ModuleWithCourse[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+export function useModules(phaseId?: string) {
+    const [modules, setModules] = useState<ModuleWithPhase[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
 
-    const fetchModules = useCallback(async () => {
+    const fetchModules = useCallback(async (): Promise<void> => {
         setIsLoading(true);
         setError(null);
 
         try {
+            // 🆕 v20.0 - Busca com phase e track
             let query = supabase
                 .from('modules')
                 .select(`
-          *,
-          course:courses(*)
-        `)
+                    *,
+                    phase:phases(
+                        *,
+                        track:tracks(*)
+                    )
+                `)
                 .order('order_index', { ascending: true });
 
-            if (courseId) {
-                query = query.eq('course_id', courseId);
+            if (phaseId) {
+                query = query.eq('phase_id', phaseId);
             }
 
             const { data, error: fetchError } = await query;
 
             if (fetchError) throw fetchError;
 
-            setModules((data as ModuleWithCourse[]) || []);
+            // Filtrar módulos que têm phase_id (ignorar órfãos da migração)
+            const validModules = (data || []).filter(
+                (m: ModuleWithPhase) => m.phase_id && m.phase
+            );
+
+            setModules(validModules as ModuleWithPhase[]);
         } catch (err) {
             console.error('[useModules] Erro ao buscar módulos:', err);
             setError('Erro ao carregar módulos');
@@ -49,26 +61,28 @@ export function useModules(courseId?: string) {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, courseId]);
+    }, [supabase, phaseId]);
 
     const createModule = useCallback(async (
         data: ModuleFormData
     ): Promise<{ success: boolean; error?: string; module?: Module }> => {
         try {
+            // Buscar último order_index da fase
             const { data: lastModule } = await supabase
                 .from('modules')
                 .select('order_index')
-                .eq('course_id', data.course_id)
+                .eq('phase_id', data.phase_id)
                 .order('order_index', { ascending: false })
                 .limit(1)
                 .single();
 
             const nextOrder = (lastModule?.order_index || 0) + 1;
 
+            // 🆕 v20.0 - Usa phase_id em vez de course_id
             const { data: newModule, error: insertError } = await supabase
                 .from('modules')
                 .insert([{
-                    course_id: data.course_id,
+                    phase_id: data.phase_id,
                     name: data.name.trim(),
                     description: data.description?.trim() || null,
                     order_index: data.order_index ?? nextOrder,
@@ -103,7 +117,7 @@ export function useModules(courseId?: string) {
             if (data.description !== undefined) updateData.description = data.description?.trim() || null;
             if (data.order_index !== undefined) updateData.order_index = data.order_index;
             if (data.status) updateData.status = data.status;
-            if (data.course_id) updateData.course_id = data.course_id;
+            if (data.phase_id) updateData.phase_id = data.phase_id;
 
             const { error: updateError } = await supabase
                 .from('modules')
@@ -170,7 +184,7 @@ export function useModules(courseId?: string) {
         orderedIds: string[]
     ): Promise<{ success: boolean; error?: string }> => {
         try {
-            const updates = orderedIds.map((id, index) =>
+            const updates = orderedIds.map((id: string, index: number) =>
                 supabase
                     .from('modules')
                     .update({ order_index: index + 1, updated_at: new Date().toISOString() })
@@ -189,6 +203,34 @@ export function useModules(courseId?: string) {
         }
     }, [supabase, fetchModules]);
 
+    // 🆕 v20.0 - Função auxiliar para buscar módulos por trilha
+    const getModulesByTrack = useCallback(async (
+        trackId: string
+    ): Promise<ModuleWithPhase[]> => {
+        try {
+            const { data, error } = await supabase
+                .from('modules')
+                .select(`
+                    *,
+                    phase:phases(
+                        *,
+                        track:tracks(*)
+                    )
+                `)
+                .order('order_index', { ascending: true });
+
+            if (error) throw error;
+
+            // Filtrar por trilha
+            return (data || []).filter(
+                (m: ModuleWithPhase) => m.phase?.track?.id === trackId
+            ) as ModuleWithPhase[];
+        } catch (err) {
+            console.error('[useModules] Erro ao buscar módulos por trilha:', err);
+            return [];
+        }
+    }, [supabase]);
+
     useEffect(() => {
         fetchModules();
     }, [fetchModules]);
@@ -202,5 +244,6 @@ export function useModules(courseId?: string) {
         updateModule,
         deleteModule,
         reorderModules,
+        getModulesByTrack,
     };
 }

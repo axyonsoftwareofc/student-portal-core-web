@@ -15,6 +15,8 @@ import {
     StickyNote,
     Upload,
     Map,
+    Route,
+    Layers,
     type LucideIcon,
 } from "lucide-react";
 
@@ -45,16 +47,22 @@ export const adminNavItems: NavItem[] = [
         description: "Gerenciar interessados",
     },
     {
-        icon: GraduationCap,
-        label: "Cursos",
-        href: "/admin/cursos",
-        description: "Gerenciar cursos",
+        icon: Route,
+        label: "Trilhas",
+        href: "/admin/trilhas",
+        description: "Visualizar trilhas de aprendizado",
     },
     {
-        icon: Map,
-        label: "Jornada",
-        href: "/aluno/journey",
-        description: "Sua evolução e progresso",
+        icon: Layers,
+        label: "Fases",
+        href: "/admin/fases",
+        description: "Visualizar fases do curso",
+    },
+    {
+        icon: GraduationCap,
+        label: "Módulos",
+        href: "/admin/modulos",
+        description: "Gerenciar módulos",
     },
     {
         icon: Play,
@@ -108,16 +116,22 @@ export const studentNavItems: NavItem[] = [
         description: "Acessar conteúdos",
     },
     {
-        icon: StickyNote,
-        label: "Minhas Notas",
-        href: "/aluno/notas",
-        description: "Suas anotações de aula",
+        icon: Route,
+        label: "Trilhas",
+        href: "/aluno/trilhas",
+        description: "Ver todas as trilhas do curso",
     },
     {
         icon: Map,
         label: "Jornada",
         href: "/aluno/journey",
         description: "Sua evolução e progresso",
+    },
+    {
+        icon: StickyNote,
+        label: "Minhas Notas",
+        href: "/aluno/notas",
+        description: "Suas anotações de aula",
     },
     {
         icon: BarChart,

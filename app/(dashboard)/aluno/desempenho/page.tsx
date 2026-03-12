@@ -1,11 +1,10 @@
-// app/(dashboard)/aluno/desempenho/page.tsx
 'use client';
 
 import { useState, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useStudentCourses } from '@/hooks/useStudentCourses';
 import { useStudentSubmissions } from '@/hooks/useStudentSubmissions';
+import { useStudentTracks } from '@/hooks/useStudentTracks';
 import { PerformanceHeader } from '@/components/student/performance/PerformanceHeader';
 import { PerformanceTabs, type PerformanceTabType } from '@/components/student/performance/PerformanceTabs';
 import { ExercisesTab } from '@/components/student/performance/ExercisesTab';
@@ -14,14 +13,14 @@ import { AchievementsTab } from '@/components/student/performance/AchievementsTa
 
 export default function DesempenhoPage() {
     const { user } = useAuth();
-    const { courses, isLoading: isLoadingCourses } = useStudentCourses(user?.id || null);
+    const { tracks, isLoading: isLoadingTracks } = useStudentTracks(user?.id || null);
     const { submissions, pendingCount, isLoading: isLoadingSubmissions } = useStudentSubmissions(user?.id || null);
 
     const [activeTab, setActiveTab] = useState<PerformanceTabType>('exercises');
 
-    // Calcular estatísticas gerais
-    const totalLessons = courses.reduce((acc, c) => acc + (c.lessons_count || 0), 0);
-    const completedLessons = courses.reduce((acc, c) => acc + (c.completed_lessons || 0), 0);
+    // Calcular estatísticas gerais baseado nas trilhas
+    const totalLessons = tracks.reduce((acc, t) => acc + (t.lessons_count || 0), 0);
+    const completedLessons = tracks.reduce((acc, t) => acc + (t.completed_lessons || 0), 0);
     const overallProgress = totalLessons > 0
         ? Math.round((completedLessons / totalLessons) * 100)
         : 0;
@@ -44,7 +43,7 @@ export default function DesempenhoPage() {
         return { totalExercises, approvedCount, averageGrade };
     }, [submissions]);
 
-    const isLoading = isLoadingCourses || isLoadingSubmissions;
+    const isLoading = isLoadingTracks || isLoadingSubmissions;
 
     if (isLoading) {
         return (
@@ -89,8 +88,8 @@ export default function DesempenhoPage() {
 
                 {activeTab === 'progress' && (
                     <ProgressTab
-                        courses={courses}
-                        isLoading={isLoadingCourses}
+                        tracks={tracks}
+                        isLoading={isLoadingTracks}
                     />
                 )}
 

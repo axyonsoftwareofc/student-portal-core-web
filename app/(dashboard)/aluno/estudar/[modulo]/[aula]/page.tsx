@@ -85,7 +85,7 @@ export default function AulaPage() {
         studentId: user?.id || '',
         lessonId: aulaId,
         moduleId: moduloId,
-        courseId: module?.course_id || '',
+        trackId: module?.phase?.track?.id || '',
     });
 
     useEffect(() => {
@@ -422,7 +422,7 @@ export default function AulaPage() {
                 noteContent={note?.content || ''}
                 isSaving={isSavingNote}
                 isLoading={isLoadingNote}
-                lastSavedAt={lastSavedAt}
+                lastSavedAt={lastSavedAt?.toISOString() || null}
                 onContentChange={saveNote}
                 onDelete={deleteNoteAction}
                 onClose={() => setIsNotesOpen(false)}

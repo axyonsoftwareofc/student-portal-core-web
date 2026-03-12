@@ -4,17 +4,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { showErrorToast } from '@/lib/toast';
+import type { Phase, Track } from '@/lib/types/database';
 
-interface ModuleWithCourse {
+// 🆕 v20.0 - Módulo agora referencia Phase
+interface ModuleWithPhase {
     id: string;
-    course_id: string;
+    phase_id: string;
     name: string;
     description?: string | null;
     order_index: number;
     status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
     created_at: string;
     updated_at: string;
-    course: { id: string; name: string };
+    phase: Phase & {
+        track: Track;
+    };
 }
 
 interface LessonFromDB {
@@ -54,7 +58,7 @@ export interface StudentLessonSummary {
 
 export function useStudentLessons(moduleId: string | null, studentId: string | null) {
     const [lessons, setLessons] = useState<StudentLessonSummary[]>([]);
-    const [module, setModule] = useState<ModuleWithCourse | null>(null);
+    const [module, setModule] = useState<ModuleWithPhase | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -73,18 +77,23 @@ export function useStudentLessons(moduleId: string | null, studentId: string | n
             setIsLoading(true);
             setError(null);
 
+            // 🆕 v20.0 - Buscar módulo com phase e track
             const { data: moduleData, error: moduleError } = await supabase
                 .from('modules')
                 .select(`
-          *,
-          course:courses(id, name)
-        `)
+                    *,
+                    phase:phases(
+                        *,
+                        track:tracks(*)
+                    )
+                `)
                 .eq('id', moduleId)
                 .single();
 
             if (moduleError) throw moduleError;
-            setModule(moduleData as ModuleWithCourse);
+            setModule(moduleData as ModuleWithPhase);
 
+            // Buscar aulas do módulo
             const { data: lessonsData, error: lessonsError } = await supabase
                 .from('lessons')
                 .select('id, module_id, title, description, order_index, status, total_contents, created_at')
@@ -102,6 +111,7 @@ export function useStudentLessons(moduleId: string | null, studentId: string | n
             const typedLessonsData = lessonsData as LessonFromDB[];
             const lessonIds = typedLessonsData.map((l: LessonFromDB) => l.id);
 
+            // Buscar conteúdos das aulas
             const { data: contentsData } = await supabase
                 .from('lesson_contents')
                 .select('id, lesson_id')
@@ -127,6 +137,7 @@ export function useStudentLessons(moduleId: string | null, studentId: string | n
                 typedProgressData.map((p: ProgressFromDB) => p.content_id)
             );
 
+            // Calcular progresso por aula
             const lessonsWithProgress: StudentLessonSummary[] = typedLessonsData.map((lesson: LessonFromDB) => {
                 const lessonContents = typedContentsData.filter(
                     (c: ContentFromDB) => c.lesson_id === lesson.id

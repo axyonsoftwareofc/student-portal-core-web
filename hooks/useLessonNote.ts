@@ -1,165 +1,162 @@
 // hooks/useLessonNote.ts
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { showErrorToast } from '@/lib/toast';
-import { StudentNote, UseLessonNoteReturn } from '@/lib/types/notes';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 
-const AUTO_SAVE_DELAY_MS = 1500;
+interface StudentNote {
+    id: string;
+    student_id: string;
+    lesson_id: string;
+    module_id: string;
+    track_id: string;  // 🆕 v20.0 - Era course_id
+    content: string;
+    created_at: string;
+    updated_at: string;
+}
 
 interface UseLessonNoteParams {
     studentId: string;
     lessonId: string;
     moduleId: string;
-    courseId: string;
+    trackId: string;  // 🆕 v20.0 - Era courseId
+}
+
+interface UseLessonNoteReturn {
+    note: StudentNote | null;
+    isLoading: boolean;
+    isSaving: boolean;
+    lastSavedAt: Date | null;
+    saveNote: (content: string) => Promise<void>;
+    deleteNote: () => Promise<void>;
 }
 
 export function useLessonNote({
                                   studentId,
                                   lessonId,
                                   moduleId,
-                                  courseId,
+                                  trackId,  // 🆕 v20.0
                               }: UseLessonNoteParams): UseLessonNoteReturn {
-    const supabaseRef = useRef(createClient());
-    const supabase = supabaseRef.current;
-    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
     const [note, setNote] = useState<StudentNote | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isSaving, setIsSaving] = useState<boolean>(false);
-    const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+    const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
-    useEffect(() => {
-        const fetchExistingNote = async (): Promise<void> => {
-            if (!studentId || !lessonId) return;
+    const supabaseRef = useRef(createClient());
+    const supabase = supabaseRef.current;
+
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Buscar nota existente
+    const fetchNote = useCallback(async (): Promise<void> => {
+        if (!studentId || !lessonId) {
+            setNote(null);
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+
+            const { data, error } = await supabase
+                .from('student_notes')
+                .select('*')
+                .eq('student_id', studentId)
+                .eq('lesson_id', lessonId)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            setNote(data as StudentNote | null);
+            if (data?.updated_at) {
+                setLastSavedAt(new Date(data.updated_at));
+            }
+        } catch (err) {
+            console.error('[useLessonNote] Erro ao buscar nota:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [studentId, lessonId, supabase]);
+
+    // Salvar nota com debounce
+    const saveNote = useCallback(async (content: string): Promise<void> => {
+        if (!studentId || !lessonId || !moduleId || !trackId) return;
+
+        // Cancelar save anterior
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Debounce de 1 segundo
+        saveTimeoutRef.current = setTimeout(async () => {
+            setIsSaving(true);
 
             try {
-                setIsLoading(true);
-
-                const { data, error: fetchError } = await supabase
-                    .from('student_notes')
-                    .select('*')
-                    .eq('student_id', studentId)
-                    .eq('lesson_id', lessonId)
-                    .maybeSingle();
-
-                if (fetchError) {
-                    console.error('useLessonNote - fetch error:', fetchError);
-                    return;
-                }
-
-                if (data) {
-                    const existingNote = data as StudentNote;
-                    setNote(existingNote);
-                    setLastSavedAt(existingNote.updated_at);
-                }
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchExistingNote();
-    }, [supabase, studentId, lessonId]);
-
-    useEffect(() => {
-        return () => {
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
-            }
-        };
-    }, []);
-
-    const persistNote = useCallback(
-        async (content: string): Promise<void> => {
-            try {
-                setIsSaving(true);
-
-                const { data, error: upsertError } = await supabase
-                    .from('student_notes')
-                    .upsert(
-                        {
-                            student_id: studentId,
-                            lesson_id: lessonId,
-                            module_id: moduleId,
-                            course_id: courseId,
-                            content,
-                            updated_at: new Date().toISOString(),
-                        },
-                        { onConflict: 'student_id,lesson_id' }
-                    )
-                    .select()
-                    .single();
-
-                if (upsertError) {
-                    throw new Error(upsertError.message);
-                }
-
-                if (data) {
-                    const savedNote = data as StudentNote;
-                    setNote(savedNote);
-                    setLastSavedAt(savedNote.updated_at);
-                }
-            } catch (err) {
-                console.error('useLessonNote - save error:', err);
-                showErrorToast('Erro ao salvar anotação', 'Suas alterações podem não ter sido salvas');
-            } finally {
-                setIsSaving(false);
-            }
-        },
-        [supabase, studentId, lessonId, moduleId, courseId]
-    );
-
-    const saveNote = useCallback(
-        async (content: string): Promise<void> => {
-            setNote((previousNote: StudentNote | null) => {
-                if (previousNote) {
-                    return { ...previousNote, content };
-                }
-                return {
-                    id: '',
+                // 🆕 v20.0 - Usa track_id em vez de course_id
+                const noteData = {
                     student_id: studentId,
                     lesson_id: lessonId,
                     module_id: moduleId,
-                    course_id: courseId,
-                    content,
-                    created_at: new Date().toISOString(),
+                    track_id: trackId,
+                    content: content,
                     updated_at: new Date().toISOString(),
                 };
-            });
 
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
+                const { data, error } = await supabase
+                    .from('student_notes')
+                    .upsert(noteData, {
+                        onConflict: 'student_id,lesson_id',
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                setNote(data as StudentNote);
+                setLastSavedAt(new Date());
+            } catch (err) {
+                console.error('[useLessonNote] Erro ao salvar nota:', err);
+                showErrorToast('Erro ao salvar', 'Sua anotação pode não ter sido salva');
+            } finally {
+                setIsSaving(false);
             }
+        }, 1000);
+    }, [studentId, lessonId, moduleId, trackId, supabase]);
 
-            debounceTimerRef.current = setTimeout(() => {
-                persistNote(content);
-            }, AUTO_SAVE_DELAY_MS);
-        },
-        [studentId, lessonId, moduleId, courseId, persistNote]
-    );
-
+    // Deletar nota
     const deleteNote = useCallback(async (): Promise<void> => {
         if (!note?.id) return;
 
         try {
-            const { error: deleteError } = await supabase
+            const { error } = await supabase
                 .from('student_notes')
                 .delete()
                 .eq('id', note.id);
 
-            if (deleteError) {
-                throw new Error(deleteError.message);
-            }
+            if (error) throw error;
 
             setNote(null);
             setLastSavedAt(null);
+            showSuccessToast('Anotação excluída');
         } catch (err) {
-            console.error('useLessonNote - delete error:', err);
-            showErrorToast('Erro ao excluir anotação', 'Tente novamente');
-            throw err;
+            console.error('[useLessonNote] Erro ao excluir nota:', err);
+            showErrorToast('Erro ao excluir', 'Tente novamente');
         }
-    }, [supabase, note]);
+    }, [note?.id, supabase]);
+
+    useEffect(() => {
+        fetchNote();
+    }, [fetchNote]);
+
+    // Cleanup
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return {
         note,

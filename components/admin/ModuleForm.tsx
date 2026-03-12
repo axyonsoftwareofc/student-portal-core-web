@@ -1,13 +1,19 @@
+// components/admin/ModuleForm.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { Module, ModuleFormData, ModuleStatus, Course } from '@/lib/types/database';
+import type { Module, ModuleFormData, ModuleStatus, Phase, Track } from '@/lib/types/database';
+
+// 🆕 v20.0 - Agora recebe phases em vez de courses
+interface PhaseWithTrack extends Phase {
+    track: Track;
+}
 
 interface ModuleFormProps {
     module?: Module | null;
-    courses: Course[];
-    defaultCourseId?: string; // ← NOVA PROP
+    phases: PhaseWithTrack[];
+    defaultPhaseId?: string;
     onSubmit: (data: ModuleFormData) => Promise<{ success: boolean; error?: string }>;
     onCancel: () => void;
     isLoading?: boolean;
@@ -21,43 +27,42 @@ const statusOptions: { value: ModuleStatus; label: string }[] = [
 
 export default function ModuleForm({
                                        module,
-                                       courses,
-                                       defaultCourseId, // ← NOVA PROP
+                                       phases,
+                                       defaultPhaseId,
                                        onSubmit,
                                        onCancel,
                                        isLoading
                                    }: ModuleFormProps) {
     const [formData, setFormData] = useState<ModuleFormData>({
-        course_id: '',
+        phase_id: '',
         name: '',
         description: '',
         status: 'DRAFT',
     });
-    const [error, setError] = useState('');
+    const [error, setError] = useState<string>('');
 
     useEffect(() => {
         if (module) {
             // Editando módulo existente
             setFormData({
-                course_id: module.course_id,
+                phase_id: module.phase_id || '',
                 name: module.name,
                 description: module.description || '',
                 status: module.status,
             });
         } else {
             // Criando novo módulo
-            // Prioridade: defaultCourseId > primeiro curso da lista
-            const initialCourseId = defaultCourseId || (courses.length > 0 ? courses[0].id : '');
-            setFormData(prev => ({ ...prev, course_id: initialCourseId }));
+            const initialPhaseId = defaultPhaseId || (phases.length > 0 ? phases[0].id : '');
+            setFormData(prev => ({ ...prev, phase_id: initialPhaseId }));
         }
-    }, [module, courses, defaultCourseId]);
+    }, [module, phases, defaultPhaseId]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
         setError('');
 
-        if (!formData.course_id) {
-            setError('Selecione um curso');
+        if (!formData.phase_id) {
+            setError('Selecione uma fase');
             return;
         }
 
@@ -72,6 +77,16 @@ export default function ModuleForm({
         }
     };
 
+    // Agrupar fases por trilha para exibição organizada
+    const phasesByTrack = phases.reduce((acc, phase) => {
+        const trackName = phase.track?.name || 'Sem trilha';
+        if (!acc[trackName]) {
+            acc[trackName] = [];
+        }
+        acc[trackName].push(phase);
+        return acc;
+    }, {} as Record<string, PhaseWithTrack[]>);
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
@@ -80,23 +95,31 @@ export default function ModuleForm({
                 </div>
             )}
 
+            {/* 🆕 v20.0 - Seletor de Fase (agrupado por Trilha) */}
             <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                    Curso <span className="text-rose-400">*</span>
+                    Fase <span className="text-rose-400">*</span>
                 </label>
                 <select
-                    value={formData.course_id}
-                    onChange={(e) => setFormData({ ...formData, course_id: e.target.value })}
+                    value={formData.phase_id}
+                    onChange={(e) => setFormData({ ...formData, phase_id: e.target.value })}
                     className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-colors"
                     disabled={isLoading}
                 >
-                    <option value="">Selecione um curso</option>
-                    {courses.map(course => (
-                        <option key={course.id} value={course.id}>
-                            {course.name}
-                        </option>
+                    <option value="">Selecione uma fase</option>
+                    {Object.entries(phasesByTrack).map(([trackName, trackPhases]) => (
+                        <optgroup key={trackName} label={`📚 ${trackName}`}>
+                            {trackPhases.map(phase => (
+                                <option key={phase.id} value={phase.id}>
+                                    Fase {phase.number}: {phase.name}
+                                </option>
+                            ))}
+                        </optgroup>
                     ))}
                 </select>
+                <p className="mt-1 text-xs text-gray-500">
+                    O módulo será vinculado à fase e trilha selecionadas
+                </p>
             </div>
 
             <div>
@@ -108,7 +131,7 @@ export default function ModuleForm({
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 text-white placeholder-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-colors"
-                    placeholder="Ex: Fundamentos de Java"
+                    placeholder="Ex: 2.1 Introdução à POO"
                     disabled={isLoading}
                 />
             </div>

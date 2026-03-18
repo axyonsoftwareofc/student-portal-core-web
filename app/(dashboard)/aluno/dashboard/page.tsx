@@ -25,6 +25,7 @@ import { useStudentTracks } from '@/hooks/useStudentTracks';
 import { useStudentSubmissions } from '@/hooks/useStudentSubmissions';
 import { DashboardAnnouncements } from '@/components/student/dashboard/DashboardAnnouncements';
 import type { StudentTrack } from '@/lib/types/database';
+import { DashboardLiveClasses } from '@/components/student/dashboard/DashboardLiveClasses';
 
 const trackIcons: Record<string, typeof Sprout> = {
     Sprout: Sprout,
@@ -81,6 +82,7 @@ export default function AlunoDashboardPage() {
 
             {/* Avisos do Professor */}
             <DashboardAnnouncements userId={user?.id || null} />
+            <DashboardLiveClasses userId={user?.id || null} />
 
             {/* Alerta de Exercícios Corrigidos */}
             {!isLoadingSubmissions && recentlyReviewed.length > 0 && (

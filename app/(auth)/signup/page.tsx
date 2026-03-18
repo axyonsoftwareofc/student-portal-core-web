@@ -1,10 +1,13 @@
 // app/(auth)/signup/page.tsx
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { validatePassword } from '@/utils/passwordValidation';
+import { PasswordStrength } from '@/components/common/password-strength';
 
 export default function SignUp() {
   const { signup } = useAuth();
@@ -12,15 +15,18 @@ export default function SignUp() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const passwordValidation = useMemo(() => validatePassword(password), [password]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres');
+    if (!passwordValidation.isValid) {
+      setError('A senha não atende todos os requisitos de segurança');
       return;
     }
 
@@ -30,7 +36,6 @@ export default function SignUp() {
       const result = await signup(email, password, name);
 
       if (result.success && result.redirectTo) {
-        // Usa router.push para navegação SPA (sem reload)
         router.push(result.redirectTo);
       } else if (!result.success) {
         setError(result.error || 'Erro ao criar conta');
@@ -99,16 +104,36 @@ export default function SignUp() {
                   <label className="block text-sm font-medium text-sky-200/80">
                     Senha <span className="text-red-500">*</span>
                   </label>
-                  <input
-                      type="password"
-                      className="form-input w-full"
-                      placeholder="Mínimo 6 caracteres"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      minLength={6}
-                  />
+                  <div className="relative">
+                    <input
+                        type={showPassword ? 'text' : 'password'}
+                        className="form-input w-full pr-10"
+                        placeholder="Crie uma senha segura"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-sky-400 transition-colors"
+                        tabIndex={-1}
+                    >
+                      {showPassword ? (
+                          <EyeOff className="h-4 w-4" strokeWidth={1.5} />
+                      ) : (
+                          <Eye className="h-4 w-4" strokeWidth={1.5} />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Indicador de força */}
+                  {password.length > 0 && (
+                      <div className="mt-3">
+                        <PasswordStrength validation={passwordValidation} />
+                      </div>
+                  )}
                 </div>
               </div>
 
@@ -116,12 +141,12 @@ export default function SignUp() {
               <div className="mt-6 space-y-5">
                 <button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading || !passwordValidation.isValid}
                     className="btn w-full bg-linear-to-t from-sky-500 to-sky-400
-                           text-white font-medium shadow-lg
-                           hover:from-sky-400 hover:to-sky-300 transition
-                           disabled:opacity-50 disabled:cursor-not-allowed
-                           flex items-center justify-center gap-2"
+                  text-white font-medium shadow-lg
+                  hover:from-sky-400 hover:to-sky-300 transition
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                       <>

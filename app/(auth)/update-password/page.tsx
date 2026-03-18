@@ -1,11 +1,13 @@
 // app/(auth)/update-password/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, ArrowLeft, Loader2, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, Loader2, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { validatePassword } from '@/utils/passwordValidation';
+import { PasswordStrength } from '@/components/common/password-strength';
 
 export default function UpdatePasswordPage() {
     const router = useRouter();
@@ -19,7 +21,8 @@ export default function UpdatePasswordPage() {
     const [isValidSession, setIsValidSession] = useState(false);
     const [checkingSession, setCheckingSession] = useState(true);
 
-    // Verificar se há uma sessão válida de recovery
+    const passwordValidation = useMemo(() => validatePassword(password), [password]);
+
     useEffect(() => {
         const checkSession = async () => {
             try {
@@ -33,7 +36,6 @@ export default function UpdatePasswordPage() {
                     setMessage('Link de recuperação inválido ou expirado. Solicite um novo link.');
                 }
             } catch (error) {
-                console.error('Erro ao verificar sessão:', error);
                 setStatus('error');
                 setMessage('Erro ao verificar sessão. Tente novamente.');
             } finally {
@@ -44,21 +46,12 @@ export default function UpdatePasswordPage() {
         checkSession();
     }, []);
 
-    const validatePassword = (pass: string): string | null => {
-        if (pass.length < 6) {
-            return 'A senha deve ter pelo menos 6 caracteres';
-        }
-        return null;
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validações
-        const passwordError = validatePassword(password);
-        if (passwordError) {
+        if (!passwordValidation.isValid) {
             setStatus('error');
-            setMessage(passwordError);
+            setMessage('A senha não atende todos os requisitos de segurança');
             return;
         }
 
@@ -86,12 +79,10 @@ export default function UpdatePasswordPage() {
             setStatus('success');
             setMessage('Senha atualizada com sucesso! Redirecionando...');
 
-            // Redirecionar após 2 segundos
             setTimeout(() => {
                 router.push('/signin');
             }, 2000);
         } catch (error) {
-            console.error('Erro ao atualizar senha:', error);
             setStatus('error');
             setMessage('Erro ao atualizar senha. Tente novamente ou solicite um novo link.');
         } finally {
@@ -99,7 +90,6 @@ export default function UpdatePasswordPage() {
         }
     };
 
-    // Loading inicial
     if (checkingSession) {
         return (
             <section>
@@ -117,7 +107,6 @@ export default function UpdatePasswordPage() {
         );
     }
 
-    // Sessão inválida
     if (!isValidSession && status === 'error') {
         return (
             <section>
@@ -205,15 +194,15 @@ export default function UpdatePasswordPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="form-input w-full border-sky-300/30 bg-sky-950/30 text-sky-100 placeholder:text-sky-300/60 focus:border-sky-400 focus:ring-sky-400/40 pr-10"
-                                    placeholder="Mínimo 6 caracteres"
+                                    placeholder="Crie uma senha segura"
                                     disabled={isLoading || status === 'success'}
                                     required
-                                    minLength={6}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-sky-400 transition-colors"
+                                    tabIndex={-1}
                                 >
                                     {showPassword ? (
                                         <EyeOff className="h-4 w-4" strokeWidth={1.5} />
@@ -222,6 +211,12 @@ export default function UpdatePasswordPage() {
                                     )}
                                 </button>
                             </div>
+
+                            {password.length > 0 && (
+                                <div className="mt-3">
+                                    <PasswordStrength validation={passwordValidation} />
+                                </div>
+                            )}
                         </div>
 
                         {/* Confirmar senha */}
@@ -242,12 +237,12 @@ export default function UpdatePasswordPage() {
                                     placeholder="Digite novamente"
                                     disabled={isLoading || status === 'success'}
                                     required
-                                    minLength={6}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-sky-400 transition-colors"
+                                    tabIndex={-1}
                                 >
                                     {showConfirmPassword ? (
                                         <EyeOff className="h-4 w-4" strokeWidth={1.5} />
@@ -256,50 +251,19 @@ export default function UpdatePasswordPage() {
                                     )}
                                 </button>
                             </div>
-                        </div>
 
-                        {/* Indicador de força (opcional) */}
-                        {password.length > 0 && (
-                            <div className="mt-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex-1 h-1 rounded-full bg-gray-800 overflow-hidden">
-                                        <div
-                                            className={`h-full transition-all duration-300 ${
-                                                password.length < 6
-                                                    ? 'w-1/4 bg-rose-500'
-                                                    : password.length < 8
-                                                        ? 'w-1/2 bg-amber-500'
-                                                        : password.length < 12
-                                                            ? 'w-3/4 bg-sky-500'
-                                                            : 'w-full bg-emerald-500'
-                                            }`}
-                                        />
-                                    </div>
-                                    <span className={`text-xs ${
-                                        password.length < 6
-                                            ? 'text-rose-400'
-                                            : password.length < 8
-                                                ? 'text-amber-400'
-                                                : password.length < 12
-                                                    ? 'text-sky-400'
-                                                    : 'text-emerald-400'
-                                    }`}>
-                                        {password.length < 6
-                                            ? 'Fraca'
-                                            : password.length < 8
-                                                ? 'Média'
-                                                : password.length < 12
-                                                    ? 'Boa'
-                                                    : 'Forte'}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
+                            {confirmPassword.length > 0 && password !== confirmPassword && (
+                                <p className="mt-1.5 text-xs text-rose-400">As senhas não coincidem</p>
+                            )}
+                            {confirmPassword.length > 0 && password === confirmPassword && (
+                                <p className="mt-1.5 text-xs text-emerald-400">✓ Senhas coincidem</p>
+                            )}
+                        </div>
 
                         <div className="mt-6">
                             <button
                                 type="submit"
-                                disabled={isLoading || status === 'success'}
+                                disabled={isLoading || status === 'success' || !passwordValidation.isValid}
                                 className="btn w-full bg-gradient-to-t from-sky-500 to-blue-400 text-white shadow-lg shadow-sky-500/30 transition hover:from-sky-400 hover:to-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (

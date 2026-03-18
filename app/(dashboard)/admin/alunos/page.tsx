@@ -19,6 +19,7 @@ import {
     GraduationCap,
     UserX,
     UserCheck,
+    KeyRound,
 } from 'lucide-react';
 import { useStudents, Student, StudentFormData } from '@/hooks/useStudents';
 import Modal from '@/components/ui/Modal';
@@ -26,6 +27,8 @@ import ConfirmDialog from '@/components/ui/confirm-dialog';
 import StudentForm from '@/components/admin/StudentForm';
 import EnrollmentManager from '@/components/admin/EnrollmentManager';
 import DeleteStudentModal from '@/components/admin/DeleteStudentModal';
+import { createClient } from '@/lib/supabase/client';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 
 interface PrefilledStudentData {
     name: string;
@@ -56,6 +59,7 @@ export default function AlunosPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
     const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState<boolean>(false);
+    const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState<boolean>(false);
     const [isInviteLinkModalOpen, setIsInviteLinkModalOpen] = useState<boolean>(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -184,6 +188,36 @@ export default function AlunosPage() {
         }
     };
 
+    const handleSendPasswordReset = async (): Promise<void> => {
+        if (!selectedStudent) return;
+
+        setIsSubmitting(true);
+
+        try {
+            const supabase = createClient();
+
+            const { error } = await supabase.auth.resetPasswordForEmail(
+                selectedStudent.email,
+                {
+                    redirectTo: `${window.location.origin}/update-password`,
+                }
+            );
+
+            if (error) {
+                throw error;
+            }
+
+            showSuccessToast(`Email de redefinição enviado para ${selectedStudent.email}`);
+            setIsResetPasswordDialogOpen(false);
+            setSelectedStudent(null);
+        } catch (error) {
+            console.error('Erro ao enviar reset de senha:', error);
+            showErrorToast('Erro ao enviar email de redefinição');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const openEditModal = (student: Student): void => {
         setSelectedStudent(student);
         setIsEditModalOpen(true);
@@ -197,6 +231,11 @@ export default function AlunosPage() {
     const openDeleteDialog = (student: Student): void => {
         setSelectedStudent(student);
         setIsDeleteDialogOpen(true);
+    };
+
+    const openResetPasswordDialog = (student: Student): void => {
+        setSelectedStudent(student);
+        setIsResetPasswordDialogOpen(true);
     };
 
     const openEnrollmentModal = (student: Student): void => {
@@ -394,6 +433,15 @@ export default function AlunosPage() {
                                                     Reenviar
                                                 </button>
                                             )}
+                                            {student.status === 'active' && (
+                                                <button
+                                                    onClick={() => openResetPasswordDialog(student)}
+                                                    className="inline-flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                                                >
+                                                    <KeyRound className="h-3 w-3" strokeWidth={1.5} />
+                                                    Reset Senha
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => openEditModal(student)}
                                                 className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors"
@@ -485,6 +533,16 @@ export default function AlunosPage() {
                                                             >
                                                                 <Mail className="h-4 w-4" strokeWidth={1.5} />
                                                                 Reenviar
+                                                            </button>
+                                                        )}
+                                                        {student.status === 'active' && (
+                                                            <button
+                                                                onClick={() => openResetPasswordDialog(student)}
+                                                                className="inline-flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300 transition-colors"
+                                                                title="Enviar email de redefinição de senha"
+                                                            >
+                                                                <KeyRound className="h-4 w-4" strokeWidth={1.5} />
+                                                                Reset Senha
                                                             </button>
                                                         )}
                                                         <button
@@ -657,6 +715,21 @@ export default function AlunosPage() {
                 confirmText="Suspender"
                 isLoading={isSubmitting}
                 variant="warning"
+            />
+
+            {/* Reset Password Confirmation */}
+            <ConfirmDialog
+                isOpen={isResetPasswordDialogOpen}
+                onClose={() => {
+                    setIsResetPasswordDialogOpen(false);
+                    setSelectedStudent(null);
+                }}
+                onConfirm={handleSendPasswordReset}
+                title="Redefinir Senha"
+                message={`Enviar email de redefinição de senha para ${selectedStudent?.name || 'o aluno'}? O aluno receberá um link no email ${selectedStudent?.email || ''} para criar uma nova senha.`}
+                confirmText="Enviar Email"
+                isLoading={isSubmitting}
+                variant="success"
             />
 
             {/* Delete Student Modal */}

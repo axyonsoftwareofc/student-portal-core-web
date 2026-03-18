@@ -1,3 +1,4 @@
+// app/(dashboard)/aluno/perfil/page.tsx
 'use client';
 
 import {
@@ -11,12 +12,12 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentTracks } from '@/hooks/useStudentTracks';
+import { ChangePasswordSection } from '@/components/student/profile/ChangePasswordSection';
 
 export default function PerfilPage() {
     const { user } = useAuth();
     const { tracks, isLoading } = useStudentTracks(user?.id || null);
 
-    // Calcular estatísticas
     const totalLessons = tracks.reduce((acc, t) => acc + (t.lessons_count || 0), 0);
     const completedLessons = tracks.reduce((acc, t) => acc + (t.completed_lessons || 0), 0);
     const overallProgress = totalLessons > 0
@@ -82,6 +83,9 @@ export default function PerfilPage() {
                 </div>
             </div>
 
+            {/* Alterar Senha */}
+            <ChangePasswordSection />
+
             {/* Stats */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-4 text-center">
@@ -128,13 +132,12 @@ export default function PerfilPage() {
                                         {track.completed_lessons}/{track.lessons_count} aulas concluídas
                                     </p>
                                 </div>
-                                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-                                    track.progress_percentage === 100
-                                        ? 'bg-emerald-500/10 text-emerald-400'
-                                        : 'bg-sky-500/10 text-sky-400'
+                                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${track.progress_percentage === 100
+                                    ? 'bg-emerald-500/10 text-emerald-400'
+                                    : 'bg-sky-500/10 text-sky-400'
                                 }`}>
-                                    {track.progress_percentage}%
-                                </span>
+                  {track.progress_percentage}%
+                </span>
                             </div>
                         ))}
                     </div>

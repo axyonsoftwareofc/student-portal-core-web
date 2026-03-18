@@ -23,6 +23,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentTracks } from '@/hooks/useStudentTracks';
 import { useStudentSubmissions } from '@/hooks/useStudentSubmissions';
+import { DashboardAnnouncements } from '@/components/student/dashboard/DashboardAnnouncements';
 import type { StudentTrack } from '@/lib/types/database';
 
 const trackIcons: Record<string, typeof Sprout> = {
@@ -41,7 +42,6 @@ export default function AlunoDashboardPage() {
         isLoading: isLoadingSubmissions
     } = useStudentSubmissions(user?.id || null);
 
-    // Calcular estatísticas gerais
     const totalPhases = tracks.reduce((acc, t) => acc + (t.phases_count || 0), 0);
     const totalLessons = tracks.reduce((acc, t) => acc + (t.lessons_count || 0), 0);
     const completedLessons = tracks.reduce((acc, t) => acc + (t.completed_lessons || 0), 0);
@@ -78,6 +78,9 @@ export default function AlunoDashboardPage() {
                     Continue de onde parou e acompanhe seu progresso
                 </p>
             </div>
+
+            {/* Avisos do Professor */}
+            <DashboardAnnouncements userId={user?.id || null} />
 
             {/* Alerta de Exercícios Corrigidos */}
             {!isLoadingSubmissions && recentlyReviewed.length > 0 && (

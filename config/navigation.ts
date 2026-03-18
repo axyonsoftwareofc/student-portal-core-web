@@ -17,6 +17,8 @@ import {
     Map,
     Route,
     Layers,
+    MessageCircle,
+    Megaphone,
     type LucideIcon,
 } from "lucide-react";
 
@@ -83,6 +85,12 @@ export const adminNavItems: NavItem[] = [
         description: "Corrigir exercícios",
     },
     {
+        icon: Megaphone,
+        label: "Avisos",
+        href: "/admin/avisos",
+        description: "Comunicar com alunos",
+    },
+    {
         icon: CreditCard,
         label: "Pagamentos",
         href: "/admin/pagamentos",
@@ -138,6 +146,18 @@ export const studentNavItems: NavItem[] = [
         label: "Desempenho",
         href: "/aluno/desempenho",
         description: "Acompanhar progresso",
+    },
+    {
+        icon: MessageCircle,
+        label: "Fórum",
+        href: "/aluno/forum",
+        description: "Tire suas dúvidas",
+    },
+    {
+        icon: Users,
+        label: "Comunidade",
+        href: "/aluno/comunidade",
+        description: "Mural da turma",
     },
     {
         icon: User,

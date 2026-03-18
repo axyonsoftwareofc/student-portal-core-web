@@ -1,11 +1,13 @@
 // app/(auth)/convite/[token]/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
-import { Loader2, PartyPopper, AlertCircle, KeyRound } from 'lucide-react';
+import { Loader2, PartyPopper, AlertCircle, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { validatePassword } from '@/utils/passwordValidation';
+import { PasswordStrength } from '@/components/common/password-strength';
 
 interface InviteData {
     id: string;
@@ -13,7 +15,6 @@ interface InviteData {
     name: string;
 }
 
-// Cliente Supabase local
 function getSupabase() {
     return createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,9 +33,12 @@ export default function ConvitePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formError, setFormError] = useState('');
 
-    // Verificar token
+    const passwordValidation = useMemo(() => validatePassword(password), [password]);
+
     useEffect(() => {
         if (!token) {
             setErrorMessage('Link inválido');
@@ -73,13 +77,12 @@ export default function ConvitePage() {
             });
     }, [token]);
 
-    // Criar conta
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError('');
 
-        if (password.length < 6) {
-            setFormError('A senha deve ter pelo menos 6 caracteres');
+        if (!passwordValidation.isValid) {
+            setFormError('A senha não atende todos os requisitos de segurança');
             return;
         }
 
@@ -94,15 +97,6 @@ export default function ConvitePage() {
         const supabase = getSupabase();
 
         try {
-            console.log('=== INÍCIO DO FLUXO DE CONVITE ===');
-            console.log('1. Email:', inviteData.email);
-            console.log('2. Nome:', inviteData.name);
-            console.log('3. ID temporário:', inviteData.id);
-
-            // Criar usuário no Auth
-            // O trigger handle_new_user vai fazer o UPSERT automaticamente
-            console.log('4. Chamando signUp...');
-
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: inviteData.email,
                 password,
@@ -113,14 +107,7 @@ export default function ConvitePage() {
                 }
             });
 
-            console.log('5. Resposta signUp:');
-            console.log('   - user:', authData?.user?.id || 'null');
-            console.log('   - session:', authData?.session ? 'existe' : 'null');
-            console.log('   - error:', authError?.message || 'nenhum');
-
             if (authError) {
-                console.error('❌ ERRO no signUp:', authError.message);
-
                 if (authError.message.includes('already registered')) {
                     setFormError('Este e-mail já possui uma conta. Tente fazer login.');
                 } else if (authError.message.includes('Database error')) {
@@ -133,22 +120,13 @@ export default function ConvitePage() {
             }
 
             if (authData.user) {
-                console.log('✅ Usuário criado no Auth! ID:', authData.user.id);
-                console.log('6. O trigger handle_new_user deve ter atualizado public.users');
-
-                // Verificar se o usuário foi atualizado corretamente
-                const { data: userData, error: userError } = await supabase
+                const { data: userData } = await supabase
                     .from('users')
                     .select('id, status')
                     .eq('email', inviteData.email)
                     .single();
 
-                console.log('7. Verificação do usuário:', { userData, userError });
-
                 if (userData?.status !== 'active') {
-                    // Fallback: atualizar manualmente se o trigger não funcionou
-                    console.log('8. Status não é active, atualizando manualmente...');
-
                     await supabase
                         .from('users')
                         .update({
@@ -161,27 +139,20 @@ export default function ConvitePage() {
                         .eq('email', inviteData.email);
                 }
 
-                console.log('=== ✅ SUCESSO ===');
                 setPageState('success');
 
                 setTimeout(() => {
                     router.push('/aluno/dashboard');
                 }, 2500);
             } else {
-                // Pode ser que o Supabase está configurado para confirmar email
-                console.log('⚠️ signUp não retornou user - pode precisar confirmar email');
                 setFormError('Verifique seu email para confirmar a conta, ou tente fazer login.');
                 setIsSubmitting(false);
             }
-
         } catch (err) {
-            console.error('❌ ERRO GERAL:', err);
             setFormError('Erro inesperado. Tente novamente.');
             setIsSubmitting(false);
         }
     };
-
-    // === RENDERIZAÇÃO ===
 
     if (pageState === 'loading') {
         return (
@@ -233,7 +204,6 @@ export default function ConvitePage() {
         );
     }
 
-    // Formulário
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4 py-8">
             <div className="max-w-md w-full">
@@ -270,35 +240,76 @@ export default function ConvitePage() {
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">
                                 Senha
                             </label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-colors"
-                                placeholder="Mínimo 6 caracteres"
-                                disabled={isSubmitting}
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 pr-10 text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-colors"
+                                    placeholder="Crie uma senha segura"
+                                    disabled={isSubmitting}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-sky-400 transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4" strokeWidth={1.5} />
+                                    ) : (
+                                        <Eye className="h-4 w-4" strokeWidth={1.5} />
+                                    )}
+                                </button>
+                            </div>
+
+                            {password.length > 0 && (
+                                <div className="mt-3">
+                                    <PasswordStrength validation={passwordValidation} />
+                                </div>
+                            )}
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">
                                 Confirmar senha
                             </label>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-colors"
-                                placeholder="Repita a senha"
-                                disabled={isSubmitting}
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 pr-10 text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-colors"
+                                    placeholder="Repita a senha"
+                                    disabled={isSubmitting}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-sky-400 transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showConfirmPassword ? (
+                                        <EyeOff className="h-4 w-4" strokeWidth={1.5} />
+                                    ) : (
+                                        <Eye className="h-4 w-4" strokeWidth={1.5} />
+                                    )}
+                                </button>
+                            </div>
+
+                            {confirmPassword.length > 0 && password !== confirmPassword && (
+                                <p className="mt-1.5 text-xs text-rose-400">As senhas não coincidem</p>
+                            )}
+                            {confirmPassword.length > 0 && password === confirmPassword && (
+                                <p className="mt-1.5 text-xs text-emerald-400">✓ Senhas coincidem</p>
+                            )}
                         </div>
 
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !passwordValidation.isValid}
                             className="w-full rounded-lg bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                         >
                             {isSubmitting ? (

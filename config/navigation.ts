@@ -19,6 +19,7 @@ import {
     Layers,
     MessageCircle,
     Megaphone,
+    Video,
     type LucideIcon,
 } from "lucide-react";
 
@@ -71,6 +72,12 @@ export const adminNavItems: NavItem[] = [
         label: "Aulas",
         href: "/admin/aulas",
         description: "Gerenciar aulas e conteúdos",
+    },
+    {
+        icon: Video,
+        label: "Aulas ao Vivo",
+        href: "/admin/aulas-ao-vivo",
+        description: "Gravações e agenda",
     },
     {
         icon: Upload,
@@ -134,6 +141,12 @@ export const studentNavItems: NavItem[] = [
         label: "Jornada",
         href: "/aluno/journey",
         description: "Sua evolução e progresso",
+    },
+    {
+        icon: Video,
+        label: "Aulas ao Vivo",
+        href: "/aluno/aulas-ao-vivo",
+        description: "Gravações e agenda",
     },
     {
         icon: StickyNote,

@@ -36,14 +36,51 @@ export function useLiveClasses(): UseLiveClassesReturn {
             setError(null);
 
             const { data, error: fetchError } = await supabase
-                .from('live_classes_view')
-                .select('*')
+                .from('live_classes')
+                .select('*, track:track_id(name), phase:phase_id(name), module:module_id(name)')
                 .order('order_index', { ascending: true, nullsFirst: false })
                 .order('scheduled_at', { ascending: true });
 
             if (fetchError) throw fetchError;
 
-            setLiveClasses((data || []) as LiveClassWithDetails[]);
+            const classIds = (data || []).map((lc: Record<string, unknown>) => lc.id as string);
+
+            let viewCounts: Record<string, number> = {};
+            if (classIds.length > 0) {
+                const { data: viewsData } = await supabase
+                    .from('live_class_views')
+                    .select('live_class_id')
+                    .in('live_class_id', classIds);
+
+                (viewsData || []).forEach((v: { live_class_id: string }) => {
+                    viewCounts[v.live_class_id] = (viewCounts[v.live_class_id] || 0) + 1;
+                });
+            }
+
+            const transformed = (data || []).map((item: Record<string, unknown>) => ({
+                id: item.id,
+                title: item.title,
+                description: item.description,
+                scheduled_at: item.scheduled_at,
+                video_url: item.video_url,
+                meet_url: item.meet_url,
+                duration_minutes: item.duration_minutes,
+                module_id: item.module_id,
+                phase_id: item.phase_id,
+                track_id: item.track_id,
+                status: item.status,
+                thumbnail_url: item.thumbnail_url,
+                is_active: item.is_active,
+                order_index: item.order_index,
+                created_at: item.created_at,
+                updated_at: item.updated_at,
+                track_name: (item.track as Record<string, string> | null)?.name ?? null,
+                phase_name: (item.phase as Record<string, string> | null)?.name ?? null,
+                module_name: (item.module as Record<string, string> | null)?.name ?? null,
+                views_count: viewCounts[item.id as string] || 0,
+            }));
+
+            setLiveClasses(transformed as LiveClassWithDetails[]);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erro ao carregar aulas ao vivo');
         } finally {

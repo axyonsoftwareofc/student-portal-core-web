@@ -35,14 +35,37 @@ export function useStudentLiveClasses(userId: string | null): UseStudentLiveClas
             setError(null);
 
             const { data: classesData, error: classesError } = await supabase
-                .from('live_classes_view')
-                .select('*')
+                .from('live_classes')
+                .select('*, track:track_id(name), phase:phase_id(name), module:module_id(name)')
                 .eq('is_active', true)
                 .neq('status', 'cancelled')
                 .order('order_index', { ascending: true, nullsFirst: false })
                 .order('scheduled_at', { ascending: true });
 
             if (classesError) throw classesError;
+
+            const flattened = (classesData || []).map((item: Record<string, unknown>) => ({
+                id: item.id,
+                title: item.title,
+                description: item.description,
+                scheduled_at: item.scheduled_at,
+                video_url: item.video_url,
+                meet_url: item.meet_url,
+                duration_minutes: item.duration_minutes,
+                module_id: item.module_id,
+                phase_id: item.phase_id,
+                track_id: item.track_id,
+                status: item.status,
+                thumbnail_url: item.thumbnail_url,
+                is_active: item.is_active,
+                order_index: item.order_index,
+                created_at: item.created_at,
+                updated_at: item.updated_at,
+                track_name: (item.track as Record<string, string> | null)?.name ?? null,
+                phase_name: (item.phase as Record<string, string> | null)?.name ?? null,
+                module_name: (item.module as Record<string, string> | null)?.name ?? null,
+                views_count: 0,
+            })) as LiveClassWithDetails[];
 
             if (userId) {
                 const { data: viewsData } = await supabase
@@ -55,14 +78,14 @@ export function useStudentLiveClasses(userId: string | null): UseStudentLiveClas
                 );
                 setWatchedIds(watchedSet);
 
-                const classesWithWatched = (classesData || []).map((lc: LiveClassWithDetails) => ({
+                const classesWithWatched = flattened.map((lc) => ({
                     ...lc,
                     is_watched: watchedSet.has(lc.id),
                 }));
 
                 setLiveClasses(classesWithWatched);
             } else {
-                setLiveClasses((classesData || []) as LiveClassWithDetails[]);
+                setLiveClasses(flattened);
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erro ao carregar aulas ao vivo');

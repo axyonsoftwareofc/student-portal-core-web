@@ -49,8 +49,12 @@ export default function AulasAoVivoAdminPage() {
         updateLiveClass,
         deleteLiveClass,
         updateStatus,
+        reorderLiveClasses,
         refresh,
     } = useLiveClasses();
+
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
     useEffect(() => {
         async function fetchData() {
@@ -114,6 +118,37 @@ export default function AulasAoVivoAdminPage() {
             showToast('success', labels[status]);
         } else {
             showToast('error', result.error || 'Erro ao atualizar');
+        }
+    };
+
+    const handleDragStart = (index: number): void => {
+        setDraggedIndex(index);
+    };
+
+    const handleDragOver = (e: React.DragEvent, index: number): void => {
+        e.preventDefault();
+        setDragOverIndex(index);
+    };
+
+    const handleDragEnd = async (items: LiveClassWithDetails[]): Promise<void> => {
+        if (draggedIndex === null || dragOverIndex === null || draggedIndex === dragOverIndex) {
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+            return;
+        }
+
+        const newItems = [...items];
+        const [draggedItem] = newItems.splice(draggedIndex, 1);
+        newItems.splice(dragOverIndex, 0, draggedItem);
+
+        const orderedIds = newItems.map((lc) => lc.id);
+        const result = await reorderLiveClasses(orderedIds);
+
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+
+        if (!result.success) {
+            showToast('error', result.error || 'Erro ao reordenar');
         }
     };
 
@@ -198,13 +233,19 @@ export default function AulasAoVivoAdminPage() {
                         Agendadas / Ao Vivo ({scheduledClasses.length})
                     </h2>
                     <div className="space-y-3">
-                        {scheduledClasses.map((liveClass: LiveClassWithDetails) => (
+                        {scheduledClasses.map((liveClass: LiveClassWithDetails, index: number) => (
                             <LiveClassCard
                                 key={liveClass.id}
                                 liveClass={liveClass}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
                                 onUpdateStatus={handleUpdateStatus}
+                                dragIndex={index}
+                                isDragging={draggedIndex === index}
+                                isDragOver={dragOverIndex === index}
+                                onDragStart={handleDragStart}
+                                onDragOver={handleDragOver}
+                                onDragEnd={() => handleDragEnd(scheduledClasses)}
                             />
                         ))}
                     </div>
@@ -218,13 +259,19 @@ export default function AulasAoVivoAdminPage() {
                         Gravações Disponíveis ({recordedClasses.length})
                     </h2>
                     <div className="space-y-3">
-                        {recordedClasses.map((liveClass: LiveClassWithDetails) => (
+                        {recordedClasses.map((liveClass: LiveClassWithDetails, index: number) => (
                             <LiveClassCard
                                 key={liveClass.id}
                                 liveClass={liveClass}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
                                 onUpdateStatus={handleUpdateStatus}
+                                dragIndex={index}
+                                isDragging={draggedIndex === index}
+                                isDragOver={dragOverIndex === index}
+                                onDragStart={handleDragStart}
+                                onDragOver={handleDragOver}
+                                onDragEnd={() => handleDragEnd(recordedClasses)}
                             />
                         ))}
                     </div>
@@ -238,13 +285,19 @@ export default function AulasAoVivoAdminPage() {
                         Canceladas ({cancelledClasses.length})
                     </h2>
                     <div className="space-y-3">
-                        {cancelledClasses.map((liveClass: LiveClassWithDetails) => (
+                        {cancelledClasses.map((liveClass: LiveClassWithDetails, index: number) => (
                             <LiveClassCard
                                 key={liveClass.id}
                                 liveClass={liveClass}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
                                 onUpdateStatus={handleUpdateStatus}
+                                dragIndex={index}
+                                isDragging={draggedIndex === index}
+                                isDragOver={dragOverIndex === index}
+                                onDragStart={handleDragStart}
+                                onDragOver={handleDragOver}
+                                onDragEnd={() => handleDragEnd(cancelledClasses)}
                             />
                         ))}
                     </div>

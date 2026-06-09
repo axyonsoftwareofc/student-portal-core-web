@@ -39,7 +39,8 @@ export function useStudentLiveClasses(userId: string | null): UseStudentLiveClas
                 .select('*')
                 .eq('is_active', true)
                 .neq('status', 'cancelled')
-                .order('scheduled_at', { ascending: false });
+                .order('order_index', { ascending: true, nullsFirst: false })
+                .order('scheduled_at', { ascending: true });
 
             if (classesError) throw classesError;
 

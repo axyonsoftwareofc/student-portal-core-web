@@ -18,6 +18,7 @@ export interface LiveClass {
     status: LiveClassStatus;
     thumbnail_url: string | null;
     is_active: boolean;
+    order_index: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -52,6 +53,7 @@ export interface CreateLiveClassData {
     track_id?: string | null;
     status?: LiveClassStatus;
     thumbnail_url?: string | null;
+    order_index?: number | null;
 }
 
 // Dados para atualizar aula ao vivo

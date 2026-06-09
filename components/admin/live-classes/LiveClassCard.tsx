@@ -16,6 +16,7 @@ import {
     Radio,
     CheckCircle,
     XCircle,
+    GripVertical,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,12 @@ interface LiveClassCardProps {
     onEdit: (liveClass: LiveClassWithDetails) => void;
     onDelete: (id: string) => void;
     onUpdateStatus: (id: string, status: LiveClassStatus) => void;
+    dragIndex?: number;
+    isDragging?: boolean;
+    isDragOver?: boolean;
+    onDragStart?: (index: number) => void;
+    onDragOver?: (e: React.DragEvent, index: number) => void;
+    onDragEnd?: () => void;
 }
 
 export function LiveClassCard({
@@ -37,6 +44,12 @@ export function LiveClassCard({
                                   onEdit,
                                   onDelete,
                                   onUpdateStatus,
+                                  dragIndex,
+                                  isDragging,
+                                  isDragOver,
+                                  onDragStart,
+                                  onDragOver,
+                                  onDragEnd,
                               }: LiveClassCardProps) {
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
@@ -56,15 +69,27 @@ export function LiveClassCard({
 
     return (
         <article
+            draggable={dragIndex !== undefined}
+            onDragStart={() => onDragStart?.(dragIndex!)}
+            onDragOver={(e) => onDragOver?.(e, dragIndex!)}
+            onDragEnd={() => onDragEnd?.()}
             className={cn(
                 'border rounded-xl p-4 transition-all',
                 config.bgColor,
-                config.borderColor
+                config.borderColor,
+                isDragging && 'opacity-50 scale-95',
+                isDragOver && 'ring-2 ring-sky-400 border-sky-400',
+                dragIndex !== undefined && 'cursor-grab active:cursor-grabbing'
             )}
         >
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
+                    {dragIndex !== undefined && (
+                        <span className="text-gray-500 hover:text-gray-300 flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing">
+                            <GripVertical className="h-5 w-5" />
+                        </span>
+                    )}
                     <span className="text-2xl flex-shrink-0">{config.icon}</span>
 
                     <div className="flex-1 min-w-0">

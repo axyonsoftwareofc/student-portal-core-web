@@ -18,6 +18,7 @@ interface UseLiveClassesReturn {
     updateLiveClass: (id: string, data: UpdateLiveClassData) => Promise<{ success: boolean; error?: string }>;
     deleteLiveClass: (id: string) => Promise<{ success: boolean; error?: string }>;
     updateStatus: (id: string, status: LiveClassStatus) => Promise<{ success: boolean; error?: string }>;
+    reorderLiveClasses: (orderedIds: string[]) => Promise<{ success: boolean; error?: string }>;
     refresh: () => Promise<void>;
 }
 
@@ -37,7 +38,8 @@ export function useLiveClasses(): UseLiveClassesReturn {
             const { data, error: fetchError } = await supabase
                 .from('live_classes_view')
                 .select('*')
-                .order('scheduled_at', { ascending: false });
+                .order('order_index', { ascending: true, nullsFirst: false })
+                .order('scheduled_at', { ascending: true });
 
             if (fetchError) throw fetchError;
 
@@ -53,8 +55,23 @@ export function useLiveClasses(): UseLiveClassesReturn {
         fetchLiveClasses();
     }, [fetchLiveClasses]);
 
+    const getNextOrderIndex = useCallback(async (): Promise<number> => {
+        const { data } = await supabase
+            .from('live_classes')
+            .select('order_index')
+            .order('order_index', { ascending: false, nullsFirst: false })
+            .limit(1)
+            .single();
+
+        return (data?.order_index ?? 0) + 1;
+    }, [supabase]);
+
     const createLiveClass = async (data: CreateLiveClassData): Promise<{ success: boolean; error?: string }> => {
         try {
+            const nextIndex = data.order_index != null
+                ? data.order_index
+                : await getNextOrderIndex();
+
             const { error: insertError } = await supabase
                 .from('live_classes')
                 .insert({
@@ -69,6 +86,7 @@ export function useLiveClasses(): UseLiveClassesReturn {
                     track_id: data.track_id || null,
                     status: data.status || 'scheduled',
                     thumbnail_url: data.thumbnail_url || null,
+                    order_index: nextIndex,
                 });
 
             if (insertError) throw insertError;
@@ -130,6 +148,31 @@ export function useLiveClasses(): UseLiveClassesReturn {
         return updateLiveClass(id, { status });
     };
 
+    const reorderLiveClasses = useCallback(async (
+        orderedIds: string[]
+    ): Promise<{ success: boolean; error?: string }> => {
+        try {
+            const updates = orderedIds.map((id, index) =>
+                supabase
+                    .from('live_classes')
+                    .update({
+                        order_index: index + 1,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', id)
+            );
+
+            await Promise.all(updates);
+            await fetchLiveClasses();
+            return { success: true };
+        } catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Erro ao reordenar aulas',
+            };
+        }
+    }, [supabase, fetchLiveClasses]);
+
     const refresh = async (): Promise<void> => {
         await fetchLiveClasses();
     };
@@ -142,6 +185,7 @@ export function useLiveClasses(): UseLiveClassesReturn {
         updateLiveClass,
         deleteLiveClass,
         updateStatus,
+        reorderLiveClasses,
         refresh,
     };
 }

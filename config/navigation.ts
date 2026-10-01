@@ -19,6 +19,7 @@ import {
     Layers,
     MessageCircle,
     Megaphone,
+    Pin,
     Video,
     type LucideIcon,
 } from "lucide-react";
@@ -96,6 +97,12 @@ export const adminNavItems: NavItem[] = [
         label: "Avisos",
         href: "/admin/avisos",
         description: "Comunicar com alunos",
+    },
+    {
+        icon: Pin,
+        label: "Destaques",
+        href: "/admin/destaques",
+        description: "Fixar tarefas no dashboard",
     },
     {
         icon: CreditCard,

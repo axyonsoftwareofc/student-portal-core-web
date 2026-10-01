@@ -6,7 +6,7 @@ import { Pin, Plus, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FeaturedItemCard, FeaturedItemForm } from '@/components/admin/featured';
+import { FeaturedItemCard, FeaturedItemForm, FeaturedSubmissionsPanel } from '@/components/admin/featured';
 import { useFeaturedItems } from '@/hooks/useFeaturedItems';
 import type {
     CreateFeaturedItemData,
@@ -51,6 +51,8 @@ export default function DestaquesPage() {
         updateItem,
         deleteItem,
         toggleActive,
+        fetchSubmissions,
+        gradeSubmission,
         refresh,
     } = useFeaturedItems();
 
@@ -249,8 +251,12 @@ export default function DestaquesPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* O painel de entregas (submissionsItem) é adicionado na Task 4 */}
-            {submissionsItem && null}
+            <FeaturedSubmissionsPanel
+                item={submissionsItem}
+                onClose={() => setSubmissionsItem(null)}
+                fetchSubmissions={fetchSubmissions}
+                gradeSubmission={gradeSubmission}
+            />
         </div>
     );
 }

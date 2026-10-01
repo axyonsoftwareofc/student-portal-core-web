@@ -102,6 +102,7 @@ export async function DELETE(request: NextRequest) {
             'exercise_responses',
             'lesson_progress',
             'task_submissions',
+            'featured_item_submissions',
             'enrollments',
             'payments',
         ];

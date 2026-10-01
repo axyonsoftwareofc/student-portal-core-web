@@ -24,6 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudentTracks } from '@/hooks/useStudentTracks';
 import { useStudentSubmissions } from '@/hooks/useStudentSubmissions';
 import { DashboardAnnouncements } from '@/components/student/dashboard/DashboardAnnouncements';
+import { DashboardFeatured } from '@/components/student/dashboard/DashboardFeatured';
 import type { StudentTrack } from '@/lib/types/database';
 import { DashboardLiveClasses } from '@/components/student/dashboard/DashboardLiveClasses';
 
@@ -79,6 +80,9 @@ export default function AlunoDashboardPage() {
                     Continue de onde parou e acompanhe seu progresso
                 </p>
             </div>
+
+            {/* Destaques do professor (tarefas e exercícios fixados) */}
+            <DashboardFeatured userId={user?.id || null} />
 
             {/* Avisos do Professor */}
             <DashboardAnnouncements userId={user?.id || null} />

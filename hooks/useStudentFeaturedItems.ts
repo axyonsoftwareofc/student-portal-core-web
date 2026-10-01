@@ -38,6 +38,7 @@ interface UseStudentFeaturedItemsReturn {
 export function useStudentFeaturedItems(userId: string | null): UseStudentFeaturedItemsReturn {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
+    const hasLoadedRef = useRef(false);
 
     const [items, setItems] = useState<StudentFeaturedItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -51,7 +52,7 @@ export function useStudentFeaturedItems(userId: string | null): UseStudentFeatur
         }
 
         try {
-            setIsLoading(true);
+            if (!hasLoadedRef.current) setIsLoading(true);
             setError(null);
 
             const now = new Date().toISOString();
@@ -182,6 +183,7 @@ export function useStudentFeaturedItems(userId: string | null): UseStudentFeatur
             setError(err instanceof Error ? err.message : 'Erro ao carregar destaques');
             setItems([]);
         } finally {
+            hasLoadedRef.current = true;
             setIsLoading(false);
         }
     }, [supabase, userId]);

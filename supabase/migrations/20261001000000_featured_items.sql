@@ -92,6 +92,35 @@ as $$
     end;
 $$;
 
+revoke execute on function public.featured_is_admin() from public, anon;
+revoke execute on function public.featured_in_scope(text, uuid) from public, anon;
+grant execute on function public.featured_is_admin() to authenticated;
+grant execute on function public.featured_in_scope(text, uuid) to authenticated;
+
+-- Impede que o aluno altere campos protegidos da própria entrega (item, feedback, datas)
+create or replace function public.featured_submissions_guard_update()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+    if not public.featured_is_admin() then
+        new.featured_item_id := old.featured_item_id;
+        new.student_id := old.student_id;
+        new.feedback := old.feedback;
+        new.created_at := old.created_at;
+        new.submitted_at := now();
+    end if;
+
+    new.updated_at := now();
+    return new;
+end;
+$$;
+
+create trigger featured_submissions_guard_update_trg
+    before update on public.featured_item_submissions
+    for each row execute function public.featured_submissions_guard_update();
+
 alter table public.featured_items enable row level security;
 alter table public.featured_item_submissions enable row level security;
 
@@ -145,4 +174,8 @@ create policy featured_submissions_student_update on public.featured_item_submis
         and grade is null
         and graded_by is null
         and graded_at is null
+        and exists (
+            select 1 from public.featured_items fi
+            where fi.id = featured_item_id and fi.kind = 'task'
+        )
     );

@@ -64,6 +64,14 @@ export function FeaturedItemForm({
     const [targetId, setTargetId] = useState<string>(item?.target_id ?? '');
     const [expiresAt, setExpiresAt] = useState<string>(toDateInput(item?.expires_at ?? null));
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [lessonSearch, setLessonSearch] = useState<string>('');
+
+    const today = toDateInput(new Date().toISOString());
+    const normalizedSearch = lessonSearch.trim().toLowerCase();
+    const visibleLessons = lessons.filter(
+        (lesson: LessonOption) =>
+            lesson.id === lessonId || lesson.label.toLowerCase().includes(normalizedSearch)
+    );
 
     const handleTargetChange = (newTarget: AnnouncementTarget) => {
         setTarget(newTarget);
@@ -173,13 +181,20 @@ export function FeaturedItemForm({
             {kind === 'exercise' ? (
                 <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Exercício *</label>
+                    <input
+                        type="text"
+                        value={lessonSearch}
+                        onChange={(e) => setLessonSearch(e.target.value)}
+                        placeholder="Buscar aula ou módulo..."
+                        className={cn(inputClass, 'mb-2')}
+                    />
                     <select
                         value={lessonId}
                         onChange={(e) => setLessonId(e.target.value)}
                         className={inputClass}
                     >
                         <option value="">Selecione a aula...</option>
-                        {lessons.map((lesson: LessonOption) => (
+                        {visibleLessons.map((lesson: LessonOption) => (
                             <option key={lesson.id} value={lesson.id}>
                                 {lesson.label}
                             </option>
@@ -236,7 +251,7 @@ export function FeaturedItemForm({
                         type="date"
                         value={expiresAt}
                         onChange={(e) => setExpiresAt(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
+                        min={expiresAt && expiresAt < today ? expiresAt : today}
                         className={inputClass}
                     />
                 </div>

@@ -29,6 +29,7 @@ interface UseFeaturedItemsReturn {
 export function useFeaturedItems(): UseFeaturedItemsReturn {
     const supabaseRef = useRef(createClient());
     const supabase = supabaseRef.current;
+    const hasLoadedRef = useRef(false);
 
     const [items, setItems] = useState<FeaturedItemWithLesson[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -36,7 +37,7 @@ export function useFeaturedItems(): UseFeaturedItemsReturn {
 
     const fetchItems = useCallback(async (): Promise<void> => {
         try {
-            setIsLoading(true);
+            if (!hasLoadedRef.current) setIsLoading(true);
             setError(null);
 
             const { data, error: fetchError } = await supabase
@@ -51,6 +52,7 @@ export function useFeaturedItems(): UseFeaturedItemsReturn {
             console.error('[useFeaturedItems] Erro ao carregar destaques:', err);
             setError(err instanceof Error ? err.message : 'Erro ao carregar destaques');
         } finally {
+            hasLoadedRef.current = true;
             setIsLoading(false);
         }
     }, [supabase]);

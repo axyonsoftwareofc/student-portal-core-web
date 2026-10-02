@@ -293,7 +293,7 @@ export default function AlunosPage() {
                 </div>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-500 transition-colors"
+                    className="w-full sm:w-auto inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 sm:min-h-0 text-sm font-medium text-white hover:bg-sky-500 transition-colors"
                 >
                     <Plus className="h-4 w-4" strokeWidth={1.5} />
                     Novo Aluno
@@ -320,7 +320,7 @@ export default function AlunosPage() {
                         <button
                             key={status}
                             onClick={() => setStatusFilter(status)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                            className={`inline-flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors sm:min-h-0 ${
                                 statusFilter === status
                                     ? 'bg-sky-600 text-white'
                                     : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
@@ -410,7 +410,7 @@ export default function AlunosPage() {
                                     {student.status === 'suspended' ? (
                                         <button
                                             onClick={() => handleReactivate(student)}
-                                            className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                                            className="inline-flex min-h-11 items-center gap-1 text-xs sm:min-h-0 text-emerald-400 hover:text-emerald-300 transition-colors"
                                         >
                                             <UserCheck className="h-3 w-3" strokeWidth={1.5} />
                                             Reativar
@@ -419,7 +419,7 @@ export default function AlunosPage() {
                                         <>
                                             <button
                                                 onClick={() => openEnrollmentModal(student)}
-                                                className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                                                className="inline-flex min-h-11 items-center gap-1 text-xs sm:min-h-0 text-emerald-400 hover:text-emerald-300 transition-colors"
                                             >
                                                 <GraduationCap className="h-3 w-3" strokeWidth={1.5} />
                                                 Cursos
@@ -427,7 +427,7 @@ export default function AlunosPage() {
                                             {student.status === 'pending' && (
                                                 <button
                                                     onClick={() => handleResendInvite(student)}
-                                                    className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                                                    className="inline-flex min-h-11 items-center gap-1 text-xs sm:min-h-0 text-sky-400 hover:text-sky-300 transition-colors"
                                                 >
                                                     <Mail className="h-3 w-3" strokeWidth={1.5} />
                                                     Reenviar
@@ -436,7 +436,7 @@ export default function AlunosPage() {
                                             {student.status === 'active' && (
                                                 <button
                                                     onClick={() => openResetPasswordDialog(student)}
-                                                    className="inline-flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                                                    className="inline-flex min-h-11 items-center gap-1 text-xs sm:min-h-0 text-violet-400 hover:text-violet-300 transition-colors"
                                                 >
                                                     <KeyRound className="h-3 w-3" strokeWidth={1.5} />
                                                     Reset Senha
@@ -444,14 +444,14 @@ export default function AlunosPage() {
                                             )}
                                             <button
                                                 onClick={() => openEditModal(student)}
-                                                className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                                                className="inline-flex min-h-11 items-center gap-1 text-xs sm:min-h-0 text-sky-400 hover:text-sky-300 transition-colors"
                                             >
                                                 <Pencil className="h-3 w-3" strokeWidth={1.5} />
                                                 Editar
                                             </button>
                                             <button
                                                 onClick={() => openSuspendDialog(student)}
-                                                className="inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors"
+                                                className="inline-flex min-h-11 items-center gap-1 text-xs sm:min-h-0 text-amber-400 hover:text-amber-300 transition-colors"
                                             >
                                                 <UserX className="h-3 w-3" strokeWidth={1.5} />
                                                 Suspender
@@ -460,7 +460,7 @@ export default function AlunosPage() {
                                     )}
                                     <button
                                         onClick={() => openDeleteDialog(student)}
-                                        className="inline-flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 transition-colors"
+                                        className="inline-flex min-h-11 items-center gap-1 text-xs sm:min-h-0 text-rose-400 hover:text-rose-300 transition-colors"
                                     >
                                         <Trash2 className="h-3 w-3" strokeWidth={1.5} />
                                         Excluir

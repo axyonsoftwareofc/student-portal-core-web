@@ -218,7 +218,7 @@ export default function AdminDashboardPage() {
                         <h2 className="text-lg font-semibold text-white">Aulas Mais Vistas</h2>
                         <Link
                             href="/admin/aulas"
-                            className="text-sm text-gray-400 transition-colors hover:text-sky-400"
+                            className="inline-flex min-h-11 items-center text-sm text-gray-400 transition-colors hover:text-sky-400 sm:min-h-0"
                         >
                             Ver todas →
                         </Link>
@@ -273,7 +273,7 @@ export default function AdminDashboardPage() {
                             <h2 className="text-lg font-semibold text-white">Alunos Recentes</h2>
                             <Link
                                 href="/admin/alunos"
-                                className="text-sm text-gray-400 transition-colors hover:text-sky-400"
+                                className="inline-flex min-h-11 items-center text-sm text-gray-400 transition-colors hover:text-sky-400 sm:min-h-0"
                             >
                                 Ver todos →
                             </Link>

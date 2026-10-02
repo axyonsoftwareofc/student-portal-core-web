@@ -189,7 +189,7 @@ export default function AulasPage() {
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
                     disabled={modules.length === 0}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 sm:min-h-0 text-sm font-medium text-white hover:bg-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Plus className="h-4 w-4" strokeWidth={1.5} />
                     Nova Aula
@@ -404,21 +404,21 @@ export default function AulasPage() {
                                 <div className="flex flex-wrap gap-3">
                                     <button
                                         onClick={() => openPreviewModal(lesson)}
-                                        className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                                        className="inline-flex min-h-11 items-center gap-1 text-sm sm:min-h-0 text-emerald-400 hover:text-emerald-300 transition-colors"
                                     >
                                         <Eye className="h-4 w-4" strokeWidth={1.5} />
                                         Visualizar
                                     </button>
                                     <button
                                         onClick={() => openEditorModal(lesson)}
-                                        className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
+                                        className="inline-flex min-h-11 items-center gap-1 text-sm sm:min-h-0 text-sky-400 hover:text-sky-300 transition-colors"
                                     >
                                         <Pencil className="h-4 w-4" strokeWidth={1.5} />
                                         Editar
                                     </button>
                                     <button
                                         onClick={() => openDeleteDialog(lesson)}
-                                        className="inline-flex items-center gap-1 text-sm text-rose-400 hover:text-rose-300 transition-colors"
+                                        className="inline-flex min-h-11 items-center gap-1 text-sm sm:min-h-0 text-rose-400 hover:text-rose-300 transition-colors"
                                     >
                                         <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                                         Excluir

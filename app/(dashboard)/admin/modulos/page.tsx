@@ -170,7 +170,7 @@ export default function ModulosPage() {
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-sky-950/20 border border-sky-500/20">
                     <Link
                         href={filteredPhaseName ? "/admin/fases" : "/admin/trilhas"}
-                        className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
+                        className="inline-flex min-h-11 items-center gap-1 text-sm sm:min-h-0 text-sky-400 hover:text-sky-300 transition-colors"
                     >
                         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
                         Voltar para {filteredPhaseName ? "Fases" : "Trilhas"}
@@ -207,7 +207,7 @@ export default function ModulosPage() {
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
                     disabled={phases.length === 0}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 sm:min-h-0 text-sm font-medium text-white hover:bg-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Plus className="h-4 w-4" strokeWidth={1.5} />
                     Novo Módulo
@@ -362,7 +362,7 @@ export default function ModulosPage() {
                                         </span>
                                         <Link
                                             href={`/admin/modulos/${module.id}`}
-                                            className="text-base sm:text-lg font-semibold text-white hover:text-sky-400 transition-colors"
+                                            className="inline-flex min-h-11 items-center text-base sm:min-h-0 sm:text-lg font-semibold text-white hover:text-sky-400 transition-colors"
                                         >
                                             {module.name}
                                         </Link>
@@ -401,14 +401,14 @@ export default function ModulosPage() {
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => openEditModal(module)}
-                                        className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
+                                        className="inline-flex min-h-11 items-center gap-1 text-sm sm:min-h-0 text-sky-400 hover:text-sky-300 transition-colors"
                                     >
                                         <Pencil className="h-4 w-4" strokeWidth={1.5} />
                                         Editar
                                     </button>
                                     <button
                                         onClick={() => openDeleteDialog(module)}
-                                        className="inline-flex items-center gap-1 text-sm text-rose-400 hover:text-rose-300 transition-colors"
+                                        className="inline-flex min-h-11 items-center gap-1 text-sm sm:min-h-0 text-rose-400 hover:text-rose-300 transition-colors"
                                     >
                                         <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                                         Excluir

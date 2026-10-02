@@ -288,7 +288,7 @@ function PhaseCard({ phase }: { phase: PhaseWithTrack }) {
                 <div className="flex sm:flex-col gap-2 flex-shrink-0">
                     <Link
                         href={`/admin/modulos?fase=${phase.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-sky-500/10 text-sm text-sky-400 hover:bg-sky-500/20 transition-colors"
+                        className="inline-flex min-h-11 items-center gap-1 px-3 py-1.5 rounded-lg bg-sky-500/10 text-sm text-sky-400 hover:bg-sky-500/20 transition-colors sm:min-h-0"
                     >
                         <GraduationCap className="h-4 w-4" strokeWidth={1.5} />
                         Módulos

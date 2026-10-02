@@ -135,7 +135,7 @@ export function LiveClassCard({
 
                         {/* Contexto */}
                         {(liveClass.track_name || liveClass.phase_name || liveClass.module_name) && (
-                            <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                            <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-500">
                                 {liveClass.track_name && (
                                     <span className="px-2 py-0.5 rounded bg-gray-800">
                                         {liveClass.track_name}

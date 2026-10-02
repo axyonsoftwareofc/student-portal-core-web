@@ -340,7 +340,7 @@ input[type='search']::-webkit-search-results-decoration {
 .form-textarea,
 .form-multiselect,
 .form-select {
-  @apply rounded-lg px-4 py-2.5 text-sm text-gray-200;
+  @apply rounded-lg px-4 py-2.5 text-base text-gray-200 sm:text-sm;
 }
 
 .form-input,

@@ -107,28 +107,28 @@ export function PaymentCard({ payment, onMarkPaid, onEdit, onCancel, onDelete }:
                 {canMarkPaid && (
                     <button
                         onClick={() => onMarkPaid(payment)}
-                        className="flex-1 rounded-lg bg-emerald-600/20 px-3 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-600/30"
+                        className="flex-1 min-h-11 rounded-lg bg-emerald-600/20 px-3 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-600/30 sm:min-h-0"
                     >
                         Marcar Pago
                     </button>
                 )}
                 <button
                     onClick={() => onEdit(payment)}
-                    className="rounded-lg bg-gray-800 p-2 text-gray-400 hover:text-white"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-gray-800 p-2 sm:min-h-0 sm:min-w-0 text-gray-400 hover:text-white"
                 >
                     <Edit className="h-4 w-4" strokeWidth={1.5} />
                 </button>
                 {canCancel && (
                     <button
                         onClick={() => onCancel(payment)}
-                        className="rounded-lg bg-gray-800 p-2 text-amber-400 hover:text-amber-300"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-gray-800 p-2 sm:min-h-0 sm:min-w-0 text-amber-400 hover:text-amber-300"
                     >
                         <Ban className="h-4 w-4" strokeWidth={1.5} />
                     </button>
                 )}
                 <button
                     onClick={() => onDelete(payment)}
-                    className="rounded-lg bg-gray-800 p-2 text-rose-400 hover:text-rose-300"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-gray-800 p-2 sm:min-h-0 sm:min-w-0 text-rose-400 hover:text-rose-300"
                 >
                     <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                 </button>

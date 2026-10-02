@@ -209,7 +209,7 @@ export default function ConfiguracoesPage() {
                                             {!isCurrentUser(admin.id) && admins.length > 1 && (
                                                 <button
                                                     onClick={() => openDemoteDialog(admin.id, admin.name)}
-                                                    className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                                    className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors sm:min-h-0 sm:min-w-0"
                                                 >
                                                     <UserMinus className="h-4 w-4" strokeWidth={1.5} />
                                                     <span className="hidden sm:inline">Remover</span>
@@ -225,7 +225,7 @@ export default function ConfiguracoesPage() {
                         {students.length > 0 && (
                             <div className="space-y-3 pt-4 border-t border-gray-800/50">
                                 <h3 className="text-sm font-medium text-gray-300">Promover aluno a administrador</h3>
-                                <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                     {students.map((student) => (
                                         <div
                                             key={student.id}
@@ -245,7 +245,7 @@ export default function ConfiguracoesPage() {
 
                                             <button
                                                 onClick={() => openPromoteDialog(student.id, student.name)}
-                                                className="flex-shrink-0 flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                                                className="flex-shrink-0 flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs text-emerald-400 hover:bg-emerald-500/10 transition-colors sm:min-h-0 sm:min-w-0"
                                             >
                                                 <UserPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
                                                 <span className="hidden sm:inline">Promover</span>
@@ -323,7 +323,7 @@ export default function ConfiguracoesPage() {
                         <div className="flex items-center justify-between pt-2">
                             <button
                                 onClick={handleResetSettings}
-                                className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-300 transition-colors"
+                                className="flex min-h-11 items-center gap-2 text-sm text-gray-400 hover:text-gray-300 transition-colors sm:min-h-0"
                             >
                                 <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
                                 Restaurar padrão
@@ -339,7 +339,7 @@ export default function ConfiguracoesPage() {
                                 <button
                                     onClick={handleSaveSchoolSettings}
                                     disabled={isSaving}
-                                    className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 transition-colors disabled:opacity-50"
+                                    className="flex min-h-11 items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 transition-colors disabled:opacity-50 sm:min-h-0"
                                 >
                                     {isSaving ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />

@@ -173,14 +173,14 @@ export default function ModuleForm({
                     type="button"
                     onClick={onCancel}
                     disabled={isLoading}
-                    className="px-4 py-2.5 text-sm font-medium text-gray-300 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="min-h-11 px-4 py-2.5 text-sm font-medium sm:min-h-0 text-gray-300 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
                     Cancelar
                 </button>
                 <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-4 py-2.5 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="min-h-11 px-4 py-2.5 text-sm font-medium sm:min-h-0 text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                     {module ? 'Salvar Alterações' : 'Criar Módulo'}

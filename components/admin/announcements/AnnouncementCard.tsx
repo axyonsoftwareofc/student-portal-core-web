@@ -83,7 +83,7 @@ export function AnnouncementCard({
                 <div className="relative">
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors sm:min-h-0 sm:min-w-0"
                     >
                         <MoreVertical className="h-4 w-4" />
                     </button>

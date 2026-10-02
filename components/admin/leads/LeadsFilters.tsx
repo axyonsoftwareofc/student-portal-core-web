@@ -41,7 +41,7 @@ export function LeadsFilters({
                         key={tab.value}
                         onClick={() => onFilterChange(tab.value)}
                         className={cn(
-                            'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                            'min-h-11 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 sm:min-h-0',
                             activeFilter === tab.value
                                 ? 'bg-sky-500 text-white'
                                 : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50'

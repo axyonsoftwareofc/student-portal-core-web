@@ -204,14 +204,14 @@ function TrackCard({ track }: { track: TrackWithStats }) {
             <div className="flex items-center justify-between pt-4 border-t border-gray-800/50">
                 <Link
                     href={`/admin/fases?trilha=${track.id}`}
-                    className="inline-flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 transition-colors"
+                    className="inline-flex min-h-11 items-center gap-1 text-sm sm:min-h-0 text-sky-400 hover:text-sky-300 transition-colors"
                 >
                     <Layers className="h-4 w-4" strokeWidth={1.5} />
                     Ver Fases ({track.phases_count})
                 </Link>
                 <Link
                     href={`/admin/modulos?trilha=${track.id}`}
-                    className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                    className="inline-flex min-h-11 items-center gap-1 text-sm sm:min-h-0 text-emerald-400 hover:text-emerald-300 transition-colors"
                 >
                     Ver Módulos
                     <ChevronRight className="h-4 w-4" strokeWidth={1.5} />

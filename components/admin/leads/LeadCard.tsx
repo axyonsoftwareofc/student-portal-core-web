@@ -83,7 +83,7 @@ export function LeadCard({ lead, onViewDetails }: LeadCardProps) {
 
                 <button
                     onClick={() => onViewDetails(lead)}
-                    className="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-sky-400 hover:bg-sky-500/10 transition-all duration-200"
+                    className="flex-shrink-0 inline-flex min-h-11 min-w-11 items-center justify-center p-2 rounded-lg text-gray-400 hover:text-sky-400 hover:bg-sky-500/10 transition-all duration-200 sm:min-h-0 sm:min-w-0"
                     title="Ver detalhes"
                 >
                     <Eye className="h-5 w-5" strokeWidth={1.5} />

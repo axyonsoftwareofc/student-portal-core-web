@@ -53,7 +53,8 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
                                     {title}
                                     <button
                                         onClick={onClose}
-                                        className="text-gray-400 hover:text-white transition-colors"
+                                        aria-label="Fechar"
+                                        className="-mr-3 inline-flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-white transition-colors sm:mr-0 sm:min-h-0 sm:min-w-0"
                                     >
                                         ✕
                                     </button>

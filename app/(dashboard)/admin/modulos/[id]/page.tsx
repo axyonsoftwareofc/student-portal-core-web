@@ -286,7 +286,7 @@ export default function ModuleDetailPage() {
                 <p className="text-gray-400 mb-4">O módulo que você está procurando não existe ou foi removido.</p>
                 <Link
                     href="/admin/modulos"
-                    className="inline-flex items-center gap-2 text-sky-400 hover:text-sky-300 transition-colors"
+                    className="inline-flex min-h-11 items-center gap-2 text-sky-400 hover:text-sky-300 transition-colors sm:min-h-0"
                 >
                     <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
                     Voltar para Módulos
@@ -301,7 +301,7 @@ export default function ModuleDetailPage() {
             <div className="space-y-4">
                 <Link
                     href="/admin/modulos"
-                    className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors"
+                    className="inline-flex min-h-11 items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors sm:min-h-0"
                 >
                     <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
                     Voltar para Módulos
@@ -349,14 +349,14 @@ export default function ModuleDetailPage() {
                     <div className="flex gap-2 flex-shrink-0">
                         <button
                             onClick={() => setIsEditModuleModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-800 bg-gray-900 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                            className="inline-flex min-h-11 items-center gap-2 px-3 py-2 rounded-lg border sm:min-h-0 border-gray-800 bg-gray-900 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
                         >
                             <Pencil className="h-4 w-4" strokeWidth={1.5} />
                             Editar
                         </button>
                         <button
                             onClick={() => setIsDeleteModuleDialogOpen(true)}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-rose-500/30 bg-rose-950/20 text-sm text-rose-400 hover:bg-rose-950/40 transition-colors"
+                            className="inline-flex min-h-11 items-center gap-2 px-3 py-2 rounded-lg border sm:min-h-0 border-rose-500/30 bg-rose-950/20 text-sm text-rose-400 hover:bg-rose-950/40 transition-colors"
                         >
                             <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                             Excluir
@@ -397,7 +397,7 @@ export default function ModuleDetailPage() {
                     </h2>
                     <button
                         onClick={() => setIsCreateLessonModalOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-500 transition-colors"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-500 transition-colors sm:min-h-0"
                     >
                         <Plus className="h-4 w-4" strokeWidth={1.5} />
                         Nova Aula
@@ -483,7 +483,7 @@ export default function ModuleDetailPage() {
                                                 setSelectedLesson(lesson);
                                                 setIsEditLessonModalOpen(true);
                                             }}
-                                            className="p-2 text-gray-500 hover:text-sky-400 transition-colors"
+                                            className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-gray-500 hover:text-sky-400 transition-colors sm:min-h-0 sm:min-w-0"
                                             title="Editar"
                                         >
                                             <Pencil className="h-4 w-4" strokeWidth={1.5} />
@@ -493,7 +493,7 @@ export default function ModuleDetailPage() {
                                                 setSelectedLesson(lesson);
                                                 setIsDeleteLessonDialogOpen(true);
                                             }}
-                                            className="p-2 text-gray-500 hover:text-rose-400 transition-colors"
+                                            className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-gray-500 hover:text-rose-400 transition-colors sm:min-h-0 sm:min-w-0"
                                             title="Excluir"
                                         >
                                             <Trash2 className="h-4 w-4" strokeWidth={1.5} />

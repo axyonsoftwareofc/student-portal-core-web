@@ -133,7 +133,8 @@ export function LeadDetailsModal({
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                        aria-label="Fechar"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors sm:min-h-0 sm:min-w-0"
                     >
                         <X className="h-5 w-5" strokeWidth={1.5} />
                     </button>
@@ -145,7 +146,7 @@ export function LeadDetailsModal({
                         <div className="space-y-2">
                             <div className="flex items-center gap-3 text-sm">
                                 <Mail className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
-                                <a href={`mailto:${lead.email}`} className="text-sky-400 hover:underline">{lead.email}</a>
+                                <a href={`mailto:${lead.email}`} className="inline-flex min-h-11 min-w-0 items-center text-sky-400 hover:underline [overflow-wrap:anywhere] sm:min-h-0">{lead.email}</a>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
                                 <Phone className="h-4 w-4 text-gray-500" strokeWidth={1.5} />
@@ -153,7 +154,7 @@ export function LeadDetailsModal({
                                     href={`https://wa.me/55${lead.phone.replace(/\D/g, '')}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-emerald-400 hover:underline"
+                                    className="inline-flex min-h-11 items-center text-emerald-400 hover:underline sm:min-h-0"
                                 >
                                     {lead.phone}
                                 </a>

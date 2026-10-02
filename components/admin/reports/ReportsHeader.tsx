@@ -67,7 +67,7 @@ export function ReportsHeader({
                         <button
                             key={range}
                             onClick={() => onTimeRangeChange(range)}
-                            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                            className={`min-h-11 rounded-md px-3 py-1.5 text-sm font-medium transition-colors sm:min-h-0 ${
                                 timeRange === range
                                     ? 'bg-sky-600 text-white'
                                     : 'text-gray-400 hover:text-white'
@@ -81,7 +81,7 @@ export function ReportsHeader({
                 <div className="relative">
                     <button
                         onClick={() => setIsExportOpen(!isExportOpen)}
-                        className="flex items-center gap-2 rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
+                        className="flex min-h-11 items-center gap-2 rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-white sm:min-h-0"
                     >
                         <Download className="h-4 w-4" strokeWidth={1.5} />
                         Exportar
@@ -156,7 +156,7 @@ export function ReportsHeader({
                 <button
                     onClick={onRefetch}
                     disabled={isLoading}
-                    className="flex items-center justify-center rounded-lg border border-gray-800 bg-gray-900 p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white disabled:opacity-50"
+                    className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-gray-800 bg-gray-900 p-2 sm:min-h-0 sm:min-w-0 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white disabled:opacity-50"
                 >
                     {isLoading ? (
                         <Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.5} />

@@ -12,10 +12,16 @@ export default function DashboardFooter() {
                         <span className="font-medium text-gray-400">Axyon Software</span>
                     </p>
                     <div className="flex gap-6">
-                        <a href="#" className="transition-colors hover:text-gray-300">
+                        <a
+                            href="#"
+                            className="inline-flex min-h-11 items-center transition-colors hover:text-gray-300 sm:min-h-0"
+                        >
                             Suporte
                         </a>
-                        <a href="#" className="transition-colors hover:text-gray-300">
+                        <a
+                            href="#"
+                            className="inline-flex min-h-11 items-center transition-colors hover:text-gray-300 sm:min-h-0"
+                        >
                             Privacidade
                         </a>
                     </div>

@@ -1,12 +1,10 @@
 // components/dashboard/sidebar.tsx
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, GraduationCap, Shield, Sparkles } from "lucide-react";
+import { GraduationCap, Shield, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
     Sheet,
     SheetContent,
@@ -14,6 +12,7 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import { type NavItem } from "@/config/navigation";
+import { useMobileNav } from "@/contexts/MobileNavContext";
 
 interface SidebarProps {
     /** Itens de navegação */
@@ -29,7 +28,7 @@ interface SidebarProps {
  * Renderiza como sidebar fixo no desktop e drawer no mobile.
  */
 export function Sidebar({ items, userType, title = "Code Plus" }: SidebarProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const { isOpen, setIsOpen } = useMobileNav();
     const pathname = usePathname();
 
     /**
@@ -116,17 +115,6 @@ export function Sidebar({ items, userType, title = "Code Plus" }: SidebarProps) 
                     <NavigationContent />
                 </div>
             </aside>
-
-            {/* ==================== MOBILE TRIGGER (TOPO ESQUERDO) ==================== */}
-            <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(true)}
-                className="fixed left-4 top-3 z-50 h-10 w-10 rounded-lg bg-gray-900/90 border border-gray-800 shadow-lg backdrop-blur-sm hover:bg-gray-800 lg:hidden"
-                aria-label="Abrir menu de navegação"
-            >
-                <Menu className="h-5 w-5 text-gray-300" strokeWidth={1.5} />
-            </Button>
 
             {/* ==================== MOBILE DRAWER ==================== */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>

@@ -345,7 +345,7 @@ export default function LessonEditorModal({
                                                 onDragStart={() => handleDragStart(index)}
                                                 onDragOver={(e) => handleDragOver(e, index)}
                                                 onDragEnd={handleDragEnd}
-                                                className={`flex items-center gap-3 rounded-lg border p-3 transition-all cursor-move ${
+                                                className={`flex flex-wrap items-center gap-3 rounded-lg border p-3 transition-all cursor-move sm:flex-nowrap ${
                                                     isDragging
                                                         ? 'opacity-50 border-sky-500 bg-sky-500/10'
                                                         : isDragOver
@@ -380,30 +380,35 @@ export default function LessonEditorModal({
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-1">
+                                                {/* Celular: ações numa segunda linha, com 44px */}
+                                                <div className="flex basis-full items-center justify-end gap-1 sm:basis-auto">
                                                     <button
                                                         onClick={() => moveContent(index, 'up')}
                                                         disabled={index === 0}
-                                                        className="p-1.5 text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                        aria-label="Mover para cima"
+                                                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors sm:min-h-0 sm:min-w-0"
                                                     >
                                                         <ChevronUp className="h-4 w-4" strokeWidth={1.5} />
                                                     </button>
                                                     <button
                                                         onClick={() => moveContent(index, 'down')}
                                                         disabled={index === contents.length - 1}
-                                                        className="p-1.5 text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                        aria-label="Mover para baixo"
+                                                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors sm:min-h-0 sm:min-w-0"
                                                     >
                                                         <ChevronDown className="h-4 w-4" strokeWidth={1.5} />
                                                     </button>
                                                     <button
                                                         onClick={() => openEditContent(content)}
-                                                        className="p-1.5 text-gray-400 hover:text-sky-400 transition-colors"
+                                                        aria-label="Editar conteúdo"
+                                                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 text-gray-400 hover:text-sky-400 transition-colors sm:min-h-0 sm:min-w-0"
                                                     >
                                                         <Pencil className="h-4 w-4" strokeWidth={1.5} />
                                                     </button>
                                                     <button
                                                         onClick={() => openDeleteContent(content)}
-                                                        className="p-1.5 text-gray-400 hover:text-rose-400 transition-colors"
+                                                        aria-label="Excluir conteúdo"
+                                                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 text-gray-400 hover:text-rose-400 transition-colors sm:min-h-0 sm:min-w-0"
                                                     >
                                                         <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                                                     </button>

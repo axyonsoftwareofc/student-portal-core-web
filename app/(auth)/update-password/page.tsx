@@ -193,7 +193,7 @@ export default function UpdatePasswordPage() {
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="form-input w-full border-sky-300/30 bg-sky-950/30 text-sky-100 placeholder:text-sky-300/60 focus:border-sky-400 focus:ring-sky-400/40 pr-12! sm:pr-10!"
+                                    className="form-input w-full border-sky-300/30 bg-sky-950/30 text-sky-100 placeholder:text-sky-300/60 focus:border-sky-400 focus:ring-sky-400/40 pr-12 sm:pr-10"
                                     placeholder="Crie uma senha segura"
                                     disabled={isLoading || status === 'success'}
                                     required
@@ -234,7 +234,7 @@ export default function UpdatePasswordPage() {
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="form-input w-full border-sky-300/30 bg-sky-950/30 text-sky-100 placeholder:text-sky-300/60 focus:border-sky-400 focus:ring-sky-400/40 pr-12! sm:pr-10!"
+                                    className="form-input w-full border-sky-300/30 bg-sky-950/30 text-sky-100 placeholder:text-sky-300/60 focus:border-sky-400 focus:ring-sky-400/40 pr-12 sm:pr-10"
                                     placeholder="Digite novamente"
                                     disabled={isLoading || status === 'success'}
                                     required

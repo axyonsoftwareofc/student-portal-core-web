@@ -900,7 +900,7 @@ function MatchingExercise({ data }: { data: InteractiveExerciseData }) {
                         <div
                             key={pair.id}
                             className={cn(
-                                "grid grid-cols-2 gap-4 p-3 rounded-lg border transition-all",
+                                "grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4 p-3 rounded-lg border transition-all",
                                 submitted && isCorrect && "border-emerald-500/30 bg-emerald-500/5",
                                 submitted && isWrong && "border-rose-500/30 bg-rose-500/5",
                                 !submitted && "border-gray-800 bg-gray-900/50"
@@ -912,13 +912,13 @@ function MatchingExercise({ data }: { data: InteractiveExerciseData }) {
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex min-w-0 items-center gap-2">
                                 <select
                                     value={userMatch}
                                     onChange={(e) => handleMatch(pair.id, e.target.value)}
                                     disabled={submitted}
                                     className={cn(
-                                        "flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50",
+                                        "min-h-11 min-w-0 flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 sm:min-h-0",
                                         submitted && isCorrect && "bg-emerald-500/20 border-emerald-500/30 text-emerald-300",
                                         submitted && isWrong && "bg-rose-500/20 border-rose-500/30 text-rose-300",
                                         !submitted && "bg-gray-800 border-gray-700 text-white"
@@ -2001,6 +2001,7 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
     const [submitted, setSubmitted] = useState<boolean>(false);
     const [showExplanation, setShowExplanation] = useState<boolean>(false);
     const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
     const unassignedItems = useMemo(() => {
         return items.filter(item => !assignments[item.id]);
@@ -2029,6 +2030,7 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
         });
 
         setDraggedItemId(null);
+        setSelectedItemId(null);
     }, [submitted, draggedItemId]);
 
     const handleClickToAssign = useCallback((itemId: string, categoryId: string): void => {
@@ -2048,12 +2050,25 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
         });
     }, [submitted]);
 
+    // Toque: selecionar um item e depois tocar na categoria (alternativa ao arrastar)
+    const handleSelectItem = useCallback((itemId: string): void => {
+        if (submitted) return;
+        setSelectedItemId(prev => (prev === itemId ? null : itemId));
+    }, [submitted]);
+
+    const handleTapCategory = useCallback((categoryId: string): void => {
+        if (submitted || !selectedItemId) return;
+        handleClickToAssign(selectedItemId, categoryId);
+        setSelectedItemId(null);
+    }, [submitted, selectedItemId, handleClickToAssign]);
+
     const handleSubmit = useCallback((): void => {
         setSubmitted(true);
     }, []);
 
     const handleRetry = useCallback((): void => {
         setAssignments({});
+        setSelectedItemId(null);
         setSubmitted(false);
         setShowExplanation(false);
     }, []);
@@ -2089,6 +2104,7 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
             {unassignedItems.length > 0 && (
                 <div className="space-y-2">
                     <p className="text-xs text-gray-500 uppercase tracking-wider">Itens para classificar</p>
+                    <p className="text-xs text-gray-500 md:hidden">Toque num item e depois na categoria.</p>
                     <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-dashed border-gray-700 bg-gray-900/30 min-h-[3rem]">
                         {unassignedItems.map(item => (
                             <div
@@ -2096,11 +2112,13 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
                                 draggable={!submitted}
                                 onDragStart={() => handleDragStart(item.id)}
                                 onDragEnd={handleDragEnd}
+                                onClick={() => handleSelectItem(item.id)}
                                 className={cn(
-                                    "px-3 py-2 rounded-lg border text-sm font-medium transition-all select-none",
+                                    "flex min-h-11 items-center px-3 py-2 rounded-lg border text-sm font-medium transition-all select-none md:min-h-0",
                                     !submitted && "cursor-grab active:cursor-grabbing bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20",
                                     submitted && "bg-gray-800 border-gray-700 text-gray-400 cursor-default",
-                                    draggedItemId === item.id && "opacity-50 ring-2 ring-sky-500"
+                                    draggedItemId === item.id && "opacity-50 ring-2 ring-sky-500",
+                                    selectedItemId === item.id && "ring-2 ring-sky-400 bg-sky-500/20"
                                 )}
                             >
                                 {item.text}
@@ -2111,9 +2129,11 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
             )}
 
             {/* Categorias */}
-            <div className="grid gap-4" style={{
-                gridTemplateColumns: `repeat(${Math.min(categories.length, 3)}, 1fr)`
-            }}>
+            <div className={cn(
+                "grid grid-cols-1 gap-4",
+                categories.length === 2 && "sm:grid-cols-2",
+                categories.length >= 3 && "sm:grid-cols-3"
+            )}>
                 {categories.map(category => {
                     const itemsInCategory = getItemsInCategory(category.id);
                     const categoryColor = category.color || '#6b7280';
@@ -2123,10 +2143,12 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
                             key={category.id}
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={() => handleDropOnCategory(category.id)}
+                            onClick={() => handleTapCategory(category.id)}
                             className={cn(
                                 "rounded-lg border-2 border-dashed p-4 min-h-[120px] transition-all",
-                                draggedItemId && "border-sky-500/50 bg-sky-500/5",
-                                !draggedItemId && "border-gray-700"
+                                (draggedItemId || selectedItemId) && "border-sky-500/50 bg-sky-500/5",
+                                selectedItemId && "cursor-pointer",
+                                !draggedItemId && !selectedItemId && "border-gray-700"
                             )}
                         >
                             <div
@@ -2152,7 +2174,8 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
                             <div className="space-y-2">
                                 {itemsInCategory.length === 0 ? (
                                     <p className="text-xs text-gray-600 text-center py-4">
-                                        Arraste itens aqui
+                                        <span className="hidden md:inline">Arraste itens aqui</span>
+                                        <span className="md:hidden">Toque aqui para colocar o item selecionado</span>
                                     </p>
                                 ) : (
                                     itemsInCategory.map(item => {
@@ -2163,7 +2186,10 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
                                         return (
                                             <div
                                                 key={item.id}
-                                                onClick={() => !submitted && handleRemoveFromCategory(item.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (!submitted) handleRemoveFromCategory(item.id);
+                                                }}
                                                 className={cn(
                                                     "flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all",
                                                     !submitted && "cursor-pointer hover:bg-gray-700/50 bg-gray-800/50",

@@ -71,7 +71,7 @@ export function ForumFilters({
                 </div>
 
                 {/* Status Filter */}
-                <div className="flex gap-1 p-1 bg-gray-800 rounded-lg">
+                <div className="grid grid-cols-2 gap-1 p-1 bg-gray-800 rounded-lg sm:flex">
                     {statusOptions.map((option) => (
                         <button
                             key={option.value}
@@ -79,7 +79,7 @@ export function ForumFilters({
                                 onFiltersChange({ ...filters, status: option.value })
                             }
                             className={cn(
-                                'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                                'min-h-11 px-3 py-1.5 rounded-md text-sm font-medium transition-all sm:min-h-0',
                                 filters.status === option.value
                                     ? 'bg-sky-600 text-white'
                                     : 'text-gray-400 hover:text-white hover:bg-gray-700'
@@ -94,7 +94,7 @@ export function ForumFilters({
             {/* Module + My Questions */}
             <div className="flex flex-col sm:flex-row gap-3">
                 {/* Module Filter */}
-                <div className="relative">
+                <div className="relative w-full sm:w-auto">
                     <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                     <select
                         value={filters.module_id || ''}
@@ -106,11 +106,11 @@ export function ForumFilters({
                             })
                         }
                         className={cn(
-                            'pl-10 pr-8 py-2.5 rounded-lg appearance-none',
+                            'w-full min-h-11 pl-10 pr-8 py-2.5 rounded-lg appearance-none sm:w-auto sm:min-h-0',
                             'bg-gray-800 border border-gray-700',
                             'text-white',
                             'focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent',
-                            'transition-all min-w-[200px]'
+                            'transition-all sm:min-w-[200px]'
                         )}
                     >
                         <option value="">Todos os módulos</option>
@@ -129,7 +129,7 @@ export function ForumFilters({
                             onFiltersChange({ ...filters, onlyMine: !filters.onlyMine })
                         }
                         className={cn(
-                            'px-4 py-2.5 rounded-lg text-sm font-medium transition-all',
+                            'min-h-11 w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all sm:min-h-0 sm:w-auto',
                             'border',
                             filters.onlyMine
                                 ? 'bg-sky-600 border-sky-500 text-white'
@@ -146,7 +146,7 @@ export function ForumFilters({
                         variant="ghost"
                         size="sm"
                         onClick={clearFilters}
-                        className="text-gray-400 hover:text-white"
+                        className="h-11 text-gray-400 hover:text-white sm:h-8"
                     >
                         <X className="h-4 w-4 mr-1" />
                         Limpar filtros

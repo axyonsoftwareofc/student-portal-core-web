@@ -213,7 +213,7 @@ export default function AdminDashboardPage() {
             {/* Content Grid - Aulas + Sidebar */}
             <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
                 {/* Top Aulas */}
-                <div className="space-y-4 lg:col-span-2">
+                <div className="min-w-0 space-y-4 lg:col-span-2">
                     <div className="flex items-center justify-between">
                         <h2 className="text-lg font-semibold text-white">Aulas Mais Vistas</h2>
                         <Link

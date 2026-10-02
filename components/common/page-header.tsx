@@ -35,7 +35,7 @@ export function PageHeader({
             </div>
 
             {actions && actions.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {actions.map((action, index) => {
                         const Icon = action.icon;
                         const variants = {
@@ -49,7 +49,7 @@ export function PageHeader({
                                 key={index}
                                 onClick={action.onClick}
                                 className={cn(
-                                    "flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-colors",
+                                    "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-colors sm:w-auto",
                                     variants[action.variant || "primary"]
                                 )}
                             >

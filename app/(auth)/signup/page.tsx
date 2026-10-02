@@ -107,7 +107,7 @@ export default function SignUp() {
                   <div className="relative">
                     <input
                         type={showPassword ? 'text' : 'password'}
-                        className="form-input w-full pr-10"
+                        className="form-input w-full pr-12! sm:pr-10!"
                         placeholder="Crie uma senha segura"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -117,7 +117,8 @@ export default function SignUp() {
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-sky-400 transition-colors"
+                        aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-sky-400 transition-colors sm:right-3 sm:min-h-0 sm:min-w-0"
                         tabIndex={-1}
                     >
                       {showPassword ? (
@@ -163,7 +164,7 @@ export default function SignUp() {
             {/* Sign in link */}
             <div className="mt-6 text-center text-sm text-sky-200/70">
               Já possui uma conta?{" "}
-              <Link className="font-medium text-sky-400 hover:underline" href="/signin">
+              <Link className="inline-flex min-h-11 items-center font-medium text-sky-400 hover:underline sm:min-h-0" href="/signin">
                 Entrar
               </Link>
             </div>

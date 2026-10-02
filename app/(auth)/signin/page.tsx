@@ -81,7 +81,7 @@ export default function SignIn() {
                       Senha
                     </label>
                     <Link
-                        className="text-sm text-sky-400 hover:underline"
+                        className="inline-flex min-h-11 items-center text-sm text-sky-400 hover:underline sm:min-h-0"
                         href="/reset-password"
                     >
                       Esqueceu?
@@ -125,7 +125,7 @@ export default function SignIn() {
             {/* Sign up link */}
             <div className="mt-6 text-center text-sm text-sky-200/70">
               Ainda não tem uma conta?{' '}
-              <Link className="font-medium text-sky-400 hover:underline" href="/signup">
+              <Link className="inline-flex min-h-11 items-center font-medium text-sky-400 hover:underline sm:min-h-0" href="/signup">
                 Criar conta
               </Link>
             </div>

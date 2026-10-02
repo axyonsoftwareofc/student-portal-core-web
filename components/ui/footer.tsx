@@ -29,7 +29,7 @@ export default function Footer() {
             {}
             <li>
               <a
-                className="flex items-center justify-center text-indigo-500 transition hover:text-indigo-400"
+                className="flex min-h-11 min-w-11 items-center justify-center text-indigo-500 transition hover:text-indigo-400 sm:min-h-0 sm:min-w-0"
                 href="#"
                 aria-label="Twitter"
               >
@@ -46,7 +46,7 @@ export default function Footer() {
             {}
             <li>
               <a
-                className="flex items-center justify-center text-indigo-500 transition hover:text-indigo-400"
+                className="flex min-h-11 min-w-11 items-center justify-center text-indigo-500 transition hover:text-indigo-400 sm:min-h-0 sm:min-w-0"
                 href="#"
                 aria-label="Medium"
               >
@@ -63,7 +63,7 @@ export default function Footer() {
             {}
             <li>
               <a
-                className="flex items-center justify-center text-indigo-500 transition hover:text-indigo-400"
+                className="flex min-h-11 min-w-11 items-center justify-center text-indigo-500 transition hover:text-indigo-400 sm:min-h-0 sm:min-w-0"
                 href="#"
                 aria-label="GitHub"
               >

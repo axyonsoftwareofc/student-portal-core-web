@@ -85,7 +85,7 @@ export default function SubscribePage() {
                             <div className="mt-6 pt-6 border-t border-gray-800/50 text-center">
                                 <Link
                                     href="/signin"
-                                    className="text-sm text-gray-400 hover:text-sky-400 transition-colors"
+                                    className="inline-flex min-h-11 items-center gap-1 text-sm text-gray-400 hover:text-sky-400 transition-colors sm:min-h-0"
                                 >
                                     Já é aluno? <span className="font-semibold">Fazer login</span>
                                 </Link>

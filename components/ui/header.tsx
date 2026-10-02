@@ -19,7 +19,7 @@ export default function Header() {
               <li>
                 <Link
                     href="/signin"
-                    className="btn-sm border border-sky-400 text-sky-400
+                    className="btn-sm min-h-11 sm:min-h-0 border border-sky-400 text-sky-400
                            bg-transparent px-4 py-[5px] rounded-md
                            hover:bg-sky-400 hover:text-white
                            transition"
@@ -31,7 +31,7 @@ export default function Header() {
               <li>
                 <Link
                     href="/inscreva-se"
-                    className="btn-sm bg-linear-to-t from-sky-500 to-sky-400
+                    className="btn-sm min-h-11 sm:min-h-0 bg-linear-to-t from-sky-500 to-sky-400
                            px-4 py-[5px] text-white font-medium rounded-md
                            shadow-md hover:from-sky-400 hover:to-sky-300
                            transition"

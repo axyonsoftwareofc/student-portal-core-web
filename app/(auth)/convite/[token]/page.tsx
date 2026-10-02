@@ -253,6 +253,7 @@ export default function ConvitePage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
+                                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                                     className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-sky-400 transition-colors sm:right-3 sm:min-h-0 sm:min-w-0"
                                     tabIndex={-1}
                                 >
@@ -288,6 +289,7 @@ export default function ConvitePage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    aria-label={showConfirmPassword ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
                                     className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-sky-400 transition-colors sm:right-3 sm:min-h-0 sm:min-w-0"
                                     tabIndex={-1}
                                 >

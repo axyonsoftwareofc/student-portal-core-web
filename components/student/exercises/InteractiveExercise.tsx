@@ -2030,6 +2030,7 @@ function CategorizeExercise({ data }: { data: InteractiveExerciseData }) {
         });
 
         setDraggedItemId(null);
+        setSelectedItemId(null);
     }, [submitted, draggedItemId]);
 
     const handleClickToAssign = useCallback((itemId: string, categoryId: string): void => {

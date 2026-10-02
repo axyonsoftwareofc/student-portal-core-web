@@ -457,16 +457,20 @@ const tr = trigger?.getBoundingClientRect();
 ({
     path: location.pathname,
     innerWidth,
-    mainClientW: m.clientWidth,
-    mainScrollW: m.scrollWidth,
+    mainOverflowX: getComputedStyle(m).overflowX,
     docScrollW: document.documentElement.scrollWidth,
+    // conteúdo que passa da largura da tela e não está dentro de um contêiner com rolagem própria
+    clippedContent: [...m.querySelectorAll('*')].filter(e => {
+        const b = e.getBoundingClientRect();
+        return b.width > 0 && b.right > innerWidth + 1 && !e.closest('[aria-hidden="true"]') && !e.closest('.overflow-x-auto');
+    }).length,
     rootHeightMatchesViewport: Math.abs(document.querySelector('main').closest('.h-dvh').getBoundingClientRect().height - innerHeight) <= 1,
     trigger: trigger ? { position: getComputedStyle(trigger).position, w: tr.width, h: tr.height, inHeader: !!trigger.closest('header') } : null,
     footerLinkHeights: [...document.querySelectorAll('footer a')].map(a => Math.round(a.getBoundingClientRect().height)),
 })
 ```
 
-Expected, em todas as rotas e nas duas larguras: `mainScrollW === mainClientW`, `docScrollW === innerWidth`, `rootHeightMatchesViewport: true`, `trigger.position` diferente de `fixed`, `trigger.inHeader: true`, `trigger.w` e `trigger.h` iguais a 44, e `footerLinkHeights` com todos os valores ≥ 44.
+Expected, em todas as rotas e nas duas larguras: `mainOverflowX === "hidden"`, `clippedContent === 0`, `docScrollW === innerWidth`, `rootHeightMatchesViewport: true`, `trigger.position` diferente de `fixed`, `trigger.inHeader: true`, `trigger.w` e `trigger.h` iguais a 44, e `footerLinkHeights` com todos os valores ≥ 44.
 
 - [ ] **Step 3: Drawer**
 
@@ -474,7 +478,7 @@ Em 375px, em `/aluno/dashboard`: clique no botão hambúrguer do header → o dr
 
 - [ ] **Step 4: Admin e Dialog**
 
-Peça ao usuário para trocar a sessão do navegador para uma conta de **admin**. Meça, nas mesmas larguras, `/admin/dashboard`, `/admin/alunos`, `/admin/pagamentos`, `/admin/destaques`: o critério `mainScrollW === mainClientW` vale para todas. Em `/admin/destaques` (ou `/admin/avisos`), abra "Novo ..." e meça o diálogo:
+Peça ao usuário para trocar a sessão do navegador para uma conta de **admin**. Meça, nas mesmas larguras, `/admin/dashboard`, `/admin/alunos`, `/admin/pagamentos`, `/admin/destaques`: os critérios `mainOverflowX === "hidden"` e `clippedContent === 0` valem para todas. Em `/admin/destaques` (ou `/admin/avisos`), abra "Novo ..." e meça o diálogo:
 
 ```js
 const d = document.querySelector('[role="dialog"]');
@@ -484,6 +488,8 @@ const r = d.getBoundingClientRect();
 Expected: `left` e `right` ≥ 16, `top` e `bottom` ≥ 16 e o diálogo não passa da altura da tela (com `scrollable: true` se o conteúdo for maior). Tire um screenshot.
 
 Observação: as tabelas do admin (`/admin/pagamentos` e outras) podem ter rolagem horizontal **dentro do próprio contêiner** da tabela (`overflow-x-auto`); isso é esperado e é tratado no sub-projeto do admin. O critério acima mede o `<main>`.
+
+Nota de execução: `scrollWidth` **não** serve como critério, porque com `overflow-x: hidden` ele continua informando a largura total do conteúdo (822px com a ilustração) mesmo sem o usuário poder rolar. Por isso o critério é `overflow-x` computado como `hidden` mais `clippedContent === 0`; opcionalmente, um gesto de rolagem horizontal na tela deve deixar `main.scrollLeft` em 0. Na medição do admin, `/admin/dashboard` tinha um item de grid sem `min-w-0` (429px em 375px) que o `overflow-x-hidden` passou a cortar; foi corrigido em `app/(dashboard)/admin/dashboard/page.tsx` num commit próprio.
 
 - [ ] **Step 5: Desktop**
 

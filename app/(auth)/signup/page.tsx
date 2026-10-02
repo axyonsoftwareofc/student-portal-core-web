@@ -107,7 +107,7 @@ export default function SignUp() {
                   <div className="relative">
                     <input
                         type={showPassword ? 'text' : 'password'}
-                        className="form-input w-full pr-12 sm:pr-10"
+                        className="form-input w-full pr-12! sm:pr-10!"
                         placeholder="Crie uma senha segura"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}

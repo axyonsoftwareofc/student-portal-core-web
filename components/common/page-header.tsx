@@ -49,7 +49,7 @@ export function PageHeader({
                                 key={index}
                                 onClick={action.onClick}
                                 className={cn(
-                                    "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-colors sm:w-auto",
+                                    "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-colors sm:min-h-0 sm:w-auto",
                                     variants[action.variant || "primary"]
                                 )}
                             >

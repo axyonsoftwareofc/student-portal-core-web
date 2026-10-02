@@ -240,14 +240,14 @@ export default function AulaPage() {
                         <div className="flex items-center gap-2 text-sm overflow-x-auto pb-2 flex-1 min-w-0">
                             <Link
                                 href="/aluno/estudar"
-                                className="text-gray-500 hover:text-sky-400 transition-colors flex-shrink-0"
+                                className="text-gray-500 hover:text-sky-400 transition-colors flex-shrink-0 py-3 sm:py-0"
                             >
                                 Estudar
                             </Link>
                             <ChevronRight className="h-4 w-4 text-gray-600 flex-shrink-0" strokeWidth={1.5} />
                             <Link
                                 href={`/aluno/estudar/${moduloId}`}
-                                className="text-gray-500 hover:text-sky-400 transition-colors truncate max-w-[120px] sm:max-w-[200px]"
+                                className="text-gray-500 hover:text-sky-400 transition-colors truncate max-w-[120px] sm:max-w-[200px] py-3 sm:py-0"
                             >
                                 {module.name}
                             </Link>
@@ -259,7 +259,7 @@ export default function AulaPage() {
 
                         <button
                             onClick={() => setIsNotesOpen((prev) => !prev)}
-                            className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-all text-sm font-medium"
+                            className="flex-shrink-0 flex items-center justify-center gap-2 min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-all text-sm font-medium"
                         >
                             {isNotesOpen ? (
                                 <X className="h-4 w-4" strokeWidth={1.5} />
@@ -369,17 +369,23 @@ export default function AulaPage() {
                     )}
 
                     {/* Navigation Footer */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-800/50">
+                    <div className="flex items-center justify-between gap-2 pt-4 border-t border-gray-800/50">
                         <button
                             onClick={goToPrev}
                             disabled={activeContentIndex === 0}
-                            className="flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex min-h-11 items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed md:min-h-0"
                         >
                             <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
                             Anterior
                         </button>
 
-                        <div className="flex items-center gap-1">
+                        {/* Celular: contador de posição */}
+                        <span className="text-sm text-gray-500 md:hidden">
+                            {activeContentIndex + 1} / {contents.length}
+                        </span>
+
+                        {/* Tablet e desktop: bolinhas de navegação */}
+                        <div className="hidden items-center gap-1 md:flex">
                             {contents.map((_, index) => (
                                 <button
                                     key={index}
@@ -398,7 +404,7 @@ export default function AulaPage() {
                         {activeContentIndex < contents.length - 1 ? (
                             <button
                                 onClick={goToNext}
-                                className="flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors"
+                                className="flex min-h-11 items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors md:min-h-0"
                             >
                                 Próximo
                                 <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
@@ -406,7 +412,7 @@ export default function AulaPage() {
                         ) : (
                             <Link
                                 href={`/aluno/estudar/${moduloId}`}
-                                className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                                className="flex min-h-11 items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors md:min-h-0"
                             >
                                 <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
                                 Voltar ao módulo

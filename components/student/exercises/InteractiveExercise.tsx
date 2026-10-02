@@ -900,7 +900,7 @@ function MatchingExercise({ data }: { data: InteractiveExerciseData }) {
                         <div
                             key={pair.id}
                             className={cn(
-                                "grid grid-cols-2 gap-4 p-3 rounded-lg border transition-all",
+                                "grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4 p-3 rounded-lg border transition-all",
                                 submitted && isCorrect && "border-emerald-500/30 bg-emerald-500/5",
                                 submitted && isWrong && "border-rose-500/30 bg-rose-500/5",
                                 !submitted && "border-gray-800 bg-gray-900/50"
@@ -912,13 +912,13 @@ function MatchingExercise({ data }: { data: InteractiveExerciseData }) {
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex min-w-0 items-center gap-2">
                                 <select
                                     value={userMatch}
                                     onChange={(e) => handleMatch(pair.id, e.target.value)}
                                     disabled={submitted}
                                     className={cn(
-                                        "flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50",
+                                        "min-h-11 min-w-0 flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 sm:min-h-0",
                                         submitted && isCorrect && "bg-emerald-500/20 border-emerald-500/30 text-emerald-300",
                                         submitted && isWrong && "bg-rose-500/20 border-rose-500/30 text-rose-300",
                                         !submitted && "bg-gray-800 border-gray-700 text-white"

@@ -139,7 +139,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
 
                         if (isInline) {
                             return (
-                                <code className="bg-gray-800 text-sky-300 px-1.5 py-0.5 rounded text-[0.85em] font-mono">
+                                <code className="bg-gray-800 text-sky-300 px-1.5 py-0.5 rounded text-[0.85em] font-mono [overflow-wrap:anywhere]">
                                     {children}
                                 </code>
                             );

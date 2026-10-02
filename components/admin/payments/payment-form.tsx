@@ -161,7 +161,7 @@ export function PaymentForm({
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors sm:min-h-0 sm:min-w-0"
                     >
                         <X className="h-5 w-5" strokeWidth={1.5} />
                     </button>
@@ -270,7 +270,7 @@ export function PaymentForm({
                                         key={option.value}
                                         type="button"
                                         onClick={() => handleStatusChange(option.value)}
-                                        className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                                        className={`min-h-11 px-3 py-2 text-sm font-medium rounded-lg border transition-colors sm:min-h-0 ${
                                             formData.status === option.value
                                                 ? option.value === 'PENDING'
                                                     ? 'bg-amber-500/20 border-amber-500 text-amber-400'

@@ -205,7 +205,7 @@ export default function CorrecoesPage() {
                         <button
                             key={filter.value}
                             onClick={() => setFilterStatus(filter.value)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                            className={`inline-flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors sm:min-h-0 ${
                                 filterStatus === filter.value
                                     ? 'bg-sky-600 text-white'
                                     : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'

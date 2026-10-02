@@ -178,7 +178,7 @@ export default function ConvitePage() {
                     <p className="text-gray-400 mb-6">{errorMessage}</p>
                     <Link
                         href="/signin"
-                        className="inline-block rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-sky-500 transition-colors"
+                        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-sky-500 transition-colors sm:min-h-0"
                     >
                         Ir para Login
                     </Link>
@@ -245,7 +245,7 @@ export default function ConvitePage() {
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 pr-10 text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-colors"
+                                    className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 pr-12 sm:pr-10 text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-colors"
                                     placeholder="Crie uma senha segura"
                                     disabled={isSubmitting}
                                     required
@@ -253,7 +253,7 @@ export default function ConvitePage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-sky-400 transition-colors"
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-sky-400 transition-colors sm:right-3 sm:min-h-0 sm:min-w-0"
                                     tabIndex={-1}
                                 >
                                     {showPassword ? (
@@ -280,7 +280,7 @@ export default function ConvitePage() {
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 pr-10 text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-colors"
+                                    className="w-full rounded-lg border border-gray-800/50 bg-gray-900/30 px-4 py-2.5 pr-12 sm:pr-10 text-white placeholder-gray-500 focus:border-sky-500/50 focus:outline-none focus:ring-1 focus:ring-sky-500/30 transition-colors"
                                     placeholder="Repita a senha"
                                     disabled={isSubmitting}
                                     required
@@ -288,7 +288,7 @@ export default function ConvitePage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-sky-400 transition-colors"
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-sky-400 transition-colors sm:right-3 sm:min-h-0 sm:min-w-0"
                                     tabIndex={-1}
                                 >
                                     {showConfirmPassword ? (
@@ -326,7 +326,7 @@ export default function ConvitePage() {
 
                 <p className="mt-6 text-center text-sm text-gray-500">
                     Já tem conta?{' '}
-                    <Link href="/signin" className="text-sky-400 hover:text-sky-300 transition-colors">
+                    <Link href="/signin" className="inline-flex min-h-11 items-center text-sky-400 hover:text-sky-300 transition-colors sm:min-h-0">
                         Fazer login
                     </Link>
                 </p>

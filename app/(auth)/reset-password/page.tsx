@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
             <div className="mb-8">
               <Link
                   href="/signin"
-                  className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors"
+                  className="inline-flex min-h-11 items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors sm:min-h-0"
               >
                 <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
                 Voltar para login
@@ -152,7 +152,7 @@ export default function ResetPasswordPage() {
             <div className="mt-8 text-center">
               <p className="text-sm text-gray-400">
                 Lembrou sua senha?{' '}
-                <Link href="/signin" className="text-sky-400 hover:text-sky-300 transition-colors">
+                <Link href="/signin" className="inline-flex min-h-11 items-center text-sky-400 hover:text-sky-300 transition-colors sm:min-h-0">
                   Fazer login
                 </Link>
               </p>

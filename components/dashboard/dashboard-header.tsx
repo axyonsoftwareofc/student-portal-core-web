@@ -3,6 +3,8 @@
 
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { useMobileNav } from "@/contexts/MobileNavContext";
 import {
     ChevronDown,
     User,
@@ -10,6 +12,7 @@ import {
     LayoutDashboard,
     LogOut,
     GraduationCap,
+    Menu,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -36,6 +39,7 @@ function getInitials(name: string): string {
  */
 export function DashboardHeader() {
     const { user, logout } = useAuth();
+    const { setIsOpen } = useMobileNav();
 
     if (!user) return null;
 
@@ -51,18 +55,31 @@ export function DashboardHeader() {
         <header className="sticky top-0 z-40 border-b border-gray-800/50 bg-gray-950/95 backdrop-blur-xl">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-14 sm:h-16 items-center justify-between">
-                    {/* Logo - com margem à esquerda no mobile para o botão do menu */}
-                    <Link
-                        href={dashboardLink}
-                        className="flex items-center gap-2.5 transition-opacity hover:opacity-80 ml-12 lg:ml-0"
-                    >
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-sky-600">
-                            <GraduationCap className="h-4 w-4 text-white" strokeWidth={2} />
-                        </div>
-                        <span className="hidden sm:inline font-nacelle text-lg font-semibold text-white">
-              {isAdmin ? "Code Plus Admin" : "Code Plus"}
-            </span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        {/* Botão do menu (drawer): só no mobile */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsOpen(true)}
+                            className="h-11 w-11 rounded-lg text-gray-300 hover:bg-gray-800/50 lg:hidden"
+                            aria-label="Abrir menu de navegação"
+                        >
+                            <Menu className="h-5 w-5" strokeWidth={1.5} />
+                        </Button>
+
+                        {/* Logo */}
+                        <Link
+                            href={dashboardLink}
+                            className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
+                        >
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-sky-600">
+                                <GraduationCap className="h-4 w-4 text-white" strokeWidth={2} />
+                            </div>
+                            <span className="hidden sm:inline font-nacelle text-lg font-semibold text-white">
+                                {isAdmin ? "Code Plus Admin" : "Code Plus"}
+                            </span>
+                        </Link>
+                    </div>
 
                     {/* User Menu */}
                     <DropdownMenu>

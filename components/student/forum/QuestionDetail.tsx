@@ -189,7 +189,7 @@ export function QuestionDetail({
                                         className="fixed inset-0 z-10"
                                         onClick={() => setIsMenuOpen(false)}
                                     />
-                                    <div className="absolute right-0 top-10 z-20 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[180px]">
+                                    <div className="absolute right-0 top-full mt-1 z-20 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[180px]">
                                         <button
                                             onClick={handleToggleStatus}
                                             className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2"

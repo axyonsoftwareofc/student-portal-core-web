@@ -128,7 +128,7 @@ export function AnswerCard({
                                     className="fixed inset-0 z-10"
                                     onClick={() => setIsMenuOpen(false)}
                                 />
-                                <div className="absolute right-0 top-8 z-20 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[140px]">
+                                <div className="absolute right-0 top-full mt-1 z-20 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[140px]">
                                     <button
                                         onClick={handleDelete}
                                         disabled={isDeleting}

@@ -109,6 +109,7 @@ export function BatchPaymentDialog({ isOpen, onClose, onSubmit, students }: Batc
                     </div>
                     <button
                         onClick={onClose}
+                        aria-label="Fechar"
                         className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white sm:min-h-0 sm:min-w-0"
                     >
                         <X className="h-5 w-5" strokeWidth={1.5} />

@@ -104,16 +104,17 @@ export default function LessonPreviewModal({
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
             <div className="relative bg-gray-900 border border-gray-700/50 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800/50 bg-amber-950/20">
-                    <div className="flex items-center gap-3">
-                        <Eye className="h-5 w-5 text-amber-400" strokeWidth={1.5} />
+                <div className="flex items-center justify-between gap-3 px-4 py-4 border-b border-gray-800/50 bg-amber-950/20 sm:px-6">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <Eye className="h-5 w-5 flex-shrink-0 text-amber-400" strokeWidth={1.5} />
                         <div>
                             <p className="text-sm font-medium text-amber-300">Modo Preview</p>
-                            <h2 className="text-lg font-bold text-white">{lessonTitle}</h2>
+                            <h2 className="text-lg font-bold text-white [overflow-wrap:anywhere]">{lessonTitle}</h2>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
+                        aria-label="Fechar"
                         className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors sm:min-h-0 sm:min-w-0"
                     >
                         <X className="h-5 w-5" strokeWidth={1.5} />

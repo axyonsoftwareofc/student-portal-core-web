@@ -93,6 +93,7 @@ export default function SubmissionReviewModal({
                     <h2 className="text-lg font-bold text-white">Correção de Exercício</h2>
                     <button
                         onClick={onClose}
+                        aria-label="Fechar"
                         className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors sm:min-h-0 sm:min-w-0"
                     >
                         <X className="h-5 w-5" strokeWidth={1.5} />

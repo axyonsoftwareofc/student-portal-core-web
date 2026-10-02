@@ -117,7 +117,7 @@ export function AnswerCard({
                     <div className="relative">
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+                            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 text-gray-500 hover:text-white hover:bg-gray-800 transition-colors sm:min-h-0 sm:min-w-0"
                         >
                             <MoreVertical className="h-4 w-4" />
                         </button>
@@ -156,7 +156,7 @@ export function AnswerCard({
                     onClick={handleUpvote}
                     disabled={!currentUserId}
                     className={cn(
-                        'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all',
+                        'inline-flex min-h-11 items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all sm:min-h-0',
                         hasVoted
                             ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50'
                             : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600 hover:text-white',
@@ -173,7 +173,7 @@ export function AnswerCard({
                         variant="ghost"
                         size="sm"
                         onClick={handleMarkBest}
-                        className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30"
+                        className="h-11 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30 sm:h-8"
                     >
                         <CheckCircle2 className="h-4 w-4 mr-1" />
                         Marcar como melhor

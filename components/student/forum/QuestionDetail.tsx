@@ -118,7 +118,7 @@ export function QuestionDetail({
             {/* Back Link */}
             <Link
                 href="/aluno/forum"
-                className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                className="inline-flex min-h-11 items-center gap-2 text-gray-400 hover:text-white transition-colors sm:min-h-0"
             >
                 <ArrowLeft className="h-4 w-4" />
                 Voltar para o fórum
@@ -178,7 +178,7 @@ export function QuestionDetail({
                         <div className="relative">
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 text-gray-500 hover:text-white hover:bg-gray-800 transition-colors sm:min-h-0 sm:min-w-0"
                             >
                                 <MoreVertical className="h-5 w-5" />
                             </button>

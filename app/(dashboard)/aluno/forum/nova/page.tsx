@@ -96,7 +96,7 @@ export default function NovaPeruntaPage() {
             {/* Back Link */}
             <Link
                 href="/aluno/forum"
-                className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                className="inline-flex min-h-11 items-center gap-2 text-gray-400 hover:text-white transition-colors sm:min-h-0"
             >
                 <ArrowLeft className="h-4 w-4" />
                 Voltar para o fórum

@@ -114,7 +114,7 @@ export default function LessonPreviewModal({
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors sm:min-h-0 sm:min-w-0"
                     >
                         <X className="h-5 w-5" strokeWidth={1.5} />
                     </button>
@@ -199,22 +199,28 @@ export default function LessonPreviewModal({
                 </div>
 
                 {contents.length > 0 && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800/50">
+                    <div className="flex items-center justify-between gap-2 px-4 py-4 border-t border-gray-800/50 sm:px-6">
                         <button
                             onClick={goToPrev}
                             disabled={activeIndex === 0}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="inline-flex min-h-11 shrink-0 items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors md:min-h-0"
                         >
                             <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
                             Anterior
                         </button>
 
-                        <div className="flex items-center gap-1">
+                        {/* Celular: contador de posição */}
+                        <span className="text-sm text-gray-500 md:hidden">
+                            {activeIndex + 1} / {contents.length}
+                        </span>
+
+                        {/* Tablet e desktop: bolinhas de navegação */}
+                        <div className="hidden min-w-0 items-center gap-1 overflow-x-auto py-1 [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden">
                             {contents.map((_, index) => (
                                 <button
                                     key={index}
                                     onClick={() => setActiveIndex(index)}
-                                    className={`h-2 rounded-full transition-all ${
+                                    className={`h-2 shrink-0 rounded-full transition-all ${
                                         index === activeIndex
                                             ? 'w-6 bg-sky-500'
                                             : 'w-2 bg-gray-700 hover:bg-gray-600'
@@ -226,7 +232,7 @@ export default function LessonPreviewModal({
                         <button
                             onClick={goToNext}
                             disabled={activeIndex === contents.length - 1}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="inline-flex min-h-11 shrink-0 items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors md:min-h-0"
                         >
                             Próximo
                             <ChevronRight className="h-4 w-4" strokeWidth={1.5} />

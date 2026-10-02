@@ -84,7 +84,7 @@ export function LiveClassCard({
         >
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3 flex-1">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
                     {dragIndex !== undefined && (
                         <span className="text-gray-500 hover:text-gray-300 flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing">
                             <GripVertical className="h-5 w-5" />
@@ -94,7 +94,7 @@ export function LiveClassCard({
 
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-white">
+                            <h3 className="font-semibold text-white [overflow-wrap:anywhere]">
                                 {liveClass.title}
                             </h3>
                             <span
@@ -160,7 +160,7 @@ export function LiveClassCard({
                 <div className="relative">
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors sm:min-h-0 sm:min-w-0"
                     >
                         <MoreVertical className="h-4 w-4" />
                     </button>
@@ -247,7 +247,7 @@ export function LiveClassCard({
                         href={liveClass.meet_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm transition-colors"
+                        className="inline-flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg sm:min-h-0 bg-sky-600 hover:bg-sky-500 text-white text-sm transition-colors"
                     >
                         <Video className="h-4 w-4" />
                         Entrar na Sala
@@ -258,7 +258,7 @@ export function LiveClassCard({
                         href={liveClass.video_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm transition-colors"
+                        className="inline-flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg sm:min-h-0 bg-gray-700 hover:bg-gray-600 text-white text-sm transition-colors"
                     >
                         <Play className="h-4 w-4" />
                         Ver Gravação

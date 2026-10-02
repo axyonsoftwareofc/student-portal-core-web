@@ -29,7 +29,7 @@ export function PerformanceTabs({ activeTab, onTabChange }: PerformanceTabsProps
                         key={tab.id}
                         onClick={() => onTabChange(tab.id)}
                         className={cn(
-                            'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all',
+                            'flex min-h-11 flex-1 items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all sm:min-h-0',
                             isActive
                                 ? 'bg-sky-500/10 text-sky-300 border border-sky-500/20'
                                 : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'

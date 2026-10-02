@@ -83,7 +83,7 @@ export function AnswerForm({ questionId, onSubmit, isLoading = false }: AnswerFo
                 <Button
                     type="submit"
                     disabled={!isValid || isSubmitting || isLoading}
-                    className="bg-sky-600 hover:bg-sky-500"
+                    className="h-11 bg-sky-600 hover:bg-sky-500 sm:h-10"
                 >
                     {isSubmitting ? (
                         <>

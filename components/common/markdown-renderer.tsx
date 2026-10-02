@@ -57,7 +57,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
                             href={href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sky-400 hover:text-sky-300 underline underline-offset-2 transition-colors"
+                            className="text-sky-400 hover:text-sky-300 underline underline-offset-2 transition-colors [overflow-wrap:anywhere]"
                         >
                             {children}
                         </a>

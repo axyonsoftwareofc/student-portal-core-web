@@ -118,7 +118,7 @@ export function QuestionDetail({
             {/* Back Link */}
             <Link
                 href="/aluno/forum"
-                className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                className="inline-flex min-h-11 items-center gap-2 text-gray-400 hover:text-white transition-colors sm:min-h-0"
             >
                 <ArrowLeft className="h-4 w-4" />
                 Voltar para o fórum
@@ -178,7 +178,7 @@ export function QuestionDetail({
                         <div className="relative">
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 text-gray-500 hover:text-white hover:bg-gray-800 transition-colors sm:min-h-0 sm:min-w-0"
                             >
                                 <MoreVertical className="h-5 w-5" />
                             </button>
@@ -189,7 +189,7 @@ export function QuestionDetail({
                                         className="fixed inset-0 z-10"
                                         onClick={() => setIsMenuOpen(false)}
                                     />
-                                    <div className="absolute right-0 top-10 z-20 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[180px]">
+                                    <div className="absolute right-0 top-full mt-1 z-20 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[180px]">
                                         <button
                                             onClick={handleToggleStatus}
                                             className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2"

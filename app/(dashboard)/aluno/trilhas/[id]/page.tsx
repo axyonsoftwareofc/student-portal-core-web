@@ -219,7 +219,7 @@ export default function AlunoTrilhaFasesPage({ params }: PageProps) {
                     </p>
                     <Link
                         href="/aluno/estudar"
-                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition-colors"
+                        className="mt-3 inline-flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition-colors sm:min-h-0"
                     >
                         <Play className="h-4 w-4" strokeWidth={1.5} />
                         Ir para Estudar

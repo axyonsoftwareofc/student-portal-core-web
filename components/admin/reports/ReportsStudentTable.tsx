@@ -86,7 +86,7 @@ export function ReportsStudentTable({ studentReports }: ReportsStudentTableProps
                         placeholder="Buscar aluno..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full rounded-lg border border-gray-800 bg-gray-900 py-2 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none sm:w-64"
+                        className="min-h-11 w-full rounded-lg border border-gray-800 bg-gray-900 py-2 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none sm:min-h-0 sm:w-64"
                     />
                 </div>
             </div>

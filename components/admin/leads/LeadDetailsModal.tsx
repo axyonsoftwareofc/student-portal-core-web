@@ -225,7 +225,7 @@ export function LeadDetailsModal({
                                 <button
                                     onClick={() => handleAction(() => onMarkAsContacted(lead.id))}
                                     disabled={isProcessing}
-                                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-sky-500/10 text-sky-400 border border-sky-500/30 hover:bg-sky-500/20 transition-all duration-200 disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 min-h-11 px-4 py-2.5 rounded-lg text-sm font-medium sm:min-h-0 bg-sky-500/10 text-sky-400 border border-sky-500/30 hover:bg-sky-500/20 transition-all duration-200 disabled:opacity-50"
                                 >
                                     <PhoneCall className="h-4 w-4" strokeWidth={1.5} />
                                     Marcar como Contatado
@@ -237,7 +237,7 @@ export function LeadDetailsModal({
                                     <button
                                         onClick={handleConvertToStudent}
                                         disabled={isProcessing}
-                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all duration-200 disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 min-h-11 px-4 py-2.5 rounded-lg text-sm font-medium sm:min-h-0 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all duration-200 disabled:opacity-50"
                                     >
                                         <UserCheck className="h-4 w-4" strokeWidth={1.5} />
                                         Converter em Aluno
@@ -246,7 +246,7 @@ export function LeadDetailsModal({
                                     <button
                                         onClick={() => handleAction(() => onDecline(lead.id))}
                                         disabled={isProcessing}
-                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 transition-all duration-200 disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 min-h-11 px-4 py-2.5 rounded-lg text-sm font-medium sm:min-h-0 bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 transition-all duration-200 disabled:opacity-50"
                                     >
                                         <XCircle className="h-4 w-4" strokeWidth={1.5} />
                                         Declinar Lead
@@ -260,14 +260,14 @@ export function LeadDetailsModal({
                                         <button
                                             onClick={handleDelete}
                                             disabled={isProcessing}
-                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-rose-500 text-white hover:bg-rose-600 transition-all duration-200 disabled:opacity-50"
+                                            className="flex-1 flex items-center justify-center gap-2 min-h-11 px-4 py-2.5 rounded-lg text-sm font-medium sm:min-h-0 bg-rose-500 text-white hover:bg-rose-600 transition-all duration-200 disabled:opacity-50"
                                         >
                                             <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                                             Confirmar Exclusão
                                         </button>
                                         <button
                                             onClick={() => setShowDeleteConfirmation(false)}
-                                            className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200"
+                                            className="min-h-11 px-4 py-2.5 rounded-lg text-sm font-medium sm:min-h-0 text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200"
                                         >
                                             Cancelar
                                         </button>
@@ -276,7 +276,7 @@ export function LeadDetailsModal({
                                     <button
                                         onClick={() => setShowDeleteConfirmation(true)}
                                         disabled={isProcessing}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-200"
+                                        className="w-full flex items-center justify-center gap-2 min-h-11 px-4 py-2.5 rounded-lg text-sm font-medium sm:min-h-0 text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-200"
                                     >
                                         <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                                         Excluir Lead

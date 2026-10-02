@@ -169,7 +169,7 @@ export default function ImportPage() {
                                 onClick={handleValidate}
                                 disabled={!jsonInput.trim() || isValidating}
                                 className={cn(
-                                    "flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
+                                    "flex min-h-11 items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all sm:min-h-0",
                                     jsonInput.trim() && !isValidating
                                         ? "bg-sky-600 hover:bg-sky-500 text-white"
                                         : "bg-gray-800 text-gray-500 cursor-not-allowed"

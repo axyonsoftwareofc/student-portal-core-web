@@ -333,3 +333,13 @@
 .animate-pulse-slow {
   animation: pulse-slow 3s ease-in-out infinite;
 }
+
+/* iPhone: o Safari dá zoom ao focar campo com fonte menor que 16px.
+   Abaixo de sm (40rem) todo campo fica com 16px; a partir de sm, vale o tamanho de cada componente. */
+@media (width < 40rem) {
+  input,
+  select,
+  textarea {
+    font-size: 1rem !important;
+  }
+}

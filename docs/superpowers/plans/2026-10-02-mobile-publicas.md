@@ -4,7 +4,7 @@
 
 **Goal:** Nas páginas públicas, evitar o zoom do iPhone ao focar campos (fonte de 16px no celular) e levar a 44px no celular os links dos formulários, os botões de mostrar senha, o header, o logo e os links do rodapé.
 
-**Architecture:** Só ajustes de classes Tailwind (e de `aria-label`/`alt` no logo) em arquivos existentes, mais uma troca de `text-sm` por `text-base sm:text-sm` na regra global de `.form-input`. Padrão de toque `min-h-11 sm:min-h-0` (e `min-w-11 sm:min-w-0` em itens só de ícone), o mesmo dos PRs anteriores.
+**Architecture:** Só ajustes de classes Tailwind (e de `aria-label`/`alt` no logo) em arquivos existentes, mais uma troca de `text-sm` por `text-[1rem] sm:text-sm` na regra global de `.form-input`. Padrão de toque `min-h-11 sm:min-h-0` (e `min-w-11 sm:min-w-0` em itens só de ícone), o mesmo dos PRs anteriores.
 
 **Tech Stack:** Next.js 15 (App Router), React 19, TypeScript, Tailwind 4, pnpm.
 
@@ -12,7 +12,7 @@
 
 - Largura mínima alvo: 375px, e também 360px, sem elemento fora da tela.
 - Áreas de toque de pelo menos 44px de altura no celular com o padrão `min-h-11 sm:min-h-0` (e `min-w-11 sm:min-w-0` em itens só de ícone). A partir de `sm` o aspecto visual não muda.
-- Campos `.form-input`, `.form-textarea`, `.form-multiselect`, `.form-select`: `text-base sm:text-sm` (16px no celular, 14px a partir de `sm`).
+- Campos `.form-input`, `.form-textarea`, `.form-multiselect`, `.form-select`: `text-[1rem] sm:text-sm` (16px no celular, 14px a partir de `sm`).
 - Links sociais do rodapé continuam com `href="#"`; só ganham área de toque.
 - Logo: `aria-label="Code Plus"` e `alt="Code Plus"`.
 - Sem mudança de estilo visual além do necessário.
@@ -81,7 +81,7 @@ Nos dois arquivos de CSS (1 ocorrência em cada), troque
 ```
 por
 ```
-@apply rounded-lg px-4 py-2.5 text-base text-gray-200 sm:text-sm;
+@apply rounded-lg px-4 py-2.5 text-[1rem] text-gray-200 sm:text-sm;
 ```
 (Só essa linha, que pertence ao bloco `.form-input, .form-textarea, .form-multiselect, .form-select`.)
 
@@ -168,8 +168,8 @@ className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-11 min-w-
 
 - [ ] **Step 2: Folga no campo de senha**
 
-1. `signup/page.tsx` (1): troque `className="form-input w-full pr-10"` por `className="form-input w-full pr-12 sm:pr-10"`.
-2. `update-password/page.tsx` (2; substituição de todas): troque `focus:ring-sky-400/40 pr-10"` por `focus:ring-sky-400/40 pr-12 sm:pr-10"`.
+1. `signup/page.tsx` (1): troque `className="form-input w-full pr-10"` por `className="form-input w-full pr-12! sm:pr-10!"`.
+2. `update-password/page.tsx` (2; substituição de todas): troque `focus:ring-sky-400/40 pr-10"` por `focus:ring-sky-400/40 pr-12! sm:pr-10!"`.
 3. `convite/[token]/page.tsx` (2; substituição de todas): troque `px-4 py-2.5 pr-10 text-white` por `px-4 py-2.5 pr-12 sm:pr-10 text-white`.
 
 - [ ] **Step 3: Login**
@@ -244,9 +244,9 @@ Pergunte ao usuário se pode mesclar. Com o "sim": `gh pr merge --merge --delete
 
 ## Auto-revisão do plano contra o spec
 
-- **§1 Fonte dos campos (`text-base sm:text-sm` nas duas definições):** Task 1, Step 1.
+- **§1 Fonte dos campos (`text-[1rem] sm:text-sm` nas duas definições; o tema define `text-base` como 15px):** Task 1, Step 1.
 - **§2 Links dos formulários:** login (Task 2, Step 3), cadastro (Step 4), recuperação e convite (Step 5), inscrição (Step 6).
-- **§3 Mostrar senha (`right-0 … sm:right-3`, 44×44, `pr-12 sm:pr-10`):** Task 2, Steps 1–2. Pendência resolvida: os campos com `pr-10` são 1 em signup, 2 em update-password e 2 no convite.
+- **§3 Mostrar senha (`right-0 … sm:right-3`, 44×44, `pr-12 sm:pr-10`):** Task 2, Steps 1–2. Pendência resolvida: os campos com `pr-10` são 1 em signup, 2 em update-password e 2 no convite. Nos campos com `.form-input` o `pr-*` precisa do sufixo `!` (a regra `.form-input` fica fora das camadas e vence os utilitários).
 - **§4 Header, logo (com `aria-label`/`alt` "Code Plus") e "Ir para Login":** Task 1, Steps 2–3; Task 2, Step 5.
 - **§5 Rodapé:** Task 1, Step 4.
 - **Verificação do spec:** Task 3.

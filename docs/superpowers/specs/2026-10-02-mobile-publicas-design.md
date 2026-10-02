@@ -11,7 +11,7 @@ Status: aprovado pelo usuário
 
 | Tema | Decisão |
 |---|---|
-| Fonte dos campos (zoom do iPhone) | Corrigir na classe global `.form-input` e afins: `text-base sm:text-sm` |
+| Fonte dos campos (zoom do iPhone) | Corrigir na classe global `.form-input` e afins: `text-[1rem] sm:text-sm` (o tema define `text-base` como 15px) |
 | Links do rodapé (Twitter, Medium, GitHub com `href="#"`) | Manter no lugar e só aumentar a área de toque para 44px |
 | `aria-label="Cruip"` do logo | Trocar por "Code Plus" |
 | Áreas de toque | 44px no celular com o padrão `min-h-11 sm:min-h-0` (o desktop não muda), igual ao dos PRs anteriores |
@@ -44,13 +44,13 @@ Nos dois arquivos de CSS, no bloco
   @apply rounded-lg px-4 py-2.5 text-sm text-gray-200;
 }
 ```
-`text-sm` passa a ser `text-base sm:text-sm`. Os campos ficam com 16px no celular e 14px a partir de `sm`.
+`text-sm` passa a ser `text-[1rem] sm:text-sm` (não `text-base`, que neste tema vale 15px e não evita o zoom). Os campos ficam com 16px no celular e 14px a partir de `sm`.
 
 ### 2. Links dos formulários
 Cada link do achado 2 ganha `inline-flex min-h-11 items-center sm:min-h-0` (os que já têm `inline-flex items-center` ganham só `min-h-11` e `sm:min-h-0`). Links no meio de uma frase passam a ocupar uma linha de 44px no celular.
 
 ### 3. Botão de mostrar senha
-Nos botões `absolute right-3 top-1/2 -translate-y-1/2 …`: passam a `absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-11 min-w-11 items-center justify-center sm:right-3 sm:min-h-0 sm:min-w-0 …` (resto das classes igual). O campo de senha correspondente passa de `pr-10` para `pr-12 sm:pr-10`.
+Nos botões `absolute right-3 top-1/2 -translate-y-1/2 …`: passam a `absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-11 min-w-11 items-center justify-center sm:right-3 sm:min-h-0 sm:min-w-0 …` (resto das classes igual). O campo de senha correspondente passa de `pr-10` para `pr-12 sm:pr-10`; nos campos com `.form-input` (signup e update-password) com o sufixo `!` (`pr-12! sm:pr-10!`), porque a regra `.form-input` fica fora das camadas do Tailwind e anula o `pr-*` comum (o `pr-10` original nunca teve efeito).
 
 ### 4. Header, logo e convite
 - `header.tsx`: links "Entrar" e "Inscreva-se" ganham `min-h-11 sm:min-h-0`.

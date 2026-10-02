@@ -133,7 +133,7 @@ export function ChangePasswordSection() {
                     </div>
                     <button
                         onClick={() => setIsExpanded(true)}
-                        className="rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                        className="min-h-11 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors sm:min-h-0"
                     >
                         Alterar
                     </button>

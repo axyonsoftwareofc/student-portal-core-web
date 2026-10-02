@@ -81,7 +81,7 @@ export default function ModuloPage() {
             <div className="space-y-3">
                 <Link
                     href={backLink}
-                    className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors"
+                    className="inline-flex min-h-11 items-center gap-2 text-sm text-gray-400 hover:text-sky-400 transition-colors sm:min-h-0"
                 >
                     <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
                     {backLabel}

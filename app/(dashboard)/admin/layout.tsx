@@ -27,7 +27,7 @@ export default function AdminLayout({
     }
 
     return (
-        <div className="flex h-screen flex-col bg-gray-950">
+        <div className="flex h-dvh flex-col bg-gray-950">
             {/* Header fixo no topo */}
             <DashboardHeader />
 
@@ -41,7 +41,7 @@ export default function AdminLayout({
                 />
 
                 {/* Área de conteúdo principal */}
-                <main className="relative flex-1 overflow-y-auto">
+                <main className="relative flex-1 overflow-y-auto overflow-x-hidden">
                     {/* Background decorativo */}
                     <PageIllustration />
 

@@ -84,7 +84,7 @@ export default function AlunoLayout({
     }
 
     return (
-        <div className="flex h-screen flex-col bg-gray-950">
+        <div className="flex h-dvh flex-col bg-gray-950">
             <DashboardHeader />
             <div className="flex flex-1 overflow-hidden">
                 <Sidebar
@@ -92,7 +92,7 @@ export default function AlunoLayout({
                     userType="student"
                     title="Code Plus"
                 />
-                <main className="relative flex-1 overflow-y-auto">
+                <main className="relative flex-1 overflow-y-auto overflow-x-hidden">
                     <PageIllustration />
                     <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
                         {children}
